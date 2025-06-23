@@ -1,7 +1,7 @@
 ---
 title: 'Species Persistence: Data Processing and Visualization'
 author: "NOAA Fisheries' Office of Science and Technology"
-date: "2025-06-05"
+date: "2025-06-25"
 output:
   html_document:
     toc: yes
@@ -33,7 +33,7 @@ library(tidyverse)
 
 This document presents various analyses for evaluating species persistence as a new analysis module on [DisMAP](https://apps-st.fisheries.noaa.gov/dismap/). 
 
-**The Species Persistence module is in a pilot period. Feedback is encouraged and can always be given by submitting a pull request through GitHub, taking our [feedback survey](https://docs.google.com/forms/d/1yJX11wHzLBh1mQEKEKV_JcsNimdiAC75qtmqTsUw_ZE/viewform?pli=1&pli=1&edit_requested=true), or emailing us at.. [dismap.contact@noaa.gov](dismap.contact@noaa.gov).**
+**The Species Persistence module is in a pilot period. Feedback is encouraged and can always be given by submitting a pull request through GitHub, taking our [feedback survey](https://docs.google.com/forms/d/1yJX11wHzLBh1mQEKEKV_JcsNimdiAC75qtmqTsUw_ZE/viewform?pli=1&pli=1&edit_requested=true), or emailing us at [dismap.contact@noaa.gov](dismap.contact@noaa.gov).**
 
 
 The goals for this analysis are four-fold:
