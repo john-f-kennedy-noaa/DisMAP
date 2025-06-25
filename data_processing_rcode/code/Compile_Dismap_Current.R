@@ -3462,7 +3462,7 @@ spplist <- presyrsum %>%
   filter(presyr >= 2) %>%
   select(region, spp, common)
 
-spp_addin<-read.csv("data_processing_rcode/data/Add_managed_spp.csv",header=T, sep=",")
+spp_addin<-read.csv("data_processing_rcode/Add_managed_spp.csv",header=T, sep=",")
 spplist<-rbind(spplist, spp_addin) %>%
   distinct()
 
@@ -3498,7 +3498,7 @@ spplist_IDW <- presyrsum %>%
   filter(presyr >= (maxyrs * 3/4)) %>%
   select(region, spp, common)
 
-spp_addin<-read.csv("data_processing_rcode/data/Add_managed_spp.csv",header=T, sep=",")
+spp_addin<-read.csv("data_processing_rcode/Add_managed_spp.csv",header=T, sep=",")
 spplist2<-rbind(spplist_IDW, spp_addin) %>%
   distinct() %>%
   mutate(DistributionProjectName="NMFS/Rutgers IDW Interpolation")
@@ -3578,7 +3578,7 @@ spp_survey<-dat.exploded %>%
 print("Core species")
 
 ## FILTERED DATA
-# Find a standard set of species (present at least 3/4 of the years of the filtered data in a region)
+# Find a standard set of species (present in all years of the filtered data in a region)
 # this result differs from the original code because it does not include any species that have a pres value of 0.  It does, however, include speices for which the common name is NA.
 presyr <- present_every_year(dat_fltr, region, spp, common, year)
 
