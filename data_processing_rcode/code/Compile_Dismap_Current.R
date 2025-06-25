@@ -414,10 +414,10 @@ ebs <- ak_full %>%
   dplyr::select(region, haulid, year, lat, lon, stratum, stratumarea, depth, spp, wtcpue) %>%
   dplyr::ungroup()
 
-ebs<-left_join(ebs, ebs_strata, by=c("stratum"="StratumCode"))%>%
-  select(-stratumarea, -SubareaDescription) %>%
-  rename(stratumarea=Areakm2) %>%
-  dplyr::select(region, haulid, year, lat, lon, stratum, stratumarea, depth, spp, wtcpue)
+# ebs<-left_join(ebs, ebs_strata, by=c("stratum"="StratumCode"))%>%
+#   select(-stratumarea, -SubareaDescription) %>%
+#   rename(stratumarea=Areakm2) %>%
+#   dplyr::select(region, haulid, year, lat, lon, stratum, stratumarea, depth, spp, wtcpue)
 
 if (HQ_DATA_ONLY == TRUE){
   # look at the graph and make sure decisions to keep or eliminate data make sense
@@ -1023,7 +1023,7 @@ gmex_tow<-type_convert(gmex_tow, col_types = cols(
   X28 = col_character()
 ))
 gmex_tow <- gmex_tow %>%
-  select('STATIONID', 'VESSEL', 'CRUISE_NO', 'P_STA_NO', 'INVRECID', 'GEAR_SIZE', 'GEAR_TYPE', 'MESH_SIZE', 'MIN_FISH', 'OP') %>%
+  select('CRUISEID', 'STATIONID', 'VESSEL', 'CRUISE_NO', 'P_STA_NO', 'INVRECID', 'GEAR_SIZE', 'GEAR_TYPE', 'MESH_SIZE', 'MIN_FISH', 'OP') %>%
   filter(GEAR_TYPE=='ST')
 
 gmex_bio <-readr::read_delim(here::here("data_processing_rcode/data","gmex_BGSREC.csv"),
@@ -1184,7 +1184,7 @@ gmex_bio_utax2 <- gmex_bio_utax1 %>%
   mutate(taxon = ifelse(biocode %in% c(691010100),'ASTROPECTEN',taxon))
 
 ## MERGE the corrected catch/tow/species information from above with cruise information, but only for shrimp trawl tows (ST)
-gmex <- left_join(gmex_bio_utax2, gmex_tow, by = c("stationid","vessel", "cruise_no", "p_sta_no", "invrecid")) %>%
+gmex <- left_join(gmex_bio_utax2, gmex_tow, by = c("cruiseid", "stationid","vessel", "cruise_no", "p_sta_no", "invrecid")) %>%
   # add station location and related data
   left_join(gmex_station, by = c("cruiseid", "stationid", "cruise_no", "p_sta_no")) %>%
   # add cruise title
