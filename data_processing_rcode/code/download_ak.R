@@ -60,7 +60,7 @@ res <- httr::GET(url = paste0('https://apps-st.fisheries.noaa.gov/ods/foss/afsc_
 data <- jsonlite::fromJSON(base::rawToChar(res$content))
 catch_spp <- data$items  %>%
   dplyr::select(-links) %>% # necessary for API accounting, but not part of the dataset
-  filter(species_code < 32000)
+  filter(species_code < 99990)
 
 write.csv(x = catch_spp,
           here::here("data_processing_rcode/data/AK_gap_products_foss_species.csv"))
