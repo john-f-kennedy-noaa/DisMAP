@@ -2024,8 +2024,8 @@ dat_spp <- dat %>%
 
 # Anti-join this spp list to the taxon column from the tax file to see which spp are not represented there
 not_in_tax <- anti_join(dat_spp, tax, by = c("spp" = "survey_name"))
-not_in_tax<- not_in_tax %>% group_by(spp) %>%
-  summarise_all(funs(toString(unique(na.omit(.)))))
+not_in_tax <- not_in_tax %>% group_by(spp) %>%
+  summarise_all(funs(toString(unique(na.omit(.))))) #FLAG: Update to replace `funs()`, which has been deprecated
 
 #========================== end species name check ===========
 
