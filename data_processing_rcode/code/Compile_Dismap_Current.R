@@ -70,7 +70,7 @@ HQ_DATA_ONLY <- TRUE
 
 # 2. View plots of removed strata for HQ_DATA. #OPTIONAL, DEFAULT:FALSE
 # It takes a while to generate these plots.
-HQ_PLOTS <- FALSE
+HQ_PLOTS <- TRUE
 
 # 3. Remove ai,ebs,gmex,goa,neus,seus,wcann,wctri, scot. Keep `dat`. #DEFAULT: FALSE
 REMOVE_REGION_DATASETS <- FALSE
@@ -373,7 +373,7 @@ if (HQ_DATA_ONLY == TRUE){
     distinct() %>%
     group_by(stratum) %>%
     summarise(count = n()) %>%
-    filter(count >= 13)
+    filter(count >= 14) #this ensures that we only use strata that are sampled in all years. Should be updated annually.
 
   # how many rows will be lost if only stratum trawled ever year are kept?
   test2 <- ai %>%
@@ -501,7 +501,7 @@ if (HQ_DATA_ONLY == TRUE){
     distinct() %>%
     group_by(stratum) %>%
     summarise(count = n())%>%
-    filter(count >= 12) ## I think this may need to change to 12 years?
+    filter(count >= 12) #this ensures that we only use strata that are sampled in all but 3 years. Should be updated annually.
 
   # how many rows will be lost if only stratum trawled ever year and the ones mentioned
   # above are kept?
@@ -564,9 +564,9 @@ if (HQ_DATA_ONLY == TRUE){
     distinct() %>%
     group_by(stratum) %>%
     summarise(count = n())%>%
-    filter(count >= 5)
+    filter(count >= 6)#this ensures that we only use strata that are sampled in all years. Should be updated annually.
 
-  # how many rows will be lost if only stratum trawled ever year aare kept?
+  # how many rows will be lost if only stratum trawled ever year are kept?
   test2 <- nbs %>%
     filter(stratum %in% test$stratum)
   nrow(nbs) - nrow(test2)
@@ -1367,7 +1367,7 @@ neus_strata <- read_csv(here::here("data_processing_rcode/data", "neus_strata.cs
   distinct()
 
 #read in catch file, which includes both spring and fall survey. Need to parse them out
-neus_catch <- read.csv("data_processing_rcode/data/NEFSC_BTS_ALLCATCHES_May2024.csv", header=T, sep=",")%>%
+neus_catch <- read.csv("data_processing_rcode/data/neus_catch.csv", header=T, sep=",")%>%
   filter(!is.na(SCINAME)) %>%
   mutate(SVSPP = as.character(SVSPP))
 neus_fall_catch<-neus_catch %>%
@@ -1492,7 +1492,7 @@ neus_spring <- neus_spring_catch %>%
          stratum = STRATUM,
          haulid = ID,
          spp = SCINAME,
-         wtcpue = EXPCATCHWT)  %>%
+         wtcpue = CALIB_WT)  %>%
   mutate(haulid= paste(CRUISE6,"0",stratum,"00",TOW, "0000"),sep="") %>%
   mutate(stratum = as.double(stratum),
          lat = as.double(lat),
