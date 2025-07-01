@@ -93,6 +93,56 @@ wc_tri <- read_csv(here::here("data_processing_rcode","output","python", "WC_TRI
 data <- rbind(bfish, ai, ebs, gmex, goa, nbs, neus_fall, neus_spri, seus_fall, seus_spri, seus_sum, wc_ann, wc_tri)
 ```
 
+```{r temp}
+#Remove this chunk!!! 7/1/2025
+
+bfish <- read_csv(here::here("data_processing_rcode/data", "BFISH_DisMAP_2024_update_v2.csv")) 
+
+ai <- read_csv(here::here("data_processing_rcode","output","python", "AI_survey.csv"))
+ebs <- read_csv(here::here("data_processing_rcode","output","python", "EBS_survey.csv")) 
+gmex <- read_csv(here::here("data_processing_rcode","output","python", "GMEX_survey.csv"))
+goa <- read_csv(here::here("data_processing_rcode","output","python", "GOA_survey.csv"))
+nbs <- read_csv(here::here("data_processing_rcode","output","python", "NBS_survey.csv")) 
+neus_fall <- read_csv(here::here("data_processing_rcode","output","python", "NEUS_FAL_survey.csv"))
+neus_spri <- read_csv(here::here("data_processing_rcode","output","python", "NEUS_SPR_survey.csv"))
+seus_fall <- read_csv(here::here("data_processing_rcode","output","python", "SEUS_FAL_survey.csv"))
+seus_spri <- read_csv(here::here("data_processing_rcode","output","python", "SEUS_SPR_survey.csv"))
+seus_sum <- read_csv(here::here("data_processing_rcode","output","python", "SEUS_SUM_survey.csv"))
+wc_ann <- read_csv(here::here("data_processing_rcode","output","python", "WC_ANN_survey.csv"))
+wc_tri <- read_csv(here::here("data_processing_rcode","output","python", "WC_TRI_survey.csv"))
+
+data <- rbind(ai, ebs, gmex, goa, nbs, neus_fall, neus_spri, seus_fall, seus_spri, seus_sum, wc_ann, wc_tri)
+
+myfilt <- data %>% 
+  filter(DistributionProjectName == "NMFS/Rutgers IDW Interpolation") %>% 
+  select(region, year, spp, haulid, wtcpue) %>% 
+  filter(wtcpue > 0) %>%
+  distinct(region, year, spp) %>% 
+  group_by(region, spp) %>% 
+  summarize(n = n())
+
+myfilt$max <- ifelse(myfilt$region == "Aleutian Islands", 13,
+                     ifelse(myfilt$region == "Eastern Bering Sea", 36,
+                            ifelse(myfilt$region == "Gulf of Alaska", 15,
+                                   ifelse(myfilt$region == "Gulf of Mexico", 12,
+                                          ifelse(myfilt$region == "Northeast US Fall", 48,
+                                                 ifelse(myfilt$region == "Northeast US Spring", 46,
+                                                        ifelse(myfilt$region == "Northern Bering Sea", 6,
+                                                               ifelse(myfilt$region == "Southeast US Fall", 33,
+                                                                      ifelse(myfilt$region == "Southeast US Spring", 32,
+                                                                             ifelse(myfilt$region == "Southeast US Summer", 32,
+                                                                                    ifelse(myfilt$region == "West Coast Annual", 20,
+                                                                                           ifelse(myfilt$region == "West Coast Triennial", 10, NA))))))))))))
+
+myfilt2 <- myfilt %>% 
+  mutate(pres = max - n) %>% 
+  filter(pres == 0) %>% 
+  group_by(region) %>% 
+  summarize(n = n())
+
+```
+
+
 ## Data Processing
 
 ```{r tech report table, eval=FALSE}
