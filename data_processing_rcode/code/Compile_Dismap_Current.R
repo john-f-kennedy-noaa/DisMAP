@@ -934,7 +934,7 @@ if (HQ_DATA_ONLY == TRUE){
     distinct() %>%
     group_by(stratum) %>%
     summarise(count = n()) %>%
-    filter(count>=20)
+    filter(count>=21) #this ensures that we only use strata that are sampled in all years. Should be updated annually.
 
   # how many rows will be lost if only stratum trawled ever year are kept?
   test2 <- wcann %>%
