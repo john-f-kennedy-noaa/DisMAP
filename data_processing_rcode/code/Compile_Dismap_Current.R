@@ -1099,7 +1099,7 @@ gmex_bio_mod <- bgsrec_null_invrecid %>%
 
 # drop unwanted data objects
 rm(bgsrec_null_invrecid,bgsrec_null_check1,bgsrec_null_check2,bgsrec_with_invrecid,get_stationid_invrecid, gmex_bio)
-# garbace collect to free up memory
+# garbage collect to free up memory
 gc()
 
 
@@ -1212,7 +1212,7 @@ gmex_tow <- gmex_tow %>%
     lon = -rowMeans(cbind(s_lond + s_lonm/60, e_lond + e_lonm/60), na.rm=T),
   ) %>%
   ## filter for target years
-  filter(year >= 2010 & year <= 2023)
+  filter(year >= 2010)
 
 
 ## Create gmex object by left_joining gmex_bio_utax3 to gmex_tow
@@ -1317,12 +1317,12 @@ if (HQ_DATA_ONLY == TRUE){
 
 
   test <- gmex %>%
-    filter(year >= 2010, year!=2023) %>% # switched to 2010 and after since 2008-2009 were experimental years
+    # filter(year >= 2010, year!=2023) %>% # switched to 2010 and after since 2008-2009 were experimental years
     select(stratum, year) %>%
     distinct() %>%
     group_by(stratum) %>%
     summarise(count = n()) %>%
-    filter(count >=10) # removes strata that are poorly sampled through time
+    filter(count >=11) # Update annually. THis removes strata that are poorly sampled through time.
 
   # how many rows will be lost if years where all strata sampled (>2008) are kept?
   test2 <- gmex %>%
