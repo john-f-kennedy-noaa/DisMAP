@@ -1322,7 +1322,7 @@ if (HQ_DATA_ONLY == TRUE){
     distinct() %>%
     group_by(stratum) %>%
     summarise(count = n()) %>%
-    filter(count >=11) # Update annually. THis removes strata that are poorly sampled through time.
+    filter(count >=11) # Update annually. This removes strata that are poorly sampled through time.
 
   # how many rows will be lost if years where all strata sampled (>2008) are kept?
   test2 <- gmex %>%
@@ -1445,11 +1445,11 @@ if (HQ_DATA_ONLY == TRUE){
     geom_jitter()
 
   test <- neus_fall %>%
-    filter(year != 2017, year >= 1974) %>%
+    # filter(year != 2017, year >= 1974) %>%
     select(stratum, year) %>%
     distinct() %>%
     group_by(stratum) %>%
-    summarise(count = n())%>%
+    summarise(count = n()) %>%
     filter(count >= 46)
 
   # how many rows will be lost if only stratum trawled fairly consistently (>46 years - so all but 2 of the years) are kept?
