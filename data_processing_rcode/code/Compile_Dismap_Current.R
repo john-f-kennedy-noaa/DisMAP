@@ -1333,8 +1333,9 @@ if (HQ_DATA_ONLY == TRUE){
   # lose % of rows
 
   gmex_fltr <- gmex %>%
-    filter(stratum %in% test$stratum) %>%
-    filter(year>=2010, year != 2023)
+    filter(stratum %in% test$stratum)
+  # %>%
+    # filter(year>=2010, year != 2023)
 
 
   p3 <- gmex_fltr %>%
@@ -1450,7 +1451,7 @@ if (HQ_DATA_ONLY == TRUE){
     distinct() %>%
     group_by(stratum) %>%
     summarise(count = n()) %>%
-    filter(count >= 46)
+    filter(count >= 47)
 
   # how many rows will be lost if only stratum trawled fairly consistently (>46 years - so all but 2 of the years) are kept?
   test2 <- neus_fall %>%
@@ -1547,12 +1548,12 @@ if (HQ_DATA_ONLY == TRUE){
     geom_jitter()
 
   test <- neus_spring %>%
-    filter(year != 2020,year != 2014, year != 1975, year > 1973) %>%
+    filter(year!= 2023, year != 2020, year != 2014, year != 1975, year > 1973) %>%
     select(stratum, year) %>%
     distinct() %>%
     group_by(stratum) %>%
     summarise(count = n())%>%
-    filter(count >= 44) #note: every year would be 46, but that would lost some key strata in the south
+    filter(count >= 45) #Update annually; note: every year would be 47, but that would lost some key strata in the south
 
   # how many rows will be lost if only stratum trawled ALMOST ever year are kept?
   test2 <- neus_spring %>%
@@ -1590,7 +1591,7 @@ rm(neus_strata)
 # Compile SEUS ===========================================================
 print("Compile SEUS")
 # turns everything into a character so import as character anyway
-seus_catch <- read_csv(here::here("data_processing_rcode/data", "seus_catch.csv"), col_types = cols(.default = col_character())) %>%
+seus_catch <- read_csv(here::here("data_processing_rcode", "data", "seus_catch.csv"), col_types = cols(.default = col_character())) %>%
   # remove symbols
   mutate_all(list(~str_replace(., "=", ""))) %>%
   mutate_all(list(~str_replace(., '"', ''))) %>%
@@ -1687,7 +1688,7 @@ seus <- left_join(seus, seus_strata, by = "STRATA")
 
 #Create a 'SEASON' column using 'MONTH' as a criteria
 seus <- seus %>%
-  mutate(DATE = as.Date(DATE, "%m-%d-%Y"),
+  mutate(DATE = as.Date(DATE, "%m/%d/%Y"),
          MONTH = month(DATE)) %>%
   # create season column -- FLAG, in 2023 the survey was conducted in two "seasons" see here for details: https://seamap.org/seamap-sa-coastal-trawl/
   mutate(SEASON = NA,
@@ -1806,7 +1807,6 @@ seusSPRING <- seus %>%
 if (HQ_DATA_ONLY == TRUE){
   # look at the graph and make sure decisions to keep or eliminate data make sense
 
-
   p1 <- seusSPRING %>%
     select(stratum, year) %>%
     ggplot(aes(x = as.factor(stratum), y = as.factor(year))) +
@@ -1822,7 +1822,7 @@ if (HQ_DATA_ONLY == TRUE){
     distinct() %>%
     group_by(stratum) %>%
     summarise(count = n()) %>%
-    filter(count >= 29) # strata sampled all but a few year!!
+    filter(count >= 30) #FLAG: Update annually. strata sampled all but a few year!!
 
   # how many rows will be lost if only stratum trawled ever year are kept?
   test2 <- seusSPRING %>%
@@ -1921,7 +1921,7 @@ if (HQ_DATA_ONLY == TRUE){
     distinct() %>%
     group_by(stratum) %>%
     summarise(count = n()) %>%
-    filter(count >= 31)
+    filter(count >= 31) #FLAG: review this annually!
 
   test2 <- seusFALL %>%
     #filter(year != 2018,  year != 2019) %>%
@@ -1929,7 +1929,7 @@ if (HQ_DATA_ONLY == TRUE){
   nrow(seusFALL) - nrow(test2)
   # percent that will be lost
   print((nrow(seusFALL) - nrow(test2))/nrow(seusFALL))
-  # 5.1% are removed
+  # 9.6% are removed
 
   seusFALL_fltr <- seusFALL  %>%
     #filter(year != 2018,  year != 2019) %>%
