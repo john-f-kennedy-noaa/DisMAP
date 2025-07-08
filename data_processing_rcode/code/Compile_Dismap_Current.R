@@ -1058,7 +1058,8 @@ gmex_cruise <-read_csv(here::here("data_processing_rcode/data", "gmex_CRUISES.cs
 gmex_cruise <- type_convert(gmex_cruise, col_types = cols(CRUISEID = col_integer(), VESSEL = col_integer(), TITLE = col_character()))
 names(gmex_cruise)<-tolower(names(gmex_cruise))
 
-gmex_spp <-read_csv(here::here("data_processing_rcode/data","gmex_BCT_NFR_01182023.csv"))
+gmex_spp <-read_csv(here::here("data_processing_rcode/data","gmex_BCT_NFR_01182023.csv")) %>%
+  mutate_if(is.logical, as.character)
 problems(gmex_spp)
 names(gmex_spp)<-tolower(names(gmex_spp))
 
@@ -1946,9 +1947,11 @@ if (HQ_DATA_ONLY == TRUE){
     ggplot(aes(x = lon, y = lat)) +
     geom_jitter()
 
+
   if (HQ_PLOTS == TRUE){
     temp <- grid.arrange(p1, p2, p3, p4, nrow = 2)
     ggsave(plot = temp, filename = here::here("data_processing_rcode/output/plots", "seusFALL_hq_dat_removed.png"))
+    ggsave(plot = p3, filename = here::here("data_processing_rcode/output/plots", "seusFALL_2023_2024.png"))
     rm(temp)
   }
 }
