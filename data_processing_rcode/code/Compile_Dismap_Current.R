@@ -1650,7 +1650,8 @@ seus_catch <- type_convert(seus_catch, col_types = cols(
   LONGITUDESTART = col_double(),
   LONGITUDEEND = col_double(),
   SPECSTATUSDESCRIPTION = col_character(),
-  LASTUPDATED = col_character()
+  LASTUPDATED = col_character(),
+  SEASON = col_character()
 ))
 
 seus_haul <- read_csv(here::here("data_processing_rcode/data", "seus_haul.csv"), col_types = cols(.default = col_character())) %>%
@@ -1687,8 +1688,21 @@ seus <- seus %>%
 #add STRATAHECTARE to main file
 seus <- left_join(seus, seus_strata, by = "STRATA")
 
+
+#Survey was changed in 2023 to reflect new months categorized in each season
+#We want to preserve the historical season definitions but assign the new definitions for years 2023 and above
+#So, here we break datasets in to pre2023 and post2023 to assign seasons and then recombine
+seus_pre2023 <- seus %>%
+  filter(EVENTNAME < 2023000)
+
+seus_post2023 <- seus %>%
+  filter(EVENTNAME >= 2023000)
+
+seus_post2023$SEASON <- ifelse(seus_post2023$SEASON == "AFAL", "fall",
+                               ifelse(seus_post2023$SEASON == "ASPR", "spring", NA))
+
 #Create a 'SEASON' column using 'MONTH' as a criteria
-seus <- seus %>%
+seus_pre2023 <- seus_pre2023 %>%
   mutate(DATE = as.Date(DATE, "%m/%d/%Y"),
          MONTH = month(DATE)) %>%
   # create season column -- FLAG, in 2023 the survey was conducted in two "seasons" see here for details: https://seamap.org/seamap-sa-coastal-trawl/
@@ -1698,7 +1712,10 @@ seus <- seus %>%
          SEASON = ifelse(MONTH >= 7 & MONTH <= 8, "summer", SEASON),
          #September EVENTS were grouped with summer, should be fall because all
          #hauls made in late-September during fall-survey
-         SEASON = ifelse(MONTH >= 9 & MONTH <= 12, "fall", SEASON))
+         SEASON = ifelse(MONTH >= 9 & MONTH <= 12, "fall", SEASON)) %>%
+  select(-MONTH)
+
+seus <- rbind(seus_post2023, seus_pre2023)
 
 # find rows where weight wasn't provided for a species
 misswt <- seus %>%
