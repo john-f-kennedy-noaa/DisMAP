@@ -2090,7 +2090,7 @@ if(isTRUE(WRITE_MASTER_DAT)){
 
 
 # Master "Filtered" dataset
-dat_fltr <- rbind(ai_fltr, ebs_fltr, nbs_fltr, gmex_fltr, goa_fltr, neus_fall_fltr, neus_spring_fltr, seusFALL_fltr, seusSPRING_fltr, seusSUMMER_fltr, wcann_fltr, wctri_fltr, bfish_catch) %>%
+dat_fltr <- rbind(ai_fltr, ebs_fltr, nbs_fltr, gmex_fltr, goa_fltr, neus_fall_fltr, neus_spring_fltr, seusFALL_fltr, seusSPRING_fltr, seusSUMMER_fltr, wcann_fltr, wctri_fltr) %>%
   # Remove NA values in wtcpue
   filter(!is.na(wtcpue)) %>%
   # remove any extra white space from around spp and common names
@@ -2330,8 +2330,8 @@ spp_reg_counts_Core<-spplist_core%>%
 
 num_spp_summary<-left_join(spp_reg_counts, spp_reg_counts_quarters, by=c("region"))
 num_spp_summary<-left_join(num_spp_summary, spp_reg_counts_Core, by=c("region"))
-write.csv(num_spp_summary, file=here("data_processing_rcode/output/data_clean", "summary_unique_spp_table_7_24_24.csv"))
-write.csv(spplist_core, file=here("data_processing_rcode/output/data_clean","core_spp_list_7_24_24.csv"))
+write.csv(num_spp_summary, file=here("data_processing_rcode/output/data_clean", "summary_unique_spp_table_7_10_25.csv"))
+write.csv(spplist_core, file=here("data_processing_rcode/output/data_clean","core_spp_list_7_10_25.csv"))
 
 ## compare with the Master Filter Table for the filter functionality on the portal
 filter_table<-read.csv("Species_Filter.csv", header=T, sep=",")
@@ -2364,7 +2364,7 @@ dat_fltr <- rbind(ai_fltr, ebs_fltr, nbs_fltr, gmex_fltr, goa_fltr, neus_fall_fl
   filter(!is.na(wtcpue)) %>%
   # remove any extra white space from around spp and common names
   mutate(spp= str_squish(spp))
-#convert all taxa names to first word capitalzied and rest lowercase...
+#convert all taxa names to first word capitalized and rest lowercase...
 dat_fltr$spp<-firstup(dat_fltr$spp)
 # add a case sensitive spp and common name and filter out Higher Level taxon names, the turtle, bird, and dolphin species, and plants/seaweed species.
 dat_fltr <- left_join(dat_fltr, tax, by = c("spp" = "survey_name"))
