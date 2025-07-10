@@ -1,7 +1,9 @@
-##Use this script to update the Filter Table when data is updated, and check if any new species need to be described in the table 
-Filter_list<-read.csv("Filter_list_Expanded_Survey.csv", header=T, sep=",")
+##Use this script to update the Filter Table when data is updated, and check if any new species need to be described in the table
+Filter_list<-read.csv("Filter_list_Expanded_Survey.csv", header=T, sep=",") %>%
+  rename(spp = Species,
+         common = CommonName)
 
-#change region name for matching with filter table 
+#change region name for matching with filter table
 spp_survey2<-spp_survey
 spp_survey2$FilterSubRegion<-ifelse(spp_survey2$region=="Aleutian Islands","Aleutian Islands",
                                       ifelse(spp_survey2$region=="Eastern Bering Sea", "Eastern Bering Sea",
@@ -21,7 +23,7 @@ spp_survey2<- spp_survey2 %>%
   distinct()%>%
   filter(FilterSubRegion!="Bering Sea Combined")
 
-Filter_updated<-left_join(spp_survey2, Filter_list, by=c("spp", "common", "FilterSubRegion")) 
+Filter_updated<-left_join(spp_survey2, Filter_list, by=c("spp", "common", "FilterSubRegion"))
 write.csv(Filter_updated, "Filter_list_Expanded_Survey.csv")
 
 
