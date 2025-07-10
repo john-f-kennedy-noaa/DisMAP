@@ -1968,7 +1968,7 @@ if (HQ_DATA_ONLY == TRUE){
   if (HQ_PLOTS == TRUE){
     temp <- grid.arrange(p1, p2, p3, p4, nrow = 2)
     ggsave(plot = temp, filename = here::here("data_processing_rcode/output/plots", "seusFALL_hq_dat_removed.png"))
-    ggsave(plot = p3, filename = here::here("data_processing_rcode/output/plots", "seusFALL_2023_2024.png"))
+    ggsave(plot = p1, filename = here::here("data_processing_rcode/output/plots", "seusFALL2024.png"))
     rm(temp)
   }
 }
@@ -2025,7 +2025,7 @@ if(isTRUE(WRITE_MASTER_DAT)){
 # Master Data Set ===========================================================
 print("Join into Master Data Set")
 #Full unfiltered data set
-dat <- rbind(ai, ebs, gmex, goa, nbs, neus_fall, neus_spring, seusFALL, seusSPRING, seusSUMMER, wcann, wctri, bfish_catch) %>%
+dat <- rbind(ai, ebs, gmex, goa, nbs, neus_fall, neus_spring, seusFALL, seusSPRING, seusSUMMER, wcann, wctri) %>%
   # Remove NA values in wtcpue
   filter(!is.na(wtcpue)) %>%
   # remove any extra white space from around spp and common names
