@@ -70,7 +70,7 @@ HQ_DATA_ONLY <- TRUE
 
 # 2. View plots of removed strata for HQ_DATA. #OPTIONAL, DEFAULT:FALSE
 # It takes a while to generate these plots.
-HQ_PLOTS <- TRUE
+HQ_PLOTS <- FALSE
 
 # 3. Remove ai,ebs,gmex,goa,neus,seus,wcann,wctri, scot. Keep `dat`. #DEFAULT: FALSE
 REMOVE_REGION_DATASETS <- FALSE
@@ -2004,7 +2004,7 @@ tax <- read_csv(here::here("data_processing_rcode/spp_taxonomy_mater_key.csv"), 
   SpecCode = col_character()))
 
 
-tax<- tax  %>%
+tax <- tax  %>%
   # remove any extra white space from around spp and common names
   mutate(survey_name= str_squish(survey_name),
          valid_name= str_squish(accepted_name),
@@ -2095,7 +2095,7 @@ dat_fltr <- rbind(ai_fltr, ebs_fltr, nbs_fltr, gmex_fltr, goa_fltr, neus_fall_fl
   filter(!is.na(wtcpue)) %>%
   # remove any extra white space from around spp and common names
   mutate(spp= str_squish(spp))
-#convert all taxa names to first word capitalzied and rest lowercase...
+#convert all taxa names to first word capitalized and rest lowercase...
 dat_fltr$spp<-firstup(dat_fltr$spp)
 # add a case sensitive spp and common name and filter out Higher Level taxon names, the turtle, bird, and dolphin species, and plants/seaweed species.
 dat_fltr <- left_join(dat_fltr, tax, by = c("spp" = "survey_name")) %>%
@@ -2106,18 +2106,19 @@ dat_fltr <- left_join(dat_fltr, tax, by = c("spp" = "survey_name")) %>%
          !grepl("Phaeophyceae", class),
          !grepl("Florideophyceae", class),
          !grepl("Ulvophyceae", class)) %>%
-  select(region, haulid, year, lat, lon, stratum, stratumarea, depth, valid_name, common, wtcpue) %>%
-  distinct() %>%
-  rename(spp = valid_name)
+  select(region, haulid, year, lat, lon, stratum, stratumarea, depth, spp, valid_name, common, rank, wtcpue) %>%
+  distinct()
 
 #check for errors in name matching
-if(sum(dat_fltr$spp == 'NA') > 0 | sum(is.na(dat_fltr$spp)) > 0){
+if(sum(dat_fltr$valid_name == 'NA') > 0 | sum(is.na(dat_fltr$valid_name)) > 0){
   warning('>>create_master_table(): Did not match on some taxon [Variable: `tax`] names.')
 }
 #if get warning, check for which spp have NA for name and common if check above fails
 spp_na<-dat_fltr %>%
-  filter(is.na(dat_fltr$spp) & is.na(dat_fltr$common))
-rm(spp_na)
+  filter(is.na(dat_fltr$valid_name) & is.na(dat_fltr$common)) %>%
+  select(c("region", "spp", "valid_name", "common")) %>%
+  distinct()
+# rm(spp_na)
 
 if(isTRUE(REMOVE_REGION_DATASETS)) {
   rm(ai_fltr, ebs_fltr, gmex_fltr, goa_fltr, neus_fall_fltr, neus_spring_fltr, seusFALL_fltr, seusSPRING_fltr, seusSUMMER_fltr, wcann_fltr, wctri_fltr, tax)
@@ -2256,6 +2257,8 @@ rm(dat_expl_spl)
 ## Add the DistributionProjectName column to dat.exploded
 #use the spplist2 to indicate which species should be kept for IDW as opposed to which are for both IDW and expanded survey module
 dat.exploded<-left_join(dat.exploded, spplist2, by=c("spp","common","region"))
+
+# dat.exploded$CoreSpecies <-
 
 spp_IDW<-dat.exploded %>%
   filter(DistributionProjectName=="NMFS/Rutgers IDW Interpolation") %>%
