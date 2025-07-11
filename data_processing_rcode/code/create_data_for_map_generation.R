@@ -22,6 +22,7 @@ seus_spr_csv = dat.exploded[dat.exploded$region %in% c('Southeast US Spring'),]
 seus_sum_csv = dat.exploded[dat.exploded$region %in% c('Southeast US Summer'),]
 seus_fal_csv = dat.exploded[dat.exploded$region %in% c('Southeast US Fall'),]
 
+
 print ("[Local]: CSV Tables prepped.")
 write.csv(ai_csv, file.path(OUTPUT_CSV_DIRECTORY, "AI_survey.csv"))
 print ("[Local]: ai_csv.csv output successfully")
