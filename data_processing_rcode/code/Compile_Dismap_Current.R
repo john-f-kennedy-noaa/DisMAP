@@ -2258,23 +2258,7 @@ rm(dat_expl_spl)
 #use the spplist2 to indicate which species should be kept for IDW as opposed to which are for both IDW and expanded survey module
 dat.exploded<-left_join(dat.exploded, spplist2, by=c("spp","common","region"))
 
-# dat.exploded$CoreSpecies <-
 
-spp_IDW<-dat.exploded %>%
-  filter(DistributionProjectName=="NMFS/Rutgers IDW Interpolation") %>%
-  select(spp, common) %>%
-  distinct()
-
-spp_survey<-dat.exploded %>%
-  select(spp, common, region) %>%
-  distinct()
-
-#stop and....
-## Go to Update_Filter_Table.R
-## GO TO create_data_for_map_generation.R now
-
-
-###################### CAN STOP HERE ##########################################
 ## CORE Species -- caught every year of survey =======
 
 print("Core species")
@@ -2303,6 +2287,29 @@ presyrsum <- left_join(presyrsum, maxyrs, by = "region")
 spplist_core <- presyrsum %>%
   filter(presyr >= maxyrs) %>%
   select(region, spp, common)
+
+
+## Add column indicating if a species is a core species
+#Go to the next section first to create spplist_core
+spplist_core$CoreSpecies <- rep("Yes", times = nrow(spplist_core))
+dat.exploded_2 <- left_join(dat.exploded, spplist_core, by = c("region", "spp", "common"))
+dat.exploded_2$CoreSpecies[is.na(dat.exploded_2$CoreSpecies)] <- "No"
+
+spp_IDW<-dat.exploded %>%
+  filter(DistributionProjectName=="NMFS/Rutgers IDW Interpolation") %>%
+  select(spp, common) %>%
+  distinct()
+
+spp_survey<-dat.exploded %>%
+  select(spp, common, region) %>%
+  distinct()
+
+#stop and....
+## Go to Update_Filter_Table.R
+## GO TO create_data_for_map_generation.R now
+
+
+###################### CAN STOP HERE ##########################################
 
 # Summary information about # of species in this analysis================
 #number of unique species across all regions
