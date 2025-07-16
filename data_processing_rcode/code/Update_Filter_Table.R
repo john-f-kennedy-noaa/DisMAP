@@ -1,3 +1,4 @@
+# Outdated - DO NOT USE THIS (7/16/2025)
 ##Use this script to update the Filter Table when data is updated, and check if any new species need to be described in the table
 Filter_list<-read.csv("Filter_list_Expanded_Survey.csv", header=T, sep=",") %>%
   rename(spp = Species,
