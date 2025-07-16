@@ -2292,8 +2292,8 @@ spplist_core <- presyrsum %>%
 ## Add column indicating if a species is a core species
 #Go to the next section first to create spplist_core
 spplist_core$CoreSpecies <- rep("Yes", times = nrow(spplist_core))
-dat.exploded_2 <- left_join(dat.exploded, spplist_core, by = c("region", "spp", "common"))
-dat.exploded_2$CoreSpecies[is.na(dat.exploded_2$CoreSpecies)] <- "No"
+dat.exploded <- left_join(dat.exploded, spplist_core, by = c("region", "spp", "common"))
+dat.exploded$CoreSpecies[is.na(dat.exploded$CoreSpecies)] <- "No"
 
 spp_IDW<-dat.exploded %>%
   filter(DistributionProjectName=="NMFS/Rutgers IDW Interpolation") %>%
@@ -2305,9 +2305,8 @@ spp_survey<-dat.exploded %>%
   distinct()
 
 #stop and....
-## Go to Update_Filter_Table.R
 ## GO TO create_data_for_map_generation.R now
-
+# Update Filter table by running code below
 
 ###################### CAN STOP HERE ##########################################
 
@@ -2344,7 +2343,7 @@ write.csv(num_spp_summary, file=here("data_processing_rcode/output/data_clean", 
 write.csv(spplist_core, file=here("data_processing_rcode/output/data_clean","core_spp_list_7_10_25.csv"))
 
 ## compare with the Master Filter Table for the filter functionality on the portal
-filter_table<-read.csv("Species_Filter.csv", header=T, sep=",")
+filter_table<-read.csv("Filter_list_Expanded_Survey.csv", header=T, sep=",")
 spp_to_remove<-anti_join(filter_table, dfuniq, by=c("spp", "FilterSubRegion"="region"))
 
 # write.csv(spp_to_remove, "spp_removed_filter_6_10_24.csv")
