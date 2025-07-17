@@ -2135,7 +2135,7 @@ if(isTRUE(WRITE_MASTER_DAT)){
 
 # Expanded Survey Dataset=================================================
 print ("Expanded dataset")
-presyr <- present_every_year(dat_fltr, region, spp, common, year)
+presyr <- present_every_year(dat_fltr, region, valid_name, common, year)
 
 haulsyr<-num_hauls_year(dat_fltr, region, year)
 
@@ -2144,7 +2144,7 @@ preshaul<-left_join(presyr, haulsyr, by=c("region", "year")) %>%
   filter(proportion>=5)
 
 # years in which spp was present in >= 5% of tows
-presyrsum <- num_year_present(preshaul, region, spp, common)
+presyrsum <- num_year_present(preshaul, region, valid_name, common)
 
 # max num years of survey in each region
 maxyrs <- max_year_surv(presyrsum, region)
@@ -2155,7 +2155,8 @@ presyrsum <- left_join(presyrsum, maxyrs, by = "region")
 # retain all spp present at >5% of tows in at least 2 of the available years in a survey
 spplist <- presyrsum %>%
   filter(presyr >= 2) %>%
-  select(region, spp, common)
+  select(region, valid_name, common) %>%
+  rename(spp = valid_name)
 
 # these species were removed based on the 3/4 years criteria above but we have decided to add them back in based on commercial/recreational importance
 spp_addin<-read.csv("data_processing_rcode/data/Add_managed_spp.csv",header=T, sep=",")
@@ -2172,13 +2173,14 @@ print("Trim species")
 ## FILTERED DATA
 # Find a standard set of species (present at least 3/4 of the years of the filtered data in a region)
 # this result differs from the original code because it does not include any species that have a pres value of 0.  It does, however, include species for which the common name is NA.
-presyr <- present_every_year(dat_fltr, region, spp, common, year)
+presyr <- present_every_year(dat_fltr, region, valid_name, common, year)
 
 haulsyr<-num_hauls_year(dat_fltr, region, year)
 
 preshaul<-left_join(presyr, haulsyr, by=c("region", "year")) %>%
   mutate(proportion=((pres/hauls)*100)) %>%
-  filter(proportion>=5)
+  filter(proportion>=5) %>%
+  rename(spp = valid_name)
 
 # years in which spp was present in >= 5% of tows
 presyrsum <- num_year_present(preshaul, region, spp, common)
@@ -2266,13 +2268,14 @@ print("Core species")
 ## FILTERED DATA
 # Find a standard set of species (present at least 3/4 of the years of the filtered data in a region)
 # this result differs from the original code because it does not include any species that have a pres value of 0.  It does, however, include speices for which the common name is NA.
-presyr <- present_every_year(dat_fltr, region, spp, common, year)
+presyr <- present_every_year(dat_fltr, region, valid_name, common, year)
 
 haulsyr<-num_hauls_year(dat_fltr, region, year)
 
 preshaul<-left_join(presyr, haulsyr, by=c("region", "year")) %>%
   mutate(proportion=((pres/hauls)*100))%>%
-  filter(proportion>=5)
+  filter(proportion>=5) %>%
+  rename(spp = valid_name)
 
 # years in which spp was present in >= 5% of tows
 presyrsum <- num_year_present(preshaul, region, spp, common)
@@ -2357,13 +2360,14 @@ miss_filter<-anti_join(dfuniq, filter_table, by=c("spp", "region"="FilterSubRegi
 # #write.csv(Filter_table_updated, file=here("data_processing_rcode/output/data_clean", "Final_Filter_Table.csv"))
 
 ## Compare old and new filter table to see which species were removed and which were added!
-old_table<-read.csv("filter_table_final_5_31_23.csv", header=T, sep=",")
-new_table<- read.csv("output/data_clean/Final_Filter_Table.csv", header=T, sep=",")
-
-spp_added<-anti_join(new_table, old_table, by= c("spp", "FilterSubRegion"))
-write.csv(spp_added, "spp_added_to_filter_6_10_24.csv")
-spp_removed<-anti_join(old_table, new_table, by= c("spp", "FilterSubRegion"))
-write.csv(spp_removed, "spp_removed_from_filter_6_10_24.csv")
+### We don't need to rewrite this section - can just use the miss_filter df and add directly to the filter table csv ###
+# old_table<-read.csv("filter_table_final_5_31_23.csv", header=T, sep=",")
+# new_table<- read.csv("output/data_clean/Final_Filter_Table.csv", header=T, sep=",")
+#
+# spp_added<-anti_join(new_table, old_table, by= c("spp", "FilterSubRegion"))
+# write.csv(spp_added, "spp_added_to_filter_6_10_24.csv")
+# spp_removed<-anti_join(old_table, new_table, by= c("spp", "FilterSubRegion"))
+# write.csv(spp_removed, "spp_removed_from_filter_6_10_24.csv")
 
 
 ##GET LIST OF SPECIES AND TAXON REMOVED
