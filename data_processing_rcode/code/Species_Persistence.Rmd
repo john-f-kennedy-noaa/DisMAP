@@ -188,69 +188,72 @@ data_rank$Absence_Presence <- ifelse(data_rank$WTCPUE == 0, "0",
 ### Presence in hauls
 This section will calculate the number of hauls that a species is present in, per survey and per year. Measuring the presence in hauls will capture the prevalence of that species in the survey (i.e., how prominent is this species in the survey?), over time.
 
-```{r functions, message = FALSE}
-
-present_every_year <- function(dat, ...){
-  presyr <- dat %>%
-    filter(wtcpue > 0) %>%
-    group_by(...) %>%
-    summarise(pres = n())
-  return(presyr)
-}
-
-num_hauls_year <- function(dat, ...){
-  haulsyr <- dat %>%
-    select(c(region, survey, haulid, year)) %>%
-    distinct() %>%
-    group_by(...) %>%
-    summarise(hauls = n())
-  return(haulsyr)
-}
-
-```
-
 We calculate the number of hauls total (in each survey and survey year) and the number of hauls for which a particular species was caught. We then also calculate the proportion of total hauls each species was caught in (for each survey and survey year).
-```{r build data_haul}
 
-presyr <- present_every_year(data_update, region, survey, spp, common, year)
+```{r build haul freq df, message = FALSE}
 
-haulsyr <- num_hauls_year(data_update, region, survey, year)
+haulsyr_max <- data %>%
+  select(survey, haulid, year) %>%
+  distinct() %>%
+  group_by(survey, year) %>%
+  summarise(maxhauls = n())
 
-# data frame with the number of hauls a species is present for, 
-preshaul <- left_join(presyr, haulsyr, by=c("region", "survey", "year")) %>%
-  mutate(proportion=((pres/hauls)*100))
+haulsyr <- data %>% 
+  filter(wtcpue > 0) %>% 
+  select(survey, year, haulid, spp) %>% 
+  distinct() %>% 
+  group_by(survey, year, spp) %>% 
+  summarise(haulspres = n())
 
-data_haul <- preshaul %>% 
-  select(-hauls) %>% 
-  dplyr::rename(Region = region,
-                Species = spp,
-                Common = common,
-                SurveyName = survey,
-                Year = year,
-                Presence = pres,
-                Proportion = proportion)
+
+data_haul <- left_join(haulsyr, haulsyr_max, by = c("survey", "year")) %>% 
+  mutate(
+    haul_perc = haulspres/maxhauls
+      ) %>% 
+  rename(
+    SurveyName = survey,
+    Year = year,
+    Species = spp,
+    HaulPresence = haulspres,
+    HaulProportion = haul_perc
+  ) %>% 
+  select(-maxhauls)
 
 ```
 
 
 ### Binding haul count to percentiles
 
-Using left_join to add the `Presence` and `Proportion` values from `data_haul` to the corresponding survey and species in `data_rank`. Any zero biomass/percentile will turn up as `NA` values in the haul presence column when it's joined. We have converted these `NA`'s to zeros because those are instances in which the species was not landed in the survey. **This builds our full data set of results.**
+Using left_join to add the `haulspres` and `haul_perc` values from `data_haul` to the corresponding survey and species in `data_rank`. Any zero biomass/percentile will turn up as `NA` values in the haul presence column when it's joined. We have converted these `NA`'s to zeros because those are instances in which the species was not landed in the survey. **This builds our full data set of results.**
 
 ```{r}
 data_full <- data_rank %>% 
-  left_join(data_haul, by = c("Region", "SurveyName", "Species", "Common", "Year")) %>% 
-  mutate(Presence = ifelse(is.na(Presence), 0, Presence)) %>% 
-  mutate(Proportion = ifelse(is.na(Proportion), 0, Proportion))
+  left_join(data_haul, by = c("SurveyName", "Year", "Species")) %>% 
+  mutate(HaulPresence = ifelse(is.na(HaulPresence), 0, HaulPresence)) %>% 
+  mutate(HaulProportion = ifelse(is.na(HaulProportion), 0, HaulProportion))
 
+
+
+data_full$HaulBin <- ifelse(data_full$HaulProportion == 0.0, "Absent",
+                        ifelse(data_full$HaulProportion > 0.0 & data_full$HaulProportion <= 0.10, "Rare",
+                               ifelse(data_full$HaulProportion > 0.10 & data_full$HaulProportion <= 0.25, "Less Common",
+                                      ifelse(data_full$HaulProportion > 0.25 & data_full$HaulProportion <= 0.75, "Common",
+                                             ifelse(data_full$HaulProportion > 0.75 & data_full$HaulProportion <= 0.90, "Abundant",
+                                                    ifelse(data_full$HaulProportion > 0.90, "Highly Abundant", NA))))))
+
+data_full$HaulBin <- factor(data_full$HaulBin, levels = c("Absent", "Rare", "Less Common", "Common", "Abundant", "Highly Abundant"))
 # saveRDS(data_full, file = "data_full.RData")
+
+ggplot(data_full, aes(HaulBin)) +
+  geom_bar( fill = "steelblue")
+
 ```
 
 
 ```{r exporting data_full}
 # writing the csv for DisMAP development team here
 data_export <- data_full %>% 
-  select(Region, SurveyName, Year, Species, Common, Bin, WTCPUE)
+  select(Region, SurveyName, Year, Species, Common, Bin, WTCPUE, HaulProportion, HaulBin)
 
 # write.csv(data_export, here::here("data_processing_rcode","output","data_clean","SpeciesPersistenceIndicatorPercentileBin.csv"))
 ```
@@ -371,7 +374,7 @@ for(v in surveys) {
 ```
 
 ```{r adding common names}
-# Creating a speices list will allow for joining in the common names at the end of the next chunk
+# Creating a species list will allow for joining in the common names at the end of the next chunk
 spp_list <- distinct(data_full %>% 
   ungroup() %>% 
   select(SurveyName, Species, Common))
@@ -421,7 +424,7 @@ data_ce <- data_ce_stable %>%
 - *Sporadic - Primarily Absent*: Observed in <50% of years
 
 ```{r build data df}
-#adding colonzation and extinction event columns to data frame to use in trend categorization
+#adding colonization and extinction event columns to data frame to use in trend categorization
 data <- data_full %>% 
   left_join(data_ce, by = c("SurveyName", "Species", "Common"))
 
@@ -634,7 +637,33 @@ flags_combo$Notes <- c(rep("Preliminary trend - under review", nrow(flags_combo)
 
 ```
 
-```{r trend viz}
+
+```{r export data_full_trends}
+
+data_trends_export <- data_summary %>% 
+  left_join(flags_combo, by = c("SurveyName", "Species")) %>% 
+  select(Region, SurveyName, Species, Common, TrendCategory, Notes)
+
+# write.csv(data_trends_export, here::here("data_processing_rcode","output","data_clean","SpeciesPersistenceIndicatorTrend.csv"))
+
+```
+
+
+The following table provides the number of species that fall into each category, using this version of the metrics.
+```{r summary table}
+
+library(knitr)
+
+trendsummary <- data_summary %>%
+  group_by(TrendCategory) %>%
+  summarize(n = n())
+
+kable(trendsummary)
+
+```
+
+
+```{r trend viz, eval = FALSE}
 #Persistently Present 
 trend_pres <- data_full_trends %>% 
   filter(TrendCategory == "Persistently Present")
@@ -727,6 +756,4 @@ p4 <- ggplot(trend_spoab, aes(Year, Name)) +
 ggplotly(p4)
 
 ```
-
-
 
