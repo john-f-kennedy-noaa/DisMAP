@@ -2345,15 +2345,22 @@ num_spp_summary<-left_join(num_spp_summary, spp_reg_counts_Core, by=c("region"))
 write.csv(num_spp_summary, file=here("data_processing_rcode/output/data_clean", "summary_unique_spp_table_7_10_25.csv"))
 write.csv(spplist_core, file=here("data_processing_rcode/output/data_clean","core_spp_list_7_10_25.csv"))
 
+########### FILTER TABLE ###########
 ## compare with the Master Filter Table for the filter functionality on the portal
-filter_table<-read.csv("Filter_list_Expanded_Survey.csv", header=T, sep=",")
-spp_to_remove<-anti_join(filter_table, dfuniq, by=c("spp", "FilterSubRegion"="region"))
+filter_table<-read.csv("Filter_list_Expanded_Survey.csv", header=T, sep=",") %>%
+  select(-DistributionProjectName) %>%
+  left_join(spplist2, by= c("FilterSubRegion"="region","Species"="spp", "CommonName"="common")) %>% # This will update the table with the current spp used of IDW
+  mutate(DistributionProjectName = ifelse(is.na(DistributionProjectName), "Not for IDW", "NMFS/Rutgers IDW Interpolation"))
+
+# write.csv(filter_table, file = here::here("Filter_list_Expanded_Survey.csv"))
+
+spp_to_remove<-anti_join(filter_table, dfuniq, by=c("Species"="spp", "FilterSubRegion"="region"))
 
 # write.csv(spp_to_remove, "spp_removed_filter_6_10_24.csv")
 #  #remove these species from the filter table
 # filter_table_revised<-anti_join(filter_table, spp_to_remove)
 #
-miss_filter<-anti_join(dfuniq, filter_table, by=c("spp", "region"="FilterSubRegion")) %>%
+miss_filter<-anti_join(dfuniq, filter_table, by=c("spp"="Species", "region"="FilterSubRegion")) %>%
   rename(FilterSubRegion=region)
 #
 # Filter_table_updated<-bind_rows(filter_table_revised, miss_filter)
