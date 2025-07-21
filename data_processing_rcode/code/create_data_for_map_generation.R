@@ -8,7 +8,7 @@ ai_csv = dat.exploded[dat.exploded$region %in% c('Aleutian Islands'),]
 ebs_csv = dat.exploded[dat.exploded$region %in% c('Eastern Bering Sea'),]
 goa_csv = dat.exploded[dat.exploded$region %in% c('Gulf of Alaska'),]
 nbs_csv = dat.exploded[dat.exploded$region %in% c('Northern Bering Sea'),]
-enbs_csv = dat.exploded[dat.exploded$region %in% c('Bering Sea Combined'),]
+enbs_csv = dat.exploded[dat.exploded$region %in% c('Eastern and Northern Bering Sea'),]
 
 neusS_csv = dat.exploded[dat.exploded$region %in% c('Northeast US Spring'),]
 neusf_csv = dat.exploded[dat.exploded$region %in% c('Northeast US Fall'),]
