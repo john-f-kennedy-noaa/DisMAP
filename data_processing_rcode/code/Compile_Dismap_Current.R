@@ -82,7 +82,7 @@ REMOVE_REGION_DATASETS <- FALSE
 PREFER_RDATA <- TRUE
 
 # 6. Output the clean full master data frame. #DEFAULT:FALSE
-WRITE_MASTER_DAT <- TRUE
+WRITE_MASTER_DAT <- FALSE
 
 # 7. Output the clean trimmed data frame. #DEFAULT:FALSE
 WRITE_TRIMMED_DAT <- TRUE
@@ -2120,6 +2120,12 @@ spp_na<-dat_fltr %>%
   distinct()
 # rm(spp_na)
 
+#This code chunk is for Appendix II in the Tech report (the species removed from dataset by taxon check and filtering)
+filtered_spp <- anti_join(dat, dat_fltr, by = c("region", "valid_name")) %>%
+  select(region, valid_name, common) %>%
+  distinct()
+# write.csv(filtered_spp, "filter_removed_spp.csv")
+
 if(isTRUE(REMOVE_REGION_DATASETS)) {
   rm(ai_fltr, ebs_fltr, gmex_fltr, goa_fltr, neus_fall_fltr, neus_spring_fltr, seusFALL_fltr, seusSPRING_fltr, seusSUMMER_fltr, wcann_fltr, wctri_fltr, tax)
 }
@@ -2157,6 +2163,13 @@ spplist <- presyrsum %>%
   filter(presyr >= 2) %>%
   select(region, valid_name, common) %>%
   rename(spp = valid_name)
+
+# This creates a df for Appendix I of tech report (list of all species in all the modules)
+# spp__techreport <- spplist %>%
+#   group_by(spp, common) %>%
+#   summarise(regions = paste(unique(region), collapse = ", "),
+#             .groups = "drop")
+# write.csv(spp__techreport, "spp_techreport.csv")
 
 # these species were removed based on the 3/4 years criteria above but we have decided to add them back in based on commercial/recreational importance
 spp_addin<-read.csv("data_processing_rcode/data/Add_managed_spp.csv",header=T, sep=",")
