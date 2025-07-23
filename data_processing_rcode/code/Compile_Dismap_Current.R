@@ -2360,7 +2360,7 @@ write.csv(spplist_core, file=here("data_processing_rcode/output/data_clean","cor
 
 ########### FILTER TABLE ###########
 ## compare with the Master Filter Table for the filter functionality on the portal
-filter_table<-read.csv("Filter_list_Expanded_Survey.csv", header=T, sep=",") %>%
+filter_table<-read.csv("Species_Filter.csv", header=T, sep=",") %>%
   select(-DistributionProjectName) %>%
   left_join(spplist2, by= c("FilterSubRegion"="region","Species"="spp", "CommonName"="common")) %>% # This will update the table with the current spp used of IDW
   mutate(DistributionProjectName = ifelse(is.na(DistributionProjectName), "Not for IDW", "NMFS/Rutgers IDW Interpolation"))
