@@ -2355,8 +2355,8 @@ spp_reg_counts_Core<-spplist_core%>%
 
 num_spp_summary<-left_join(spp_reg_counts, spp_reg_counts_quarters, by=c("region"))
 num_spp_summary<-left_join(num_spp_summary, spp_reg_counts_Core, by=c("region"))
-write.csv(num_spp_summary, file=here("data_processing_rcode/output/data_clean", "summary_unique_spp_table_7_10_25.csv"))
-write.csv(spplist_core, file=here("data_processing_rcode/output/data_clean","core_spp_list_7_10_25.csv"))
+# write.csv(num_spp_summary, file=here("data_processing_rcode/output/data_clean", "summary_unique_spp_table_7_10_25.csv"))
+# write.csv(spplist_core, file=here("data_processing_rcode/output/data_clean","core_spp_list_7_10_25.csv"))
 
 ########### FILTER TABLE ###########
 ## compare with the Master Filter Table for the filter functionality on the portal
