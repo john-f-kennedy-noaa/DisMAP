@@ -2180,15 +2180,43 @@ spplist<-rbind(spplist, spp_addin) %>%
 trimmed_dat_fltr_expanded <- dat_fltr %>%
   filter(paste(region, spp) %in% paste(spplist$region, spplist$spp))
 
+
+#add an EBS+NBS combined region =========================
+#select years from compiled EBS that match the NBS survey years
+years<-c(2010, 2017, 2019, 2021, 2022, 2023)
+enbs_trimmed<- trimmed_dat_fltr_expanded  %>% filter(region %in% c("Eastern Bering Sea", "Northern Bering Sea"),
+                                                     year %in% years) %>%
+  mutate(region="Eastern and Northern Bering Sea")
+
+p1 <- enbs_trimmed %>%
+  select(stratum, year) %>%
+  ggplot(aes(x = as.factor(stratum), y = as.factor(year)))   +
+  geom_jitter()
+
+p2 <- enbs_trimmed %>%
+  select(lat, lon) %>%
+  ggplot(aes(x = lon, y = lat)) +
+  geom_jitter()
+
+trimmed_dat_fltr_expanded <-rbind(trimmed_dat_fltr_expanded, enbs_trimmed)
+
+if(isTRUE(WRITE_TRIMMED_DAT)){
+  if(isTRUE(PREFER_RDATA)){
+    saveRDS(trimmed_dat_fltr_expanded, file = here("data_processing_rcode/output/data_clean", "all-regions-trimmed-fltr.rds"))
+  }else{
+    write_csv(trimmed_dat_fltr_expanded, "data_processing_rcode/data_clean/all-regions-trimmed-fltr.csv")
+  }
+}
+
 # Trim species (for IDW analysis)===========================================================
 print("Trim species")
 
 ## FILTERED DATA
 # Find a standard set of species (present at least 3/4 of the years of the filtered data in a region)
 # this result differs from the original code because it does not include any species that have a pres value of 0.  It does, however, include species for which the common name is NA.
-presyr <- present_every_year(dat_fltr, region, valid_name, common, year)
+presyr <- present_every_year(trimmed_dat_fltr_expanded, region, valid_name, common, year)
 
-haulsyr<-num_hauls_year(dat_fltr, region, year)
+haulsyr<-num_hauls_year(trimmed_dat_fltr_expanded, region, year)
 
 preshaul<-left_join(presyr, haulsyr, by=c("region", "year")) %>%
   mutate(proportion=((pres/hauls)*100)) %>%
@@ -2217,32 +2245,6 @@ spplist2<-rbind(spplist_IDW, spp_addin) %>%
   mutate(DistributionProjectName="NMFS/Rutgers IDW Interpolation")
 ## use this spp list after explode 0 to add a column indicating that these species should be kept for IDW
 
-#add an EBS+NBS combined region =========================
-#select years from compiled EBS that match the NBS survey years
-years<-c(2010, 2017, 2019, 2021, 2022, 2023)
-enbs_trimmed<- trimmed_dat_fltr_expanded  %>% filter(region %in% c("Eastern Bering Sea", "Northern Bering Sea"),
-                                                     year %in% years) %>%
-  mutate(region="Eastern and Northern Bering Sea")
-
-p1 <- enbs_trimmed %>%
-  select(stratum, year) %>%
-  ggplot(aes(x = as.factor(stratum), y = as.factor(year)))   +
-  geom_jitter()
-
-p2 <- enbs_trimmed %>%
-  select(lat, lon) %>%
-  ggplot(aes(x = lon, y = lat)) +
-  geom_jitter()
-
-trimmed_dat_fltr_expanded <-rbind(trimmed_dat_fltr_expanded, enbs_trimmed)
-
-if(isTRUE(WRITE_TRIMMED_DAT)){
-  if(isTRUE(PREFER_RDATA)){
-    saveRDS(trimmed_dat_fltr_expanded, file = here("data_processing_rcode/output/data_clean", "all-regions-trimmed-fltr.rds"))
-  }else{
-    write_csv(trimmed_dat_fltr_expanded, "data_processing_rcode/data_clean/all-regions-trimmed-fltr.csv")
-  }
-}
 
 # Dat_exploded -  Add 0's ======================================================
 print("Dat exploded")
@@ -2281,9 +2283,9 @@ print("Core species")
 ## FILTERED DATA
 # Find a standard set of species (present at least 3/4 of the years of the filtered data in a region)
 # this result differs from the original code because it does not include any species that have a pres value of 0.  It does, however, include speices for which the common name is NA.
-presyr <- present_every_year(dat_fltr, region, valid_name, common, year)
+presyr <- present_every_year(trimmed_dat_fltr_expanded, region, valid_name, common, year)
 
-haulsyr<-num_hauls_year(dat_fltr, region, year)
+haulsyr<-num_hauls_year(trimmed_dat_fltr_expanded, region, year)
 
 preshaul<-left_join(presyr, haulsyr, by=c("region", "year")) %>%
   mutate(proportion=((pres/hauls)*100))%>%
