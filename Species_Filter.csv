@@ -274,7 +274,7 @@ Lolliguncula brevis,Atlantic brief squid,"Cephalopoda (squid, octopus)",Gulf of 
 Luidia alternata,Banded sea star,Asteroidea (starfishes) ,Gulf of Mexico,Gulf of Mexico,,,Not for IDW
 Luidia clathrata,Lined sea star,Asteroidea (starfishes) ,Gulf of Mexico,Gulf of Mexico,,,NMFS/Rutgers IDW Interpolation
 Luidia lawrencei,NA,Asteroidea (starfishes) ,Gulf of Mexico,Gulf of Mexico,,,Not for IDW
-Lutjanus campechanus,Red snapper,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,,,Not for IDW
+Lutjanus campechanus,Red snapper,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,,,Not for IDW
 Lutjanus campechanus,Red snapper,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",Gulf of Mexico,Gulf of Mexico,GMFMC,Reef Fish Resources of the Gulf of Mexico,NMFS/Rutgers IDW Interpolation
 Lutjanus griseus,Gray snapper,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",Gulf of Mexico,Gulf of Mexico,GMFMC,Reef Fish Resources of the Gulf of Mexico,NMFS/Rutgers IDW Interpolation
 Lutjanus synagris,Lane snapper,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",Gulf of Mexico,Gulf of Mexico,GMFMC,Reef Fish Resources of the Gulf of Mexico,NMFS/Rutgers IDW Interpolation
@@ -465,247 +465,247 @@ Squalus suckleyi,Pacific spiny dogfish,Elasmobranchii: Selachii (sharks),Alaska,
 Stylasterias forreri,Velcro star,Asteroidea (starfishes) ,Alaska,Gulf of Alaska,,,Not for IDW
 Thaleichthys pacificus,Eulachon,"Osmeriformes (caplin, freshwater smelt)",Alaska,Gulf of Alaska,,,NMFS/Rutgers IDW Interpolation
 Zaprora silenus,Prowfish,Perciformes/Zoarcoidei (Eelpouts and pricklebacks),Alaska,Gulf of Alaska,,,Not for IDW
-Alosa aestivalis,Blueback herring,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Northeast,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
-Alosa pseudoharengus,Alewife,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Northeast,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
-Alosa sapidissima,American shad,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Northeast,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
-Amblyraja radiata,Thorny skate,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Northeast,NEFMC,Northeast Skate Complex,NMFS/Rutgers IDW Interpolation
-Ammodytes dubius,Northern sand lance,Perciformes/Uranoscopoidei (Sand dwellers),US East Coast,Northeast,,,Not for IDW
-Anarhichas lupus,Atlantic wolffish,Perciformes/Zoarcoidei (Eelpouts and pricklebacks),US East Coast,Northeast,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
-Anchoa hepsetus,Striped anchovy,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Northeast,,,Not for IDW
-Anchoa mitchilli,Bay anchovy,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Northeast,,,Not for IDW
-Antigonia capros,Deepbody boarfish,Acanthuriformes (Surgeonfishes),US East Coast,Northeast,,,Not for IDW
-Ariomma bondi,Silver rag driftfish,Scombriformes (Mackerels),US East Coast,Northeast,,,Not for IDW
-Aspidophoroides monopterygius,Alligatorfish,Perciformes/Cottoidei (sculpins),US East Coast,Northeast,,,Not for IDW
-Bathypolypus arcticus,North atlantic octopus,"Cephalopoda (squid, octopus)",US East Coast,Northeast,,,Not for IDW
-Brosme brosme,Cusk,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast,,,Not for IDW
-Cancer borealis,Jonah crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
-Cancer irroratus,Atlantic rock crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast,,,NMFS/Rutgers IDW Interpolation
+Alosa aestivalis,Blueback herring,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Northeast US,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
+Alosa pseudoharengus,Alewife,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Northeast US,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
+Alosa sapidissima,American shad,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Northeast US,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
+Amblyraja radiata,Thorny skate,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Northeast US,NEFMC,Northeast Skate Complex,NMFS/Rutgers IDW Interpolation
+Ammodytes dubius,Northern sand lance,Perciformes/Uranoscopoidei (Sand dwellers),US East Coast,Northeast US,,,Not for IDW
+Anarhichas lupus,Atlantic wolffish,Perciformes/Zoarcoidei (Eelpouts and pricklebacks),US East Coast,Northeast US,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
+Anchoa hepsetus,Striped anchovy,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Northeast US,,,Not for IDW
+Anchoa mitchilli,Bay anchovy,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Northeast US,,,Not for IDW
+Antigonia capros,Deepbody boarfish,Acanthuriformes (Surgeonfishes),US East Coast,Northeast US,,,Not for IDW
+Ariomma bondi,Silver rag driftfish,Scombriformes (Mackerels),US East Coast,Northeast US,,,Not for IDW
+Aspidophoroides monopterygius,Alligatorfish,Perciformes/Cottoidei (sculpins),US East Coast,Northeast US,,,Not for IDW
+Bathypolypus arcticus,North atlantic octopus,"Cephalopoda (squid, octopus)",US East Coast,Northeast US,,,Not for IDW
+Brosme brosme,Cusk,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast US,,,Not for IDW
+Cancer borealis,Jonah crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast US,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
+Cancer irroratus,Atlantic rock crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast US,,,NMFS/Rutgers IDW Interpolation
 Caranx crysos,Blue runner,Carangiformes (Jacks),Gulf of Mexico,Gulf of Mexico,,,Not for IDW
-Caranx crysos,Blue runner,Carangiformes (Jacks),US East Coast,Northeast,,,Not for IDW
-Centropristis striata,Black sea bass,Perciformes/Serranoidei (Groupers),US East Coast,Northeast,ASMFC,"Summer Flounder, Scup and Black Sea Bass",NMFS/Rutgers IDW Interpolation
-Centropristis striata,Black sea bass,Perciformes/Serranoidei (Groupers),US East Coast,Northeast,MAFMC,"Summer Flounder, Scup and Black Sea Bass",NMFS/Rutgers IDW Interpolation
-Chlorophthalmus agassizi,Shortnose greeneye,"Aulopiformes (Grinners, lizardfish)",US East Coast,Northeast,,,Not for IDW
-Citharichthys arctifrons,Gulf stream flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast,,,NMFS/Rutgers IDW Interpolation
-Clupea harengus,Atlantic herring,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Northeast,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
-Clupea harengus,Atlantic herring,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Northeast,NEFMC,Atlantic Herring,NMFS/Rutgers IDW Interpolation
-Cryptacanthodes maculatus,Wrymouth,Perciformes/Zoarcoidei (Eelpouts and pricklebacks),US East Coast,Northeast,,,Not for IDW
-Cynoscion regalis,Weakfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast,ASMFC,Interstate Fishery Management Plan ,Not for IDW
-Decapterus punctatus,Round scad,Carangiformes (Jacks),US East Coast,Northeast,,,Not for IDW
-Dichelopandalus leptocerus,Bristled longbeak,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast,,,Not for IDW
-Dipturus laevis,Barndoor skate,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Northeast,NEFMC,Northeast Skate Complex,NMFS/Rutgers IDW Interpolation
-Enchelyopus cimbrius,Fourbeard rockling,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast,,,Not for IDW
-Gadus morhua,Atlantic cod,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
-Glyptocephalus cynoglossus,Witch flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
-Helicolenus dactylopterus,Blackbelly rosefish,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Northeast,,,Not for IDW
-Hemitripterus americanus,Sea raven,Perciformes/Cottoidei (sculpins),US East Coast,Northeast,,,NMFS/Rutgers IDW Interpolation
-Hippoglossoides platessoides,American plaice,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
-Hippoglossus hippoglossus,Atlantic halibut,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
-Homarus americanus,American lobster,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
-Illex illecebrosus,Northern shortfin squid,"Cephalopoda (squid, octopus)",US East Coast,Northeast,MAFMC,"Mackerel, Squid and Butterfish",NMFS/Rutgers IDW Interpolation
-Larimus fasciatus,Banded drum,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast,,,Not for IDW
-Leiostomus xanthurus,Spot,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast,ASMFC,Interstate Fishery Management Plan ,Not for IDW
-Lepophidium profundorum,Fawn cusk-eel,Ophidiiformes (Cusk eels) ,US East Coast,Northeast,,,NMFS/Rutgers IDW Interpolation
-Leucoraja garmani,Rosette skate,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Northeast,NEFMC,Northeast Skate Complex,NMFS/Rutgers IDW Interpolation
-Leucoraja ocellata,Winter skate,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Northeast,NEFMC,Northeast Skate Complex,NMFS/Rutgers IDW Interpolation
-Limulus polyphemus,Horseshoe crab,Xiphosura (horseshoe crabs),US East Coast,Northeast,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
-Lithodes maja,Norway king crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast,,,Not for IDW
-Lophius americanus,Monkfish,Lophiiformes (Anglerfishes),US East Coast,Northeast,MAFMC,Monkfish,NMFS/Rutgers IDW Interpolation
-Lophius americanus,Monkfish,Lophiiformes (Anglerfishes),US East Coast,Northeast,NEFMC,Monkfish,NMFS/Rutgers IDW Interpolation
-Malacoraja senta,Smooth skate,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Northeast,NEFMC,Northeast Skate Complex,NMFS/Rutgers IDW Interpolation
-Maurolicus weitzmani,Atlantic pearlside,Stomiiformes (Lightfishes and dragonfishes),US East Coast,Northeast,,,Not for IDW
-Melanogrammus aeglefinus,Haddock,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
-Menticirrhus americanus,Southern kingfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast,,,Not for IDW
-Menticirrhus saxatilis,Northern kingfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast,,,Not for IDW
-Merluccius albidus,Offshore hake,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
-Merluccius bilinearis,Silver hake,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
-Micropogonias undulatus,Atlantic croaker,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
-Mustelus canis,Smooth dogfish,Elasmobranchii: Selachii (sharks),US East Coast,Northeast,Atlantic HMS,Consolidated Atlantic Highly Migratory Species,NMFS/Rutgers IDW Interpolation
-Myliobatis freminvillei,Bullnose eagle ray,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Northeast,,,Not for IDW
-Myoxocephalus octodecemspinosus,Longhorn sculpin,Perciformes/Cottoidei (sculpins),US East Coast,Northeast,,,NMFS/Rutgers IDW Interpolation
-Myxine glutinosa,Atlantic hagfish,Myxiniformes (Hagfishes),US East Coast,Northeast,,,Not for IDW
-Opisthonema oglinum,Atlantic thread herring,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Northeast,,,Not for IDW
-Orthopristis chrysoptera,Pigfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast,,,Not for IDW
-Ovalipes ocellatus,Ocellate lady crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast,,,Not for IDW
-Ovalipes stephensoni,Coarsehand lady crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast,,,Not for IDW
-Pandalus borealis,Atlantic northern shrimp,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
-Pandalus montagui,Aesop shrimp,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast,,,Not for IDW
-Paralichthys dentatus,Summer flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast,ASMFC,"Summer Flounder, Scup and Black Sea Bass",NMFS/Rutgers IDW Interpolation
-Paralichthys dentatus,Summer flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast,MAFMC,"Summer Flounder, Scup and Black Sea Bass",NMFS/Rutgers IDW Interpolation
-Pasiphaea multidentata,Pink glass shrimp,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast,,,Not for IDW
-Peprilus triacanthus,American butterfish,Scombriformes (Mackerels),US East Coast,Northeast,MAFMC,"Mackerel, Squid and Butterfish",NMFS/Rutgers IDW Interpolation
-Peristedion miniatum,Armored searobin,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Northeast,,,Not for IDW
-Placopecten magellanicus,Atlantic sea scallop,"Bivalvia (clams, muscles, oyster, arks, etc)",US East Coast,Northeast,NEFMC,Atlantic Sea Scallop,NMFS/Rutgers IDW Interpolation
-Pollachius virens,Pollock,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
-Polymixia lowei,Beardfish,Polymixiiformes (Beardfishes),US East Coast,Northeast,,,Not for IDW
-Pomatomus saltatrix,Bluefish,Scombriformes (Mackerels),US East Coast,Northeast,ASMFC,Bluefish,NMFS/Rutgers IDW Interpolation
-Pomatomus saltatrix,Bluefish,Scombriformes (Mackerels),US East Coast,Northeast,MAFMC,Bluefish,NMFS/Rutgers IDW Interpolation
-Pontophilus norvegicus,Norwegian shrimp,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast,,,Not for IDW
-Prionotus carolinus,Northern searobin,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Northeast,,,NMFS/Rutgers IDW Interpolation
-Prionotus evolans,Striped searobin,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Northeast,,,Not for IDW
-Pseudopleuronectes americanus,Winter flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast,ASMFC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
-Pseudopleuronectes americanus,Winter flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
-Rhizoprionodon terraenovae,Atlantic sharpnose shark,Elasmobranchii: Selachii (sharks),US East Coast,Northeast,Atlantic HMS,Consolidated Atlantic Highly Migratory Species,NMFS/Rutgers IDW Interpolation
-Sardinella aurita,Spanish sardine,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Northeast,,,Not for IDW
-Scomber scombrus,Atlantic mackerel,Scombriformes (Mackerels),US East Coast,Northeast,MAFMC,"Mackerel, Squid and Butterfish",NMFS/Rutgers IDW Interpolation
-Scomberesox saurus,Atlantic saury,Scombriformes (Mackerels),US East Coast,Northeast,,,Not for IDW
-Scomberomorus maculatus,Spanish mackerel,Scombriformes (Mackerels),US East Coast,Northeast,,,Not for IDW
-Scophthalmus aquosus,Windowpane flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
-Scyliorhinus retifer,Chain catshark,Elasmobranchii: Selachii (sharks),US East Coast,Northeast,,,Not for IDW
-Sebastes fasciatus,Acadian redfish,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Northeast,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
-Selene setapinnis,Atlantic moonfish,Carangiformes (Jacks),US East Coast,Northeast,,,Not for IDW
-Sphoeroides maculatus,Northern puffer,Tetraodontiformes (puffers and filefishes),US East Coast,Northeast,,,Not for IDW
-Sphyraena borealis,Northern sennet,"Carangaria/misc (barracuda, threadfins)",US East Coast,Northeast,,,Not for IDW
-Squalus acanthias,Spiny dogfish,Elasmobranchii: Selachii (sharks),US East Coast,Northeast,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
-Squalus acanthias,Spiny dogfish,Elasmobranchii: Selachii (sharks),US East Coast,Northeast,MAFMC,Spiny Dogfish,NMFS/Rutgers IDW Interpolation
-Squalus acanthias,Spiny dogfish,Elasmobranchii: Selachii (sharks),US East Coast,Northeast,NEFMC,Spiny Dogfish,NMFS/Rutgers IDW Interpolation
-Stenotomus chrysops,Scup,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast,ASMFC,"Summer Flounder, Scup and Black Sea Bass",NMFS/Rutgers IDW Interpolation
-Stenotomus chrysops,Scup,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast,MAFMC,"Summer Flounder, Scup and Black Sea Bass",NMFS/Rutgers IDW Interpolation
-Synodus foetens,Inshore lizardfish,"Aulopiformes (Grinners, lizardfish)",US East Coast,Northeast,,,Not for IDW
-Tautogolabrus adspersus,Cunner,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast,,,Not for IDW
-Trachurus lathami,Rough scad,Carangiformes (Jacks),US East Coast,Northeast,,,Not for IDW
-Trichiurus lepturus,Atlantic cutlassfish,Scombriformes (Mackerels),US East Coast,Northeast,,,Not for IDW
-Urophycis chuss,Red hake,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
-Urophycis regia,Spotted hake,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast,,,NMFS/Rutgers IDW Interpolation
-Urophycis tenuis,White hake,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
-Crangon septemspinosa,Sevenspine bay shrimp,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast,,,Not for IDW
-Etropus microstomus,Smallmouth flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast,,,Not for IDW
-Lebbeus polaris,Polar lebbeid,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast,,,Not for IDW
-Menidia menidia,Atlantic silverside,Atheriniformes (Silversides),US East Coast,Northeast,,,Not for IDW
-Acanthostracion quadricornis,Scrawled cowfish,Tetraodontiformes (puffers and filefishes),US East Coast,Southeast,,,Not for IDW
-Aetobatus narinari,Spotted eagle ray,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Southeast,,,Not for IDW
-Alosa aestivalis,Blueback herring,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Southeast,ASMFC,Interstate Fishery Management Plan ,Not for IDW
-Aluterus schoepfii,Orange filefish,Tetraodontiformes (puffers and filefishes),US East Coast,Southeast,,,Not for IDW
-Ancylopsetta quadrocellata,Ocellated flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Archosargus probatocephalus,Sheepshead,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,,,Not for IDW
-Arenaeus cribrarius,Speckled swimming crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Ariopsis felis,Hardhead catfish,Siluriformes (catfishes),US East Coast,Southeast,,,Not for IDW
-Bagre marinus,Gafftopsail catfish,Siluriformes (catfishes),US East Coast,Southeast,,,Not for IDW
-Bairdiella chrysoura,Silver perch,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Brevoortia smithi,Yellowfin menhaden,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Southeast,,,Not for IDW
-Brevoortia tyrannus,Atlantic menhaden,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Southeast,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
-Calamus leucosteus,Whitebone porgy,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,,,Not for IDW
-Calappa flammea,Flame box crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,Not for IDW
-Callinectes ornatus,Shelling crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Callinectes sapidus,Blue crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Callinectes similis,Lesser blue crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Caranx crysos,Blue runner,Carangiformes (Jacks),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Caranx hippos,Crevalle jack,Carangiformes (Jacks),US East Coast,Southeast,,,Not for IDW
-Carcharhinus acronotus,Blacknose shark,Elasmobranchii: Selachii (sharks),US East Coast,Southeast,Atlantic HMS,Consolidated Atlantic Highly Migratory Species,Not for IDW
-Carcharhinus limbatus,Blacktip shark,Elasmobranchii: Selachii (sharks),US East Coast,Southeast,Atlantic HMS,Consolidated Atlantic Highly Migratory Species,Not for IDW
-Centropristis philadelphica,Rock sea bass,Perciformes/Serranoidei (Groupers),US East Coast,Southeast,SAFMC,Snapper-Grouper Fishery of the South Atlantic Region,NMFS/Rutgers IDW Interpolation
-Centropristis striata,Black sea bass,Perciformes/Serranoidei (Groupers),US East Coast,Southeast,SAFMC,Snapper-Grouper Fishery of the South Atlantic Region,NMFS/Rutgers IDW Interpolation
-Chaetodipterus faber,Atlantic spadefish,Acanthuriformes (Surgeonfishes),US East Coast,Southeast,SAFMC,Snapper-Grouper Fishery of the South Atlantic Region,NMFS/Rutgers IDW Interpolation
-Chilomycterus schoepfii,Striped burrfish,Tetraodontiformes (puffers and filefishes),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Chloroscombrus chrysurus,Atlantic bumper,Carangiformes (Jacks),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Citharichthys macrops,Spotted whiff,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Citharichthys spilopterus,Bay whiff,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Cynoscion nebulosus,Spotted weakfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,,,Not for IDW
-Cynoscion nothus,Silver seatrout,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Cynoscion regalis,Weakfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
-Cynoscion regalis,Weakfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,SAFMC,Snapper-Grouper Fishery of the South Atlantic Region,NMFS/Rutgers IDW Interpolation
-Decapterus punctatus,Round scad,Carangiformes (Jacks),US East Coast,Southeast,,,Not for IDW
-Diplectrum formosum,Sand perch,Perciformes/Serranoidei (Groupers),US East Coast,Southeast,,,Not for IDW
-Echeneis naucrates,Sharksucker,Carangiformes (Jacks),US East Coast,Southeast,,,Not for IDW
-Etropus crossotus,Fringed flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Etropus cyclosquamus,Shelf flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Gibbesia neglecta,Lesser mantis shrimp,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Gymnachirus melas,Naked sole,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast,,,Not for IDW
-Gymnura altavela,Spiny butterfly ray,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Southeast,,,Not for IDW
-Gymnura micrura,Smooth butterfly ray,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Harengula jaguana,Scaled sardine,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Hepatus epheliticus,Calico box crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Hippocampus erectus,Lined seahorse,Syngnathiformes (Seahorses),US East Coast,Southeast,,,Not for IDW
-Lagocephalus laevigatus,Smooth puffer,Tetraodontiformes (puffers and filefishes),US East Coast,Southeast,,,Not for IDW
-Lagodon rhomboides,Pinfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Larimus fasciatus,Banded drum,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Leiostomus xanthurus,Spot,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
-Limulus polyphemus,Horseshoe crab,Xiphosura (horseshoe crabs),US East Coast,Southeast,ASMFC,Interstate Fishery Management Plan ,Not for IDW
-Lolliguncula brevis,Atlantic brief squid,"Cephalopoda (squid, octopus)",US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Lutjanus synagris,Lane snapper,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,,,Not for IDW
-Menippe mercenaria,Florida stone crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,Not for IDW
-Menticirrhus americanus,Southern kingfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Menticirrhus littoralis,Gulf kingfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Menticirrhus saxatilis,Northern kingfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,,,Not for IDW
-Micropogonias undulatus,Atlantic croaker,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
-Mobula hypostoma,Devil ray,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Southeast,,,Not for IDW
-Mugil curema,White mullet,Mugiliformes (Mullets),US East Coast,Southeast,,,Not for IDW
-Myliobatis freminvillei,Bullnose eagle ray,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Narcine brasiliensis,Brazilian electric ray,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Southeast,,,Not for IDW
-Octopus vulgaris,Common octopus,"Cephalopoda (squid, octopus)",US East Coast,Southeast,,,Not for IDW
-Ogcocephalus cubifrons,NA,Lophiiformes (Anglerfishes),US East Coast,Southeast,,,Not for IDW
-Ogcocephalus rostellum,Palefin batfish,Lophiiformes (Anglerfishes),US East Coast,Southeast,,,Not for IDW
-Opisthonema oglinum,Atlantic thread herring,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Orthopristis chrysoptera,Pigfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Ovalipes ocellatus,Ocellate lady crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Ovalipes stephensoni,Coarsehand lady crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Pagurus longicarpus,Longwrist hermit crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,Not for IDW
-Pagurus pollicaris,Gray hermit crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Paralichthys albigutta,Gulf flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast,,,Not for IDW
-Paralichthys dentatus,Summer flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast,ASMFC,"Summer Flounder, Scup and Black Sea Bass",NMFS/Rutgers IDW Interpolation
-Paralichthys dentatus,Summer flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast,MAFMC,"Summer Flounder, Scup and Black Sea Bass",NMFS/Rutgers IDW Interpolation
-Paralichthys lethostigma,Southern flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Peprilus paru,Harvestfish,Scombriformes (Mackerels),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Peprilus triacanthus,American butterfish,Scombriformes (Mackerels),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Persephona mediterranea,Mottled purse crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Pilumnus sayi,Spineback hairy crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,Not for IDW
-Pogonias cromis,Black drum,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,ASMFC,Interstate Fishery Management Plan ,Not for IDW
-Pomatomus saltatrix,Bluefish,Scombriformes (Mackerels),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Porcellana sigsbeiana,Striped porcelain crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,Not for IDW
-Portunus sayi,Sargassum swimming crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,Not for IDW
-Prionotus carolinus,Northern searobin,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Prionotus evolans,Striped searobin,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Prionotus rubio,Blackwing searobin,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Prionotus scitulus,Leopard searobin,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Prionotus tribulus,Bighead searobin,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Rachycentron canadum,Cobia,Carangiformes (Jacks),US East Coast,Southeast,,,Not for IDW
-Rhinoptera bonasus,Cownose ray,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Rhizoprionodon terraenovae,Atlantic sharpnose shark,Elasmobranchii: Selachii (sharks),US East Coast,Southeast,Atlantic HMS,Consolidated Atlantic Highly Migratory Species,NMFS/Rutgers IDW Interpolation
-Rimapenaeus constrictus,Roughneck shrimp,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,Not for IDW
-Sardinella aurita,Spanish sardine,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Southeast,,,Not for IDW
-Scomberomorus cavalla,King mackerel,Scombriformes (Mackerels),US East Coast,Southeast,GMFMC,Coastal Migratory Pelagic Resources of the Gulf of Mexico and South Atlantic,NMFS/Rutgers IDW Interpolation
-Scomberomorus cavalla,King mackerel,Scombriformes (Mackerels),US East Coast,Southeast,SAFMC,Coastal Migratory Pelagic Resources of the Gulf of Mexico and South Atlantic,NMFS/Rutgers IDW Interpolation
-Scomberomorus maculatus,Spanish mackerel,Scombriformes (Mackerels),US East Coast,Southeast,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
-Scomberomorus maculatus,Spanish mackerel,Scombriformes (Mackerels),US East Coast,Southeast,GMFMC,Coastal Migratory Pelagic Resources of the Gulf of Mexico and South Atlantic,NMFS/Rutgers IDW Interpolation
-Scomberomorus maculatus,Spanish mackerel,Scombriformes (Mackerels),US East Coast,Southeast,SAFMC,Coastal Migratory Pelagic Resources of the Gulf of Mexico and South Atlantic,NMFS/Rutgers IDW Interpolation
-Scophthalmus aquosus,Windowpane flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Selene setapinnis,Atlantic moonfish,Carangiformes (Jacks),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Selene vomer,Lookdown,Carangiformes (Jacks),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Sphoeroides maculatus,Northern puffer,Tetraodontiformes (puffers and filefishes),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Sphyraena guachancho,Guachanche barracuda,"Carangaria/misc (barracuda, threadfins)",US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Sphyrna lewini,Scalloped hammerhead,Elasmobranchii: Selachii (sharks),US East Coast,Southeast,Atlantic HMS,Consolidated Atlantic Highly Migratory Species,Not for IDW
-Sphyrna tiburo,Bonnethead,Elasmobranchii: Selachii (sharks),US East Coast,Southeast,Atlantic HMS,Consolidated Atlantic Highly Migratory Species,NMFS/Rutgers IDW Interpolation
-Squilla empusa,Mantis shrimp,Stomatopoda (mantis shrimp),US East Coast,Southeast,SAFMC,Shrimp Fishery of the South Atlantic Region,NMFS/Rutgers IDW Interpolation
-Stellifer lanceolatus,Star drum,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Stephanolepis hispida,Planehead filefish,Tetraodontiformes (puffers and filefishes),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Stomolophus meleagris,Cannonball jellyfish,"Cnidaria (jellyfish, corals, anenomes) ",US East Coast,Southeast,,,Not for IDW
-Syacium papillosum,Dusky flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast,,,Not for IDW
-Symphurus plagiusa,Blackcheek tonguefish,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Synodus foetens,Inshore lizardfish,"Aulopiformes (Grinners, lizardfish)",US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Trachinotus carolinus,Florida pompano,Carangiformes (Jacks),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Trichiurus lepturus,Atlantic cutlassfish,Scombriformes (Mackerels),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Trinectes maculatus,Hogchoker,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Urophycis earllii,Carolina hake,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Southeast,,,Not for IDW
-Xiphopenaeus kroyeri,Atlantic seabob,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Cancer irroratus,Atlantic rock crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,Not for IDW
-Mustelus canis,Smooth dogfish,Elasmobranchii: Selachii (sharks),US East Coast,Southeast,Atlantic HMS,Consolidated Atlantic Highly Migratory Species,Not for IDW
-Oligoplites saurus,Leatherjacket,Carangiformes (Jacks),US East Coast,Southeast,,,Not for IDW
-Ophidion marginatum,Striped cusk-eel,Ophidiiformes (Cusk eels) ,US East Coast,Southeast,,,Not for IDW
-Sicyonia brevirostris,Brown rock shrimp,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,SAFMC,Shrimp Fishery of the South Atlantic Region,Not for IDW
-Squalus acanthias,Spiny dogfish,Elasmobranchii: Selachii (sharks),US East Coast,Southeast,,,Not for IDW
-Syngnathus louisianae,Chain pipefish,Syngnathiformes (Seahorses),US East Coast,Southeast,,,Not for IDW
-Trachurus lathami,Rough scad,Carangiformes (Jacks),US East Coast,Southeast,,,Not for IDW
-Upeneus parvus,Dwarf goatfish,Mulliformes (Goatfishes),US East Coast,Southeast,,,Not for IDW
-Urophycis floridana,Southern hake,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Southeast,,,Not for IDW
-Urophycis regia,Spotted hake,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Southeast,,,NMFS/Rutgers IDW Interpolation
-Alectis ciliaris,African pompano,Carangiformes (Jacks),US East Coast,Southeast,,,Not for IDW
-Carcharhinus brevipinna,Spinner shark,Elasmobranchii: Selachii (sharks),US East Coast,Southeast,,,Not for IDW
-Gobiosoma bosc,Naked goby,Gobiiformes (Gobies),US East Coast,Southeast,,,Not for IDW
-Haemulon aurolineatum,Tomtate grunt,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast,,,Not for IDW
-Hypleurochilus geminatus,Crested blenny,Blenniiformes (Blennies),US East Coast,Southeast,,,Not for IDW
-Opsanus tau,Oyster toadfish,Batrachoidiformes (Toadfishes),US East Coast,Southeast,,,Not for IDW
-Paralichthys squamilentus,Broad flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast,,,Not for IDW
-Petrochirus diogenes,Giant hermit,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast,,,Not for IDW
-Porichthys plectrodon,Atlantic midshipman,Batrachoidiformes (Toadfishes),US East Coast,Southeast,,,Not for IDW
+Caranx crysos,Blue runner,Carangiformes (Jacks),US East Coast,Northeast US,,,Not for IDW
+Centropristis striata,Black sea bass,Perciformes/Serranoidei (Groupers),US East Coast,Northeast US,ASMFC,"Summer Flounder, Scup and Black Sea Bass",NMFS/Rutgers IDW Interpolation
+Centropristis striata,Black sea bass,Perciformes/Serranoidei (Groupers),US East Coast,Northeast US,MAFMC,"Summer Flounder, Scup and Black Sea Bass",NMFS/Rutgers IDW Interpolation
+Chlorophthalmus agassizi,Shortnose greeneye,"Aulopiformes (Grinners, lizardfish)",US East Coast,Northeast US,,,Not for IDW
+Citharichthys arctifrons,Gulf stream flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast US,,,NMFS/Rutgers IDW Interpolation
+Clupea harengus,Atlantic herring,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Northeast US,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
+Clupea harengus,Atlantic herring,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Northeast US,NEFMC,Atlantic Herring,NMFS/Rutgers IDW Interpolation
+Cryptacanthodes maculatus,Wrymouth,Perciformes/Zoarcoidei (Eelpouts and pricklebacks),US East Coast,Northeast US,,,Not for IDW
+Cynoscion regalis,Weakfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast US,ASMFC,Interstate Fishery Management Plan ,Not for IDW
+Decapterus punctatus,Round scad,Carangiformes (Jacks),US East Coast,Northeast US,,,Not for IDW
+Dichelopandalus leptocerus,Bristled longbeak,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast US,,,Not for IDW
+Dipturus laevis,Barndoor skate,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Northeast US,NEFMC,Northeast Skate Complex,NMFS/Rutgers IDW Interpolation
+Enchelyopus cimbrius,Fourbeard rockling,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast US,,,Not for IDW
+Gadus morhua,Atlantic cod,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast US,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
+Glyptocephalus cynoglossus,Witch flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast US,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
+Helicolenus dactylopterus,Blackbelly rosefish,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Northeast US,,,Not for IDW
+Hemitripterus americanus,Sea raven,Perciformes/Cottoidei (sculpins),US East Coast,Northeast US,,,NMFS/Rutgers IDW Interpolation
+Hippoglossoides platessoides,American plaice,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast US,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
+Hippoglossus hippoglossus,Atlantic halibut,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast US,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
+Homarus americanus,American lobster,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast US,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
+Illex illecebrosus,Northern shortfin squid,"Cephalopoda (squid, octopus)",US East Coast,Northeast US,MAFMC,"Mackerel, Squid and Butterfish",NMFS/Rutgers IDW Interpolation
+Larimus fasciatus,Banded drum,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast US,,,Not for IDW
+Leiostomus xanthurus,Spot,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast US,ASMFC,Interstate Fishery Management Plan ,Not for IDW
+Lepophidium profundorum,Fawn cusk-eel,Ophidiiformes (Cusk eels) ,US East Coast,Northeast US,,,NMFS/Rutgers IDW Interpolation
+Leucoraja garmani,Rosette skate,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Northeast US,NEFMC,Northeast Skate Complex,NMFS/Rutgers IDW Interpolation
+Leucoraja ocellata,Winter skate,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Northeast US,NEFMC,Northeast Skate Complex,NMFS/Rutgers IDW Interpolation
+Limulus polyphemus,Horseshoe crab,Xiphosura (horseshoe crabs),US East Coast,Northeast US,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
+Lithodes maja,Norway king crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast US,,,Not for IDW
+Lophius americanus,Monkfish,Lophiiformes (Anglerfishes),US East Coast,Northeast US,MAFMC,Monkfish,NMFS/Rutgers IDW Interpolation
+Lophius americanus,Monkfish,Lophiiformes (Anglerfishes),US East Coast,Northeast US,NEFMC,Monkfish,NMFS/Rutgers IDW Interpolation
+Malacoraja senta,Smooth skate,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Northeast US,NEFMC,Northeast Skate Complex,NMFS/Rutgers IDW Interpolation
+Maurolicus weitzmani,Atlantic pearlside,Stomiiformes (Lightfishes and dragonfishes),US East Coast,Northeast US,,,Not for IDW
+Melanogrammus aeglefinus,Haddock,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast US,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
+Menticirrhus americanus,Southern kingfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast US,,,Not for IDW
+Menticirrhus saxatilis,Northern kingfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast US,,,Not for IDW
+Merluccius albidus,Offshore hake,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast US,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
+Merluccius bilinearis,Silver hake,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast US,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
+Micropogonias undulatus,Atlantic croaker,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast US,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
+Mustelus canis,Smooth dogfish,Elasmobranchii: Selachii (sharks),US East Coast,Northeast US,Atlantic HMS,Consolidated Atlantic Highly Migratory Species,NMFS/Rutgers IDW Interpolation
+Myliobatis freminvillei,Bullnose eagle ray,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Northeast US,,,Not for IDW
+Myoxocephalus octodecemspinosus,Longhorn sculpin,Perciformes/Cottoidei (sculpins),US East Coast,Northeast US,,,NMFS/Rutgers IDW Interpolation
+Myxine glutinosa,Atlantic hagfish,Myxiniformes (Hagfishes),US East Coast,Northeast US,,,Not for IDW
+Opisthonema oglinum,Atlantic thread herring,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Northeast US,,,Not for IDW
+Orthopristis chrysoptera,Pigfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast US,,,Not for IDW
+Ovalipes ocellatus,Ocellate lady crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast US,,,Not for IDW
+Ovalipes stephensoni,Coarsehand lady crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast US,,,Not for IDW
+Pandalus borealis,Atlantic northern shrimp,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast US,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
+Pandalus montagui,Aesop shrimp,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast US,,,Not for IDW
+Paralichthys dentatus,Summer flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast US,ASMFC,"Summer Flounder, Scup and Black Sea Bass",NMFS/Rutgers IDW Interpolation
+Paralichthys dentatus,Summer flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast US,MAFMC,"Summer Flounder, Scup and Black Sea Bass",NMFS/Rutgers IDW Interpolation
+Pasiphaea multidentata,Pink glass shrimp,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast US,,,Not for IDW
+Peprilus triacanthus,American butterfish,Scombriformes (Mackerels),US East Coast,Northeast US,MAFMC,"Mackerel, Squid and Butterfish",NMFS/Rutgers IDW Interpolation
+Peristedion miniatum,Armored searobin,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Northeast US,,,Not for IDW
+Placopecten magellanicus,Atlantic sea scallop,"Bivalvia (clams, muscles, oyster, arks, etc)",US East Coast,Northeast US,NEFMC,Atlantic Sea Scallop,NMFS/Rutgers IDW Interpolation
+Pollachius virens,Pollock,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast US,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
+Polymixia lowei,Beardfish,Polymixiiformes (Beardfishes),US East Coast,Northeast US,,,Not for IDW
+Pomatomus saltatrix,Bluefish,Scombriformes (Mackerels),US East Coast,Northeast US,ASMFC,Bluefish,NMFS/Rutgers IDW Interpolation
+Pomatomus saltatrix,Bluefish,Scombriformes (Mackerels),US East Coast,Northeast US,MAFMC,Bluefish,NMFS/Rutgers IDW Interpolation
+Pontophilus norvegicus,Norwegian shrimp,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast US,,,Not for IDW
+Prionotus carolinus,Northern searobin,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Northeast US,,,NMFS/Rutgers IDW Interpolation
+Prionotus evolans,Striped searobin,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Northeast US,,,Not for IDW
+Pseudopleuronectes americanus,Winter flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast US,ASMFC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
+Pseudopleuronectes americanus,Winter flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast US,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
+Rhizoprionodon terraenovae,Atlantic sharpnose shark,Elasmobranchii: Selachii (sharks),US East Coast,Northeast US,Atlantic HMS,Consolidated Atlantic Highly Migratory Species,NMFS/Rutgers IDW Interpolation
+Sardinella aurita,Spanish sardine,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Northeast US,,,Not for IDW
+Scomber scombrus,Atlantic mackerel,Scombriformes (Mackerels),US East Coast,Northeast US,MAFMC,"Mackerel, Squid and Butterfish",NMFS/Rutgers IDW Interpolation
+Scomberesox saurus,Atlantic saury,Scombriformes (Mackerels),US East Coast,Northeast US,,,Not for IDW
+Scomberomorus maculatus,Spanish mackerel,Scombriformes (Mackerels),US East Coast,Northeast US,,,Not for IDW
+Scophthalmus aquosus,Windowpane flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast US,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
+Scyliorhinus retifer,Chain catshark,Elasmobranchii: Selachii (sharks),US East Coast,Northeast US,,,Not for IDW
+Sebastes fasciatus,Acadian redfish,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Northeast US,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
+Selene setapinnis,Atlantic moonfish,Carangiformes (Jacks),US East Coast,Northeast US,,,Not for IDW
+Sphoeroides maculatus,Northern puffer,Tetraodontiformes (puffers and filefishes),US East Coast,Northeast US,,,Not for IDW
+Sphyraena borealis,Northern sennet,"Carangaria/misc (barracuda, threadfins)",US East Coast,Northeast US,,,Not for IDW
+Squalus acanthias,Spiny dogfish,Elasmobranchii: Selachii (sharks),US East Coast,Northeast US,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
+Squalus acanthias,Spiny dogfish,Elasmobranchii: Selachii (sharks),US East Coast,Northeast US,MAFMC,Spiny Dogfish,NMFS/Rutgers IDW Interpolation
+Squalus acanthias,Spiny dogfish,Elasmobranchii: Selachii (sharks),US East Coast,Northeast US,NEFMC,Spiny Dogfish,NMFS/Rutgers IDW Interpolation
+Stenotomus chrysops,Scup,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast US,ASMFC,"Summer Flounder, Scup and Black Sea Bass",NMFS/Rutgers IDW Interpolation
+Stenotomus chrysops,Scup,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast US,MAFMC,"Summer Flounder, Scup and Black Sea Bass",NMFS/Rutgers IDW Interpolation
+Synodus foetens,Inshore lizardfish,"Aulopiformes (Grinners, lizardfish)",US East Coast,Northeast US,,,Not for IDW
+Tautogolabrus adspersus,Cunner,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Northeast US,,,Not for IDW
+Trachurus lathami,Rough scad,Carangiformes (Jacks),US East Coast,Northeast US,,,Not for IDW
+Trichiurus lepturus,Atlantic cutlassfish,Scombriformes (Mackerels),US East Coast,Northeast US,,,Not for IDW
+Urophycis chuss,Red hake,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast US,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
+Urophycis regia,Spotted hake,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast US,,,NMFS/Rutgers IDW Interpolation
+Urophycis tenuis,White hake,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Northeast US,NEFMC,Northeast Multispecies,NMFS/Rutgers IDW Interpolation
+Crangon septemspinosa,Sevenspine bay shrimp,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast US,,,Not for IDW
+Etropus microstomus,Smallmouth flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Northeast US,,,Not for IDW
+Lebbeus polaris,Polar lebbeid,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Northeast US,,,Not for IDW
+Menidia menidia,Atlantic silverside,Atheriniformes (Silversides),US East Coast,Northeast US,,,Not for IDW
+Acanthostracion quadricornis,Scrawled cowfish,Tetraodontiformes (puffers and filefishes),US East Coast,Southeast US,,,Not for IDW
+Aetobatus narinari,Spotted eagle ray,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Southeast US,,,Not for IDW
+Alosa aestivalis,Blueback herring,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Southeast US,ASMFC,Interstate Fishery Management Plan ,Not for IDW
+Aluterus schoepfii,Orange filefish,Tetraodontiformes (puffers and filefishes),US East Coast,Southeast US,,,Not for IDW
+Ancylopsetta quadrocellata,Ocellated flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Archosargus probatocephalus,Sheepshead,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,,,Not for IDW
+Arenaeus cribrarius,Speckled swimming crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Ariopsis felis,Hardhead catfish,Siluriformes (catfishes),US East Coast,Southeast US,,,Not for IDW
+Bagre marinus,Gafftopsail catfish,Siluriformes (catfishes),US East Coast,Southeast US,,,Not for IDW
+Bairdiella chrysoura,Silver perch,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Brevoortia smithi,Yellowfin menhaden,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Southeast US,,,Not for IDW
+Brevoortia tyrannus,Atlantic menhaden,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Southeast US,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
+Calamus leucosteus,Whitebone porgy,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,,,Not for IDW
+Calappa flammea,Flame box crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,Not for IDW
+Callinectes ornatus,Shelling crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Callinectes sapidus,Blue crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Callinectes similis,Lesser blue crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Caranx crysos,Blue runner,Carangiformes (Jacks),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Caranx hippos,Crevalle jack,Carangiformes (Jacks),US East Coast,Southeast US,,,Not for IDW
+Carcharhinus acronotus,Blacknose shark,Elasmobranchii: Selachii (sharks),US East Coast,Southeast US,Atlantic HMS,Consolidated Atlantic Highly Migratory Species,Not for IDW
+Carcharhinus limbatus,Blacktip shark,Elasmobranchii: Selachii (sharks),US East Coast,Southeast US,Atlantic HMS,Consolidated Atlantic Highly Migratory Species,Not for IDW
+Centropristis philadelphica,Rock sea bass,Perciformes/Serranoidei (Groupers),US East Coast,Southeast US,SAFMC,Snapper-Grouper Fishery of the South Atlantic Region,NMFS/Rutgers IDW Interpolation
+Centropristis striata,Black sea bass,Perciformes/Serranoidei (Groupers),US East Coast,Southeast US,SAFMC,Snapper-Grouper Fishery of the South Atlantic Region,NMFS/Rutgers IDW Interpolation
+Chaetodipterus faber,Atlantic spadefish,Acanthuriformes (Surgeonfishes),US East Coast,Southeast US,SAFMC,Snapper-Grouper Fishery of the South Atlantic Region,NMFS/Rutgers IDW Interpolation
+Chilomycterus schoepfii,Striped burrfish,Tetraodontiformes (puffers and filefishes),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Chloroscombrus chrysurus,Atlantic bumper,Carangiformes (Jacks),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Citharichthys macrops,Spotted whiff,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Citharichthys spilopterus,Bay whiff,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Cynoscion nebulosus,Spotted weakfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,,,Not for IDW
+Cynoscion nothus,Silver seatrout,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Cynoscion regalis,Weakfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
+Cynoscion regalis,Weakfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,SAFMC,Snapper-Grouper Fishery of the South Atlantic Region,NMFS/Rutgers IDW Interpolation
+Decapterus punctatus,Round scad,Carangiformes (Jacks),US East Coast,Southeast US,,,Not for IDW
+Diplectrum formosum,Sand perch,Perciformes/Serranoidei (Groupers),US East Coast,Southeast US,,,Not for IDW
+Echeneis naucrates,Sharksucker,Carangiformes (Jacks),US East Coast,Southeast US,,,Not for IDW
+Etropus crossotus,Fringed flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Etropus cyclosquamus,Shelf flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Gibbesia neglecta,Lesser mantis shrimp,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Gymnachirus melas,Naked sole,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast US,,,Not for IDW
+Gymnura altavela,Spiny butterfly ray,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Southeast US,,,Not for IDW
+Gymnura micrura,Smooth butterfly ray,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Harengula jaguana,Scaled sardine,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Hepatus epheliticus,Calico box crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Hippocampus erectus,Lined seahorse,Syngnathiformes (Seahorses),US East Coast,Southeast US,,,Not for IDW
+Lagocephalus laevigatus,Smooth puffer,Tetraodontiformes (puffers and filefishes),US East Coast,Southeast US,,,Not for IDW
+Lagodon rhomboides,Pinfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Larimus fasciatus,Banded drum,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Leiostomus xanthurus,Spot,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
+Limulus polyphemus,Horseshoe crab,Xiphosura (horseshoe crabs),US East Coast,Southeast US,ASMFC,Interstate Fishery Management Plan ,Not for IDW
+Lolliguncula brevis,Atlantic brief squid,"Cephalopoda (squid, octopus)",US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Lutjanus synagris,Lane snapper,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,,,Not for IDW
+Menippe mercenaria,Florida stone crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,Not for IDW
+Menticirrhus americanus,Southern kingfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Menticirrhus littoralis,Gulf kingfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Menticirrhus saxatilis,Northern kingfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,,,Not for IDW
+Micropogonias undulatus,Atlantic croaker,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
+Mobula hypostoma,Devil ray,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Southeast US,,,Not for IDW
+Mugil curema,White mullet,Mugiliformes (Mullets),US East Coast,Southeast US,,,Not for IDW
+Myliobatis freminvillei,Bullnose eagle ray,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Narcine brasiliensis,Brazilian electric ray,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Southeast US,,,Not for IDW
+Octopus vulgaris,Common octopus,"Cephalopoda (squid, octopus)",US East Coast,Southeast US,,,Not for IDW
+Ogcocephalus cubifrons,NA,Lophiiformes (Anglerfishes),US East Coast,Southeast US,,,Not for IDW
+Ogcocephalus rostellum,Palefin batfish,Lophiiformes (Anglerfishes),US East Coast,Southeast US,,,Not for IDW
+Opisthonema oglinum,Atlantic thread herring,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Orthopristis chrysoptera,Pigfish,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Ovalipes ocellatus,Ocellate lady crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Ovalipes stephensoni,Coarsehand lady crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Pagurus longicarpus,Longwrist hermit crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,Not for IDW
+Pagurus pollicaris,Gray hermit crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Paralichthys albigutta,Gulf flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast US,,,Not for IDW
+Paralichthys dentatus,Summer flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast US,ASMFC,"Summer Flounder, Scup and Black Sea Bass",NMFS/Rutgers IDW Interpolation
+Paralichthys dentatus,Summer flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast US,MAFMC,"Summer Flounder, Scup and Black Sea Bass",NMFS/Rutgers IDW Interpolation
+Paralichthys lethostigma,Southern flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Peprilus paru,Harvestfish,Scombriformes (Mackerels),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Peprilus triacanthus,American butterfish,Scombriformes (Mackerels),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Persephona mediterranea,Mottled purse crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Pilumnus sayi,Spineback hairy crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,Not for IDW
+Pogonias cromis,Black drum,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,ASMFC,Interstate Fishery Management Plan ,Not for IDW
+Pomatomus saltatrix,Bluefish,Scombriformes (Mackerels),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Porcellana sigsbeiana,Striped porcelain crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,Not for IDW
+Portunus sayi,Sargassum swimming crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,Not for IDW
+Prionotus carolinus,Northern searobin,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Prionotus evolans,Striped searobin,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Prionotus rubio,Blackwing searobin,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Prionotus scitulus,Leopard searobin,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Prionotus tribulus,Bighead searobin,Perciformes/Scorpaenoidei (Scorpionfishes),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Rachycentron canadum,Cobia,Carangiformes (Jacks),US East Coast,Southeast US,,,Not for IDW
+Rhinoptera bonasus,Cownose ray,"Elasmobranchii: Batoidea (skates, rays)",US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Rhizoprionodon terraenovae,Atlantic sharpnose shark,Elasmobranchii: Selachii (sharks),US East Coast,Southeast US,Atlantic HMS,Consolidated Atlantic Highly Migratory Species,NMFS/Rutgers IDW Interpolation
+Rimapenaeus constrictus,Roughneck shrimp,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,Not for IDW
+Sardinella aurita,Spanish sardine,"Clupeiformes (Herrings, anchovy, shad)",US East Coast,Southeast US,,,Not for IDW
+Scomberomorus cavalla,King mackerel,Scombriformes (Mackerels),US East Coast,Southeast US,GMFMC,Coastal Migratory Pelagic Resources of the Gulf of Mexico and South Atlantic,NMFS/Rutgers IDW Interpolation
+Scomberomorus cavalla,King mackerel,Scombriformes (Mackerels),US East Coast,Southeast US,SAFMC,Coastal Migratory Pelagic Resources of the Gulf of Mexico and South Atlantic,NMFS/Rutgers IDW Interpolation
+Scomberomorus maculatus,Spanish mackerel,Scombriformes (Mackerels),US East Coast,Southeast US,ASMFC,Interstate Fishery Management Plan ,NMFS/Rutgers IDW Interpolation
+Scomberomorus maculatus,Spanish mackerel,Scombriformes (Mackerels),US East Coast,Southeast US,GMFMC,Coastal Migratory Pelagic Resources of the Gulf of Mexico and South Atlantic,NMFS/Rutgers IDW Interpolation
+Scomberomorus maculatus,Spanish mackerel,Scombriformes (Mackerels),US East Coast,Southeast US,SAFMC,Coastal Migratory Pelagic Resources of the Gulf of Mexico and South Atlantic,NMFS/Rutgers IDW Interpolation
+Scophthalmus aquosus,Windowpane flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Selene setapinnis,Atlantic moonfish,Carangiformes (Jacks),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Selene vomer,Lookdown,Carangiformes (Jacks),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Sphoeroides maculatus,Northern puffer,Tetraodontiformes (puffers and filefishes),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Sphyraena guachancho,Guachanche barracuda,"Carangaria/misc (barracuda, threadfins)",US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Sphyrna lewini,Scalloped hammerhead,Elasmobranchii: Selachii (sharks),US East Coast,Southeast US,Atlantic HMS,Consolidated Atlantic Highly Migratory Species,Not for IDW
+Sphyrna tiburo,Bonnethead,Elasmobranchii: Selachii (sharks),US East Coast,Southeast US,Atlantic HMS,Consolidated Atlantic Highly Migratory Species,NMFS/Rutgers IDW Interpolation
+Squilla empusa,Mantis shrimp,Stomatopoda (mantis shrimp),US East Coast,Southeast US,SAFMC,Shrimp Fishery of the South Atlantic Region,NMFS/Rutgers IDW Interpolation
+Stellifer lanceolatus,Star drum,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Stephanolepis hispida,Planehead filefish,Tetraodontiformes (puffers and filefishes),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Stomolophus meleagris,Cannonball jellyfish,"Cnidaria (jellyfish, corals, anenomes) ",US East Coast,Southeast US,,,Not for IDW
+Syacium papillosum,Dusky flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast US,,,Not for IDW
+Symphurus plagiusa,Blackcheek tonguefish,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Synodus foetens,Inshore lizardfish,"Aulopiformes (Grinners, lizardfish)",US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Trachinotus carolinus,Florida pompano,Carangiformes (Jacks),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Trichiurus lepturus,Atlantic cutlassfish,Scombriformes (Mackerels),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Trinectes maculatus,Hogchoker,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Urophycis earllii,Carolina hake,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Southeast US,,,Not for IDW
+Xiphopenaeus kroyeri,Atlantic seabob,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Cancer irroratus,Atlantic rock crab,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,Not for IDW
+Mustelus canis,Smooth dogfish,Elasmobranchii: Selachii (sharks),US East Coast,Southeast US,Atlantic HMS,Consolidated Atlantic Highly Migratory Species,Not for IDW
+Oligoplites saurus,Leatherjacket,Carangiformes (Jacks),US East Coast,Southeast US,,,Not for IDW
+Ophidion marginatum,Striped cusk-eel,Ophidiiformes (Cusk eels) ,US East Coast,Southeast US,,,Not for IDW
+Sicyonia brevirostris,Brown rock shrimp,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,SAFMC,Shrimp Fishery of the South Atlantic Region,Not for IDW
+Squalus acanthias,Spiny dogfish,Elasmobranchii: Selachii (sharks),US East Coast,Southeast US,,,Not for IDW
+Syngnathus louisianae,Chain pipefish,Syngnathiformes (Seahorses),US East Coast,Southeast US,,,Not for IDW
+Trachurus lathami,Rough scad,Carangiformes (Jacks),US East Coast,Southeast US,,,Not for IDW
+Upeneus parvus,Dwarf goatfish,Mulliformes (Goatfishes),US East Coast,Southeast US,,,Not for IDW
+Urophycis floridana,Southern hake,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Southeast US,,,Not for IDW
+Urophycis regia,Spotted hake,"Gadiformes (Cods, genadiers, pollock) ",US East Coast,Southeast US,,,NMFS/Rutgers IDW Interpolation
+Alectis ciliaris,African pompano,Carangiformes (Jacks),US East Coast,Southeast US,,,Not for IDW
+Carcharhinus brevipinna,Spinner shark,Elasmobranchii: Selachii (sharks),US East Coast,Southeast US,,,Not for IDW
+Gobiosoma bosc,Naked goby,Gobiiformes (Gobies),US East Coast,Southeast US,,,Not for IDW
+Haemulon aurolineatum,Tomtate grunt,"Eupercaria (drums, croakers, porgies, tilefishes, parrotfish, snappers) ",US East Coast,Southeast US,,,Not for IDW
+Hypleurochilus geminatus,Crested blenny,Blenniiformes (Blennies),US East Coast,Southeast US,,,Not for IDW
+Opsanus tau,Oyster toadfish,Batrachoidiformes (Toadfishes),US East Coast,Southeast US,,,Not for IDW
+Paralichthys squamilentus,Broad flounder,Pleuronectiformes (Flatfishes) ,US East Coast,Southeast US,,,Not for IDW
+Petrochirus diogenes,Giant hermit,Decapoda (Crabs/Lobster/Shrimp),US East Coast,Southeast US,,,Not for IDW
+Porichthys plectrodon,Atlantic midshipman,Batrachoidiformes (Toadfishes),US East Coast,Southeast US,,,Not for IDW
 Albatrossia pectoralis,Giant grenadier,"Gadiformes (Cods, genadiers, pollock) ",US West Coast,West Coast,PFMC,Pacific Coast Groundfish,NMFS/Rutgers IDW Interpolation
 Alepocephalus tenebrosus,California slickhead,Alepocephaliformes (Slickheads and tubeshoulders.),US West Coast,West Coast,,,NMFS/Rutgers IDW Interpolation
 Alosa sapidissima,American shad,"Clupeiformes (Herrings, anchovy, shad)",US West Coast,West Coast,,,NMFS/Rutgers IDW Interpolation
