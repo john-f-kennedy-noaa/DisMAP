@@ -2341,9 +2341,9 @@ dfuniq_Core<-unique(spplist_core[c("spp", "common")])
 length(dfuniq_Core)
 
 #[OLD] number of unique species caught in each regional survey (expanded data set)
-spp_reg_counts<-spplist %>%
-  group_by(region)%>%
-  summarise(distinct_spp=n_distinct(spp))
+# spp_reg_counts<-spplist %>%
+#   group_by(region)%>%
+#   summarise(distinct_spp=n_distinct(spp))
 
 # number of unique species in the species persistence module (5% of tows in a year in at <= 2 of  survey years)
 spp_pers <- trimmed_dat_fltr_expanded %>%
