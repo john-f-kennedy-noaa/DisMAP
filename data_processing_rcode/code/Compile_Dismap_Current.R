@@ -2340,10 +2340,17 @@ dfuniq<-unique(spplist[c("spp", "common", "region")]) %>%
 dfuniq_Core<-unique(spplist_core[c("spp", "common")])
 length(dfuniq_Core)
 
-#number of unique species caught in each regional survey (expanded data set)
+#[OLD] number of unique species caught in each regional survey (expanded data set)
 spp_reg_counts<-spplist %>%
   group_by(region)%>%
   summarise(distinct_spp=n_distinct(spp))
+
+# number of unique species in the species persistence module (5% of tows in a year in at <= 2 of  survey years)
+spp_pers <- trimmed_dat_fltr_expanded %>%
+  select(region, spp, common) %>%
+  distinct() %>%
+  group_by(region) %>%
+  summarise(spp_pers = n())
 
 #number of unique species within each regional survey (caught 3/4 or years)
 spp_reg_counts_quarters<-spplist2 %>%
@@ -2355,7 +2362,7 @@ spp_reg_counts_Core<-spplist_core%>%
   group_by(region)%>%
   summarise(spp_all_yrs=n_distinct(spp))
 
-num_spp_summary<-left_join(spp_reg_counts, spp_reg_counts_quarters, by=c("region"))
+num_spp_summary<-left_join(spp_pers, spp_reg_counts_quarters, by=c("region"))
 num_spp_summary<-left_join(num_spp_summary, spp_reg_counts_Core, by=c("region"))
 # write.csv(num_spp_summary, file=here("data_processing_rcode/output/data_clean", "summary_unique_spp_table_7_10_25.csv"))
 # write.csv(spplist_core, file=here("data_processing_rcode/output/data_clean","core_spp_list_7_10_25.csv"))
