@@ -100,7 +100,7 @@ data$survey <- ifelse(data$region == "Aleutian Islands", "Aleutian Islands Botto
                                                                                  ifelse(data$region == "Southeast US Summer", "SEAMAP Summer Coastal Trawl Survey",
                                                                                         ifelse(data$region == "West Coast Annual", "West Coast Bottom Trawl Annual",
                                                                                                ifelse(data$region == "West Coast Triennial", "West Coast Bottom Trawl Triennial",
-                                                                                                      ifelse(data$region == "Hawaii", "Bottomfish Fishery-Independent Survey in Hawaii (BFISH)",
+                                                                                                      ifelse(data$region == "Hawai'i Islands", "Bottomfish Fishery-Independent Survey in Hawaii (BFISH)",
                                                                                                              ifelse(data$region == "Eastern and Northern Bering Sea", NA, NA))))))))))))))
 
 data_update <- data %>%
@@ -119,7 +119,7 @@ data_update$region <- ifelse(data_update$region_old == "Aleutian Islands", "Aleu
                                                                               ifelse(data_update$region_old == "Southeast US Spring", "Southeast US",
                                                                                      ifelse(data_update$region_old == "Southeast US Summer", "Southeast US",
                                                                                             ifelse(data_update$region_old == "West Coast Annual", "West Coast",
-                                                                                                   ifelse(data_update$region_old == "Hawaii", "Hawai'i Islands",
+                                                                                                   ifelse(data_update$region_old == "Hawai'i Islands", "Hawai'i Islands",
                                                                                                           ifelse(data_update$region_old == "West Coast Triennial", "West Coast", NA)))))))))))))
 
 ```
