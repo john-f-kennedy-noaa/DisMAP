@@ -46,3 +46,4 @@
 *.log
 *.markdown
 *.rmarkdown
+__init__.py
