@@ -175,3 +175,8 @@ src/dismap_tools/__init__.*
 !src/dismap_tools/*.py
 !src/*.zip
 !DisMAP.atbx*
+utils.py
+setup.py
+main.py
+.gitignore
+conftest.py
