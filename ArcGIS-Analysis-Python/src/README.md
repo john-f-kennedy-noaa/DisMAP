@@ -1,20 +1,14 @@
-# [The Distribution Mapping and Analysis Portal (DisMAP)](https://github.com/nmfs-fish-tools/DisMAP) 
-
+# DisMAP ArcGIS Pro Analysis using Python
 > This code is always in development. Find code used for various reports in the code [releases](https://github.com/nmfs-fish-tools/DisMAP/releases).
 
-The NOAA Fisheries Distribution Mapping and Analysis Portal (DisMAP) provides easy access to information to track and understand distributions of marine fish and macroinvertebrate species in the U.S. Marine Ecosystems. The portal currently provides access to distribution information for over 400 species collected in fishery-independent bottom trawl surveys conducted by NOAA Fisheries or its partners. The portal provides information on three key indicators used to track and explore shifts in species distributions:
-  * Distribution of biomass in space and time (i.e., distribution surface)
-  * Center of biomass
-  * Range limits
+Explanation of Files and Folders:
+1. dismap_tools folder
+a) This folder houses the scripts for generating the interpolated biomass and calculating the distribution indicators (latitude, depth, range limits, etc). 
 
-This repository provides the data processing and analysis code used to develop the spatial distribution and indicators presented in the portal. For more information and to launch the portal visit: https://apps-st.fisheries.noaa.gov/dismap/index.html. 
-
-Explanation of Folders:
-1. data_processing_rcode
-This folder holds all the R scripts needed to download and process the regional bottom trawl survey data. Opening up the DisMAP_Project Rproject file will open all necessary Rscripts to run the analysis and set up the appropriate directory structure. You will need to follow the instructions in each of the "download_x.R" scripts for each to download or obtain from a regional POC the raw survey data. Once the data is downloaded and in the "data" folder, you may run the Compile_Dismap_Current.R script to process and clean the data. After running Compile_Dismap_Current.R, run the create_data_for_map_generation.R to get the data in the needed file format for use in the Python script and generte the interpolated biomass and indicators (as described below)
-
-2. ArcGIS Analysis - Python
-This folder houses the scripts for generating the interpolated biomass and calculating the distribution indicators (latitude, depth, range limits, etc). 
+b) This folder holds all the Pythn scripts needed to process the regional bottom trawl survey data.
+c) Opening up the DisMAP_Project Rproject file will open all necessary Rscripts to run the analysis and set up the appropriate directory structure.
+ d) You will need to follow the instructions in each of the "download_x.R" scripts for each to download or obtain from a regional POC the raw survey data.
+ e) Once the data is downloaded and in the "data" folder, you may run the Compile_Dismap_Current.R script to process and clean the data. After running Compile_Dismap_Current.R, run the create_data_for_map_generation.R to get the data in the needed file format for use in the Python script and generte the interpolated biomass and indicators (as described below)
 
 ## Suggestions and Comments
 
