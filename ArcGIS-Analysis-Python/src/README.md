@@ -1,7 +1,7 @@
 # DisMAP ArcGIS Pro Analysis using Python
 > This code is always in development. Find the code used for various reports in the code [releases](https://github.com/nmfs-fish-tools/DisMAP/releases).
 
-Explanation of Files and Folders:
+#### Explanation of Files and Folders
 1. dismap_tools folder - This folder contains the current version of Python scripts for generating the interpolated biomass and calculating the distribution indicators (latitude, depth, range limits, etc). 
 
 2. dismap_tools_v20230401 zip file - This file contains the Python scripts used in generating the 20230401 version of interpolated biomass and calculating the distribution indicators (latitude, depth, range limits, etc). 
@@ -10,7 +10,7 @@ Explanation of Files and Folders:
 
 4. dismap_tools_v20250801 zip file - This file contains the Python scripts used in generating the 20250801 version of interpolated biomass and calculating the distribution indicators (latitude, depth, range limits, etc).
 
-## Suggestions and Comments
+#### Suggestions and Comments
 
 If you see that the data, product, or metadata can be improved, you are
 invited to create a [pull
@@ -18,23 +18,20 @@ request](https://github.com/nmfs-fish-tools/DisMAP/pulls)
 or [submit an issue to the code’s
 repository](https://github.com/nmfs-fish-tools/DisMAP/issues).
 
-## NOAA README
+#### NOAA-NMFS GitHub Enterprise Disclaimer
 
-This repository is a scientific product and is not official
-communication of the National Oceanic and Atmospheric Administration, or
-the United States Department of Commerce. All NOAA GitHub project code
-is provided on an ‘as is’ basis and the user assumes responsibility for
-its use. Any claims against the Department of Commerce or Department of
-Commerce bureaus stemming from the use of this GitHub project will be
-governed by all applicable Federal law. Any reference to specific
-commercial products, processes, or services by service mark, trademark,
-manufacturer, or otherwise, does not constitute or imply their
-endorsement, recommendation or favoring by the Department of Commerce.
-The Department of Commerce seal and logo, or the seal and logo of a DOC
-bureau, shall not be used in any manner to imply endorsement of any
-commercial product or activity by DOC or the United States Government.
+This repository is a scientific product and is not official communication of the National Oceanic 
+and Atmospheric Administration, or the United States Department of Commerce. All NOAA GitHub project 
+code is provided on an ‘as is’ basis and the user assumes responsibility for its use. Any claims 
+against the Department of Commerce or Department of Commerce bureaus stemming from the use of this 
+GitHub project will be governed by all applicable Federal law. Any reference to specific commercial 
+products, processes, or services by service mark, trademark, manufacturer, or otherwise, does not 
+constitute or imply their endorsement, recommendation or favoring by the Department of Commerce. 
+The Department of Commerce seal and logo, or the seal and logo of a DOC bureau, shall not be used 
+in any manner to imply endorsement of any commercial product or activity by DOC or the United States
+Government.
 
-## NOAA License
+#### NOAA License
 
 Software code created by U.S. Government employees is not subject to
 copyright in the United States (17 U.S.C. §105). The United
@@ -50,4 +47,3 @@ works of the Software outside of the United States.
 [U.S. Department of Commerce](https://www.commerce.gov/) \| [National
 Oceanographic and Atmospheric Administration](https://www.noaa.gov) \|
 [NOAA Fisheries](https://www.fisheries.noaa.gov/)
-
