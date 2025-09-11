@@ -147,7 +147,6 @@ July 1 2024
 December 1 2024
 August 1 2025
 
-
 GpMessages
 Index
 layout
@@ -159,11 +158,10 @@ SharingMainLog.xml
 
 Datasets
 ArcGIS2InPort.xsl
-FieldAliasesTools.BulkAssignAliases.pyt.xml
-FieldAliasesTools.pyt
-FieldAliasesTools.pyt.xml
-LayerSpeciesYearImageName.xlsx
-Step6CreateSupportTablesScript.py
+#FieldAliasesTools.BulkAssignAliases.pyt.xml
+#FieldAliasesTools.pyt
+#FieldAliasesTools.pyt.xml
+
 __init__.py
 NOAA Geoportal Metadata Export
 test
@@ -174,7 +172,7 @@ src/dismap_tools/__init__.*
 
 !src/dismap_tools/*.py
 !src/*.zip
-!DisMAP.atbx*
+!DisMAP.atbx
 utils.py
 setup.py
 main.py
