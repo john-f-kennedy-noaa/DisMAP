@@ -1,14 +1,14 @@
 # DisMAP ArcGIS Pro Analysis using Python
-> This code is always in development. Find code used for various reports in the code [releases](https://github.com/nmfs-fish-tools/DisMAP/releases).
+> This code is always in development. Find the code used for various reports in the code [releases](https://github.com/nmfs-fish-tools/DisMAP/releases).
 
 Explanation of Files and Folders:
-1. dismap_tools folder
-a) This folder houses the scripts for generating the interpolated biomass and calculating the distribution indicators (latitude, depth, range limits, etc). 
+1. dismap_tools folder - This folder contains the current version of Python scripts for generating the interpolated biomass and calculating the distribution indicators (latitude, depth, range limits, etc). 
 
-b) This folder holds all the Pythn scripts needed to process the regional bottom trawl survey data.
-c) Opening up the DisMAP_Project Rproject file will open all necessary Rscripts to run the analysis and set up the appropriate directory structure.
- d) You will need to follow the instructions in each of the "download_x.R" scripts for each to download or obtain from a regional POC the raw survey data.
- e) Once the data is downloaded and in the "data" folder, you may run the Compile_Dismap_Current.R script to process and clean the data. After running Compile_Dismap_Current.R, run the create_data_for_map_generation.R to get the data in the needed file format for use in the Python script and generte the interpolated biomass and indicators (as described below)
+2. dismap_tools_v20230401 zip file - This file contains the Python scripts used in generating the 20230401 version of interpolated biomass and calculating the distribution indicators (latitude, depth, range limits, etc). 
+
+3. dismap_tools_v20240701 zip file - This file contains the Python scripts used in generating the 20240701 version of interpolated biomass and calculating the distribution indicators (latitude, depth, range limits, etc).
+
+4. dismap_tools_v20250801 zip file - This file contains the Python scripts used in generating the 20250801 version of interpolated biomass and calculating the distribution indicators (latitude, depth, range limits, etc).
 
 ## Suggestions and Comments
 
