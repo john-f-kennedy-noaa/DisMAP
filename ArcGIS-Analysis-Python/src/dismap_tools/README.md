@@ -4,6 +4,54 @@
 ### Explanation of Files and Folders
 1)
 
+create_base_bathymetry.py
+create_data_dictionary_json_files.py
+
+create_indicators_table_director.py
+create_indicators_table_worker.py
+
+create_metadata_json_files.py
+
+create_mosaics_director.py
+create_mosaics_worker.py
+
+create_rasters_director.py
+create_rasters_worker.py
+
+create_regions_from_shapefiles_director.py
+create_regions_from_shapefiles_worker.py
+
+create_region_bathymetry_director.py
+create_region_bathymetry_worker.py
+
+create_region_fishnets_director.py
+create_region_fishnets_worker.py
+
+create_region_sample_locations_director.py
+create_region_sample_locations_worker.py
+
+create_species_richness_rasters_director.py
+create_species_richness_rasters_worker.py
+
+create_species_year_image_name_table_director.py
+create_species_year_image_name_table_worker.py
+
+dev_dismap_director.py
+dev_dismap_metadata_processing.py
+dev_export_arcgis_metadata.py
+dev_zip_and_unzip_csv_data.py
+
+dismap_metadata_processing.py
+dismap_project_setup.py
+dismap_tools.py
+
+import_datasets_species_filter_csv_data.py
+
+publish_to_portal_director.py
+
+zip_and_unzip_csv_data.py
+zip_and_unzip_shapefile_data.py
+
 #### Suggestions and Comments
 
 If you see that the data, product, or metadata can be improved, you are
