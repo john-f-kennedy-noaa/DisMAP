@@ -11,7 +11,6 @@
 #-------------------------------------------------------------------------------
 import os, sys # built-ins first
 import traceback
-
 import inspect
 
 import arcpy # third-parties second
