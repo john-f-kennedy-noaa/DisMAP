@@ -134,7 +134,6 @@ ImportLog
 #############
 ## ArcGIS-Analysis-Python ignores
 #############
-#.gitignore
 .pyHistory
 *.zip
 *.docx
@@ -158,9 +157,9 @@ SharingMainLog.xml
 
 Datasets
 ArcGIS2InPort.xsl
-#FieldAliasesTools.BulkAssignAliases.pyt.xml
-#FieldAliasesTools.pyt
-#FieldAliasesTools.pyt.xml
+FieldAliasesTools.BulkAssignAliases.pyt.xml
+FieldAliasesTools.pyt
+FieldAliasesTools.pyt.xml
 
 __init__.py
 NOAA Geoportal Metadata Export
@@ -171,10 +170,19 @@ src/dismap_tools/__pycache__
 src/dismap_tools/__init__.*
 
 !src/dismap_tools/*.py
-!src/*.zip
-!DisMAP.atbx
+
+!src/dismap_tools/*.py
+src/dismap_tools/__pycache__
+src/dismap_tools/__init__.py
+src/dismap_tools_v20230401/*
+src/*.zip
+
+DisMAP.atbx
 utils.py
 setup.py
 main.py
-.gitignore
 conftest.py
+*.xml
+*.pyt
+Data/*
+Dataset Shapefiles/*
