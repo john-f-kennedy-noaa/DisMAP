@@ -1,21 +1,57 @@
 # DisMAP ArcGIS Pro Analysis using Python
 > This code is always in development. Find the code used for various reports in the code [releases](https://github.com/nmfs-fish-tools/DisMAP/releases).
 
-#### Explanation of Files and Folders
-1. Version Folders -- The version folders (i.e. April 1 2023) contain all the files, datasets, and databases for the listed version.
-    a. May 16 2022 -- 20220516 version (e.g. DisMAP_Regions_20220516)
-    b. April 1 2023 -- 20230401 version (e.g. DisMAP_Regions_20230401)
-    c. July 1 2024 -- 20240701 version (e.g. DisMAP_Regions_20240701)
-    d. December 1 2024 -- 20241201 version (e.g. HI_Sample_Locations_20241201)
-    e. August 1 2025 -- 20250801 version (e.g. DisMAP_Regions_20250801), Current Version
+### Explanation of Files and Folders
 
-2. Data Folders -- These folder contain input data needed for the DisMAP Python processing
-    a. Bathymetry -- This folder contains the sourece bathymetry data for all regions and the processed bathymetry contained in the Bathymetry.gdb 
-    b. Data -- This folder contains the CSV IDW data for each region, plus CSV support tables
-    c. Dataset Shapefiles -- This folder contains the shapefiles for each region
+1)
 
-3. src Folder -- This folder contains the current and past versions of Python scripts for generating the interpolated biomass and calculating the distribution indicators (latitude, depth, range limits, etc). 
+create_base_bathymetry.py
+create_data_dictionary_json_files.py
 
+create_indicators_table_director.py
+create_indicators_table_worker.py
+
+create_metadata_json_files.py
+
+create_mosaics_director.py
+create_mosaics_worker.py
+
+create_rasters_director.py
+create_rasters_worker.py
+
+create_regions_from_shapefiles_director.py
+create_regions_from_shapefiles_worker.py
+
+create_region_bathymetry_director.py
+create_region_bathymetry_worker.py
+
+create_region_fishnets_director.py
+create_region_fishnets_worker.py
+
+create_region_sample_locations_director.py
+create_region_sample_locations_worker.py
+
+create_species_richness_rasters_director.py
+create_species_richness_rasters_worker.py
+
+create_species_year_image_name_table_director.py
+create_species_year_image_name_table_worker.py
+
+dev_dismap_director.py
+dev_dismap_metadata_processing.py
+dev_export_arcgis_metadata.py
+dev_zip_and_unzip_csv_data.py
+
+dismap_metadata_processing.py
+dismap_project_setup.py
+dismap_tools.py
+
+import_datasets_species_filter_csv_data.py
+
+publish_to_portal_director.py
+
+zip_and_unzip_csv_data.py
+zip_and_unzip_shapefile_data.py
 
 #### Suggestions and Comments
 
