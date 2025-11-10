@@ -134,55 +134,37 @@ ImportLog
 #############
 ## ArcGIS-Analysis-Python ignores
 #############
-.pyHistory
-*.zip
-*.docx
+# Ignore Folders
 .backups
 .ipynb_checkpoints
-Bathymetry
+__pycache__
 April 1 2023
-May 1 2023
-July 1 2024
-December 1 2024
 August 1 2025
 
-GpMessages
-Index
-layout
-RasterFunctionsHistory
-RasterFunctionTemplates
-
-server on maps.fisheries.noaa.gov.ags
-SharingMainLog.xml
-
-Datasets
-ArcGIS2InPort.xsl
-FieldAliasesTools.BulkAssignAliases.pyt.xml
-FieldAliasesTools.pyt
-FieldAliasesTools.pyt.xml
-
-__init__.py
-NOAA Geoportal Metadata Export
-test
-ThematicMapSeries_Pro25
-
-src/dismap_tools/__pycache__
-src/dismap_tools/__init__.*
-
-!src/dismap_tools/*.py
-
-!src/dismap_tools/*.py
-src/dismap_tools/__pycache__
-src/dismap_tools/__init__.py
-src/dismap_tools_v20230401/*
-src/*.zip
-
-DisMAP.atbx
-utils.py
-setup.py
-main.py
-conftest.py
-*.xml
-*.pyt
+Bathymetry
 Data/*
 Dataset Shapefiles/*
+December 1 2024
+GpMessages
+ImportLog/*
+Index
+July 1 2024
+Layout
+May 16 2022
+RasterFunctionsHistory
+RasterFunctionTemplates
+Scratch/*
+# Ignore Files
+*.ags
+*.docx
+.pyHistory
+*.py
+*.pyt 
+*.xml
+*.xsl
+*.zip
+__init__.py
+
+# Do not ignore script files
+!src/dismap_tools/*.py
+
