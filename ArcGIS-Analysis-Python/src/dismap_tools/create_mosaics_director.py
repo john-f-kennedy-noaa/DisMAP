@@ -333,26 +333,27 @@ def script_tool(project_gdb=""):
         del gmtime, localtime, strftime, time
 
     except KeyboardInterrupt:
+        arcpy.AddError(f"Caught an KeyboardInterrupt in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}.")
         sys.exit()
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(f"Caught an arcpy.ExecuteWarning error in the '{inspect.stack()[0][3]}' function.")
+        arcpy.AddWarning(f"Caught an arcpy.ExecuteWarning error in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}.")
         arcpy.AddWarning(arcpy.GetMessages(1))
         traceback.print_exc()
         sys.exit()
     except arcpy.ExecuteError:
-        arcpy.AddError(f"Caught an arcpy.ExecuteError error in the '{inspect.stack()[0][3]}' function.")
+        arcpy.AddError(f"Caught an arcpy.ExecuteError error in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}.")
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
     except SystemExit as se:
-        arcpy.AddError(f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function.")
+        arcpy.AddError(f"Caught an SystemExit error: '{se}' in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}.")
         sys.exit()
     except Exception as e:
-        arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
+        arcpy.AddError(f"Caught an Exception error: '{e}' in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}.")
         traceback.print_exc()
         sys.exit()
     except:
-        arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
+        arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}.")
         traceback.print_exc()
         sys.exit()
     else:

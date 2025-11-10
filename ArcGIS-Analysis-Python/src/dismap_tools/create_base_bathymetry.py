@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #-------------------------------------------------------------------------------
-# Name:        module1
+# Name:        create_base_bathymetry
 # Purpose:
 #
 # Author:      john.f.kennedy
@@ -44,40 +44,35 @@ def raster_properties_report(dataset=""):
             del pixel_types
         del dataset
 
-    except KeyboardInterrupt:
-        raise SystemExit
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        raise SystemExit
     except SystemExit:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        raise SystemExit
     except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        raise SystemExit
     except:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        raise SystemExit
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        else:
+            pass
+        del rk
         return True
     finally:
         pass
 
-def create_alasaka_bathymetry(project_gdb=""):
+def create_alasaka_bathymetry(project_folder=""):
     try:
-        # Test if passed workspace exists, if not raise SystemExit
-
-        if not arcpy.Exists(project_gdb):
-
-            raise SystemExit(f"{os.path.basename(project_gdb)} is missing!!")
-
+        # Imports
         from dismap_tools import check_transformation
 
         # Set History and Metadata logs, set serverity and message level
@@ -89,32 +84,7 @@ def create_alasaka_bathymetry(project_gdb=""):
         arcpy.SetMessageLevels(['NORMAL']) # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
 
         # Set basic workkpace variables
-        project_folder = os.path.dirname(project_gdb)
-        base_folder = os.path.dirname(project_folder)
-
-        # Create Scratch Workspace for Project
-        if not arcpy.Exists(rf"{project_folder}\Scratch\scratch.gdb"):
-            if not arcpy.Exists(rf"{project_folder}\Scratch"):
-                os.makedirs(rf"{project_folder}\Scratch")
-            if not arcpy.Exists(rf"{project_folder}\Scratch\scratch.gdb"):
-                arcpy.management.CreateFileGDB(rf"{project_folder}\Scratch", f"scratch")
-
-        # Base Bathymetry Folder
-        if not os.path.isdir(rf"{base_folder}\Bathymetry"):
-            os.makedirs(rf"{base_folder}\Bathymetry")
-        # Base Bathymetry GDB
-        if not arcpy.Exists(rf"{base_folder}\Bathymetry\Bathymetry.gdb"):
-            arcpy.management.CreateFileGDB(rf"{base_folder}\Bathymetry", "Bathymetry")
-
-        # Project Bathymetry Folder
-        if not os.path.isdir(rf"{project_folder}\Bathymetry"):
-            os.makedirs(rf"{project_folder}\Bathymetry")
-        # Project Bathymetry GDB
-        if not arcpy.Exists(rf"{project_folder}\Bathymetry\Bathymetry.gdb"):
-            arcpy.management.CreateFileGDB(rf"{project_folder}\Bathymetry", "Bathymetry")
-
-        # Set basic workkpace variables
-        arcpy.env.workspace                = rf"{base_folder}\Bathymetry\Bathymetry.gdb"
+        arcpy.env.workspace                = rf"{project_folder}\Bathymetry\Bathymetry.gdb"
         arcpy.env.scratchWorkspace         = rf"{project_folder}\Scratch\scratch.gdb"
         arcpy.env.overwriteOutput          = True
         arcpy.env.parallelProcessingFactor = "100%"
@@ -132,23 +102,23 @@ def create_alasaka_bathymetry(project_gdb=""):
 # ###--->>> Setting up the base folder bathymetry for all projects
         # Set Alaska Bathymetry
 
-        ai_bathy         = rf"{base_folder}\Bathymetry\Alaska Bathymetry\AI_IDW_Bathy.grd"   # ASCII GRIDs
-        ebs_bathy        = rf"{base_folder}\Bathymetry\Alaska Bathymetry\EBS_IDW_Bathy.grd"  # ASCII GRIDs
-        goa_bathy        = rf"{base_folder}\Bathymetry\Alaska Bathymetry\GOA_IDW_Bathy.grd"  # ASCII GRIDs
+        ai_bathy         = rf"{project_folder}\Bathymetry\Alaska Bathymetry\AI_IDW_Bathy.grd"   # ASCII GRIDs
+        ebs_bathy        = rf"{project_folder}\Bathymetry\Alaska Bathymetry\EBS_IDW_Bathy.grd"  # ASCII GRIDs
+        goa_bathy        = rf"{project_folder}\Bathymetry\Alaska Bathymetry\GOA_IDW_Bathy.grd"  # ASCII GRIDs
 
-        ai_bathy_grid    = rf"{base_folder}\Bathymetry\Bathymetry.gdb\AI_IDW_Bathy_Grid"   # ASCII GRIDs imported to the FGDB
-        ebs_bathy_grid   = rf"{base_folder}\Bathymetry\Bathymetry.gdb\EBS_IDW_Bathy_Grid"  # ASCII GRIDs imported to the FGDB
-        goa_bathy_grid   = rf"{base_folder}\Bathymetry\Bathymetry.gdb\GOA_IDW_Bathy_Grid"  # ASCII GRIDs imported to the FGDB
+        ai_bathy_grid    = rf"{project_folder}\Bathymetry\Bathymetry.gdb\AI_IDW_Bathy_Grid"   # ASCII GRIDs imported to the FGDB
+        ebs_bathy_grid   = rf"{project_folder}\Bathymetry\Bathymetry.gdb\EBS_IDW_Bathy_Grid"  # ASCII GRIDs imported to the FGDB
+        goa_bathy_grid   = rf"{project_folder}\Bathymetry\Bathymetry.gdb\GOA_IDW_Bathy_Grid"  # ASCII GRIDs imported to the FGDB
 
-        ai_bathy_raster  = rf"{base_folder}\Bathymetry\Bathymetry.gdb\AI_IDW_Bathy_Raster"
-        ebs_bathy_raster = rf"{base_folder}\Bathymetry\Bathymetry.gdb\EBS_IDW_Bathy_Raster"
-        goa_bathy_raster = rf"{base_folder}\Bathymetry\Bathymetry.gdb\GOA_IDW_Bathy_Raster"
+        ai_bathy_raster  = rf"{project_folder}\Bathymetry\Bathymetry.gdb\AI_IDW_Bathy_Raster"
+        ebs_bathy_raster = rf"{project_folder}\Bathymetry\Bathymetry.gdb\EBS_IDW_Bathy_Raster"
+        goa_bathy_raster = rf"{project_folder}\Bathymetry\Bathymetry.gdb\GOA_IDW_Bathy_Raster"
 
-        ai_bathymetry    = rf"{base_folder}\Bathymetry\Bathymetry.gdb\AI_IDW_Bathymetry"
-        ebs_bathymetry   = rf"{base_folder}\Bathymetry\Bathymetry.gdb\EBS_IDW_Bathymetry"
-        goa_bathymetry   = rf"{base_folder}\Bathymetry\Bathymetry.gdb\GOA_IDW_Bathymetry"
-        enbs_bathymetry  = rf"{base_folder}\Bathymetry\Bathymetry.gdb\ENBS_IDW_Bathymetry"
-        nbs_bathymetry   = rf"{base_folder}\Bathymetry\Bathymetry.gdb\NBS_IDW_Bathymetry"
+        ai_bathymetry    = rf"{project_folder}\Bathymetry\Bathymetry.gdb\AI_IDW_Bathymetry"
+        ebs_bathymetry   = rf"{project_folder}\Bathymetry\Bathymetry.gdb\EBS_IDW_Bathymetry"
+        goa_bathymetry   = rf"{project_folder}\Bathymetry\Bathymetry.gdb\GOA_IDW_Bathymetry"
+        enbs_bathymetry  = rf"{project_folder}\Bathymetry\Bathymetry.gdb\ENBS_IDW_Bathymetry"
+        nbs_bathymetry   = rf"{project_folder}\Bathymetry\Bathymetry.gdb\NBS_IDW_Bathymetry"
 
         arcpy.AddMessage(f"Processing Esri Raster Grids")
 
@@ -281,7 +251,7 @@ def create_alasaka_bathymetry(project_gdb=""):
         # Set the output coordinate system to what is needed for the
         # DisMAP project
         region     = "AI_IDW"
-        arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(rf"{project_folder}\Dataset_Shapefiles\{region}\{region}_Region.prj")
+        arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(rf"{project_folder}\Dataset Shapefiles\{region}\{region}_Region.prj")
         #arcpy.env.geographicTransformations = "WGS_1984_(ITRF08)_To_NAD_1983_2011"
         #arcpy.env.geographicTransformations = check_transformation(goa_bathy_raster, region_sr)
         #del region_sr
@@ -296,7 +266,7 @@ def create_alasaka_bathymetry(project_gdb=""):
         # Set the output coordinate system to what is needed for the
         # DisMAP project
         region     = "EBS_IDW"
-        arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(rf"{project_folder}\Dataset_Shapefiles\{region}\{region}_Region.prj")
+        arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(rf"{project_folder}\Dataset Shapefiles\{region}\{region}_Region.prj")
         #arcpy.env.geographicTransformations = "WGS_1984_(ITRF08)_To_NAD_1983_2011"
         #arcpy.env.geographicTransformations = check_transformation(goa_bathy_raster, region_sr)
         #del region_sr
@@ -311,7 +281,7 @@ def create_alasaka_bathymetry(project_gdb=""):
         # Set the output coordinate system to what is needed for the
         # DisMAP project
         region     = "ENBS_IDW"
-        arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(rf"{project_folder}\Dataset_Shapefiles\{region}\{region}_Region.prj")
+        arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(rf"{project_folder}\Dataset Shapefiles\{region}\{region}_Region.prj")
         #arcpy.env.geographicTransformations = "WGS_1984_(ITRF08)_To_NAD_1983_2011"
         #arcpy.env.geographicTransformations = check_transformation(goa_bathy_raster, region_sr)
         #del region_sr
@@ -326,7 +296,7 @@ def create_alasaka_bathymetry(project_gdb=""):
         # Set the output coordinate system to what is needed for the
         # DisMAP project
         region     = "NBS_IDW"
-        arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(rf"{project_folder}\Dataset_Shapefiles\{region}\{region}_Region.prj")
+        arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(rf"{project_folder}\Dataset Shapefiles\{region}\{region}_Region.prj")
         #arcpy.env.geographicTransformations = "WGS_1984_(ITRF08)_To_NAD_1983_2011"
         #arcpy.env.geographicTransformations = check_transformation(goa_bathy_raster, region_sr)
         #del region_sr
@@ -341,7 +311,7 @@ def create_alasaka_bathymetry(project_gdb=""):
         # Set the output coordinate system to what is needed for the
         # DisMAP project
         region     = "GOA_IDW"
-        arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(rf"{project_folder}\Dataset_Shapefiles\{region}\{region}_Region.prj")
+        arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(rf"{project_folder}\Dataset Shapefiles\{region}\{region}_Region.prj")
         #arcpy.env.geographicTransformations = "WGS_1984_(ITRF08)_To_NAD_1983_2011"
         #arcpy.env.geographicTransformations = check_transformation(goa_bathy_raster, region_sr)
         #del region_sr
@@ -394,7 +364,7 @@ def create_alasaka_bathymetry(project_gdb=""):
         arcpy.management.CopyRaster(goa_bathymetry, rf"{project_folder}\Bathymetry\Bathymetry.gdb\{os.path.basename(goa_bathymetry)}")
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
-        gdb = rf"{base_folder}\Bathymetry\Bathymetry.gdb"
+        gdb = rf"{project_folder}\Bathymetry\Bathymetry.gdb"
         arcpy.AddMessage(f"Compacting the {os.path.basename(gdb)} GDB")
         arcpy.management.Compact(gdb)
         arcpy.AddMessage("\t"+arcpy.GetMessages(0).replace("\n", "\n\t"))
@@ -410,42 +380,37 @@ def create_alasaka_bathymetry(project_gdb=""):
         del check_transformation
         # Declared Variables for this function only
         del ai_bathymetry, ebs_bathymetry, goa_bathymetry, enbs_bathymetry, nbs_bathymetry
-        del base_folder, project_folder
         # Function parameter
-        del project_gdb
+        del project_folder
 
-    except KeyboardInterrupt:
-        raise SystemExit
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        raise SystemExit
     except SystemExit:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        raise SystemExit
     except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        raise SystemExit
     except:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        raise SystemExit
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        else:
+            pass
+        del rk
         return True
     finally:
         pass
 
-def create_hawaii_bathymetry(project_gdb=""):
+def create_hawaii_bathymetry(project_folder=""):
     try:
-        # Test if passed workspace exists, if not raise SystemExit
-        if not arcpy.Exists(project_gdb):
-            raise SystemExit(f"{os.path.basename(project_gdb)} is missing!!")
-
         # Set History and Metadata logs, set serverity and message level
         arcpy.SetLogHistory(True) # Look in %AppData%\Roaming\Esri\ArcGISPro\ArcToolbox\History
         arcpy.SetLogMetadata(True)
@@ -455,34 +420,9 @@ def create_hawaii_bathymetry(project_gdb=""):
         arcpy.SetMessageLevels(['NORMAL']) # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
 
         # Set basic workkpace variables
-        project_folder = os.path.dirname(project_gdb)
-        base_folder = os.path.dirname(project_folder)
-
-        # Create Scratch Workspace for Project
-        if not arcpy.Exists(rf"{project_folder}\Scratch\scratch.gdb"):
-            if not arcpy.Exists(rf"{project_folder}\Scratch"):
-                os.makedirs(rf"{project_folder}\Scratch")
-            if not arcpy.Exists(rf"{project_folder}\Scratch\scratch.gdb"):
-                arcpy.management.CreateFileGDB(rf"{project_folder}\Scratch", f"scratch")
-
-        # Base Bathymetry Folder
-        if not os.path.isdir(rf"{base_folder}\Bathymetry"):
-            os.makedirs(rf"{base_folder}\Bathymetry")
-        # Base Bathymetry GDB
-        if not arcpy.Exists(rf"{base_folder}\Bathymetry\Bathymetry.gdb"):
-            arcpy.management.CreateFileGDB(rf"{base_folder}\Bathymetry", "Bathymetry")
-
-        # Project Bathymetry Folder
-        if not os.path.isdir(rf"{project_folder}\Bathymetry"):
-            os.makedirs(rf"{project_folder}\Bathymetry")
-        # Project Bathymetry GDB
-        if not arcpy.Exists(rf"{project_folder}\Bathymetry\Bathymetry.gdb"):
-            arcpy.management.CreateFileGDB(rf"{project_folder}\Bathymetry", "Bathymetry")
-
-        # Set basic workkpace variables
-        arcpy.env.workspace                = rf"{base_folder}\Bathymetry\Bathymetry.gdb"
+        arcpy.env.workspace                = rf"{project_folder}\Bathymetry\Bathymetry.gdb"
         arcpy.env.scratchWorkspace         = rf"{project_folder}\Scratch\scratch.gdb"
-        arcpy.env.overwriteOutput             = True
+        arcpy.env.overwriteOutput          = True
         arcpy.env.parallelProcessingFactor = "100%"
 
         arcpy.env.cellSize = 500
@@ -493,9 +433,9 @@ def create_hawaii_bathymetry(project_gdb=""):
 
         arcpy.env.outputCoordinateSystem = None
 
-        hi_bathy_grid   = rf"{base_folder}\Bathymetry\Hawaii Bathymetry\BFISH_PSU.shp"
-        hi_bathy_raster = rf"{base_folder}\Bathymetry\Bathymetry.gdb\HI_IDW_Bathy_Raster"
-        hi_bathymetry   = rf"{base_folder}\Bathymetry\Bathymetry.gdb\HI_IDW_Bathymetry"
+        hi_bathy_grid   = rf"{project_folder}\Bathymetry\Hawaii Bathymetry\BFISH_PSU.shp"
+        hi_bathy_raster = rf"{project_folder}\Bathymetry\Bathymetry.gdb\HI_IDW_Bathy_Raster"
+        hi_bathymetry   = rf"{project_folder}\Bathymetry\Bathymetry.gdb\HI_IDW_Bathymetry"
 
         arcpy.AddMessage(f"Converting Hawaii Polygon Grid to a Raster")
 
@@ -512,7 +452,7 @@ def create_hawaii_bathymetry(project_gdb=""):
         arcpy.management.CopyRaster(hi_bathymetry, rf"{project_folder}\Bathymetry\Bathymetry.gdb\HI_IDW_Bathymetry")
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
-        gdb = rf"{base_folder}\Bathymetry\Bathymetry.gdb"
+        gdb = rf"{project_folder}\Bathymetry\Bathymetry.gdb"
         arcpy.AddMessage(f"Compacting the {os.path.basename(gdb)} GDB")
         arcpy.management.Compact(gdb)
         arcpy.AddMessage("\t"+arcpy.GetMessages(0).replace("\n", "\n\t"))
@@ -526,42 +466,39 @@ def create_hawaii_bathymetry(project_gdb=""):
 
         # Declared Variables for this function only
         del hi_bathy_grid, hi_bathy_raster, hi_bathymetry
-        del base_folder, project_folder
         # Function parameter
-        del project_gdb
+        del project_folder
 
-    except KeyboardInterrupt:
-        raise SystemExit
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        raise SystemExit
     except SystemExit:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        raise SystemExit
     except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        raise SystemExit
     except:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        raise SystemExit
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        else:
+            pass
+        del rk
         return True
     finally:
         pass
 
-def gebco_bathymetry(project_gdb=""):
+def gebco_bathymetry(project_folder=""):
     try:
-        # Test if passed workspace exists, if not raise SystemExit
-        if not arcpy.Exists(project_gdb):
-            raise SystemExit(f"{os.path.basename(project_gdb)} is missing!!")
 
+        # Imports
         from dismap_tools import check_transformation
 
         # Set History and Metadata logs, set serverity and message level
@@ -573,34 +510,9 @@ def gebco_bathymetry(project_gdb=""):
         arcpy.SetMessageLevels(['NORMAL']) # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
 
         # Set basic workkpace variables
-        project_folder = os.path.dirname(project_gdb)
-        base_folder = os.path.dirname(project_folder)
-
-        # Create Scratch Workspace for Project
-        if not arcpy.Exists(rf"{project_folder}\Scratch\scratch.gdb"):
-            if not arcpy.Exists(rf"{project_folder}\Scratch"):
-                os.makedirs(rf"{project_folder}\Scratch")
-            if not arcpy.Exists(rf"{project_folder}\Scratch\scratch.gdb"):
-                arcpy.management.CreateFileGDB(rf"{project_folder}\Scratch", f"scratch")
-
-        # Base Bathymetry Folder
-        if not os.path.isdir(rf"{base_folder}\Bathymetry"):
-            os.makedirs(rf"{base_folder}\Bathymetry")
-        # Base Bathymetry GDB
-        if not arcpy.Exists(rf"{base_folder}\Bathymetry\Bathymetry.gdb"):
-            arcpy.management.CreateFileGDB(rf"{base_folder}\Bathymetry", "Bathymetry")
-
-        # Project Bathymetry Folder
-        if not os.path.isdir(rf"{project_folder}\Bathymetry"):
-            os.makedirs(rf"{project_folder}\Bathymetry")
-        # Project Bathymetry GDB
-        if not arcpy.Exists(rf"{project_folder}\Bathymetry\Bathymetry.gdb"):
-            arcpy.management.CreateFileGDB(rf"{project_folder}\Bathymetry", "Bathymetry")
-
-        # Set basic workkpace variables
-        arcpy.env.workspace                = rf"{base_folder}\Bathymetry\Bathymetry.gdb"
+        arcpy.env.workspace                = rf"{project_folder}\Bathymetry\Bathymetry.gdb"
         arcpy.env.scratchWorkspace         = rf"{project_folder}\Scratch\scratch.gdb"
-        arcpy.env.overwriteOutput             = True
+        arcpy.env.overwriteOutput          = True
         arcpy.env.parallelProcessingFactor = "100%"
 
         arcpy.env.cellSize = 1000
@@ -621,8 +533,6 @@ def gebco_bathymetry(project_gdb=""):
                        'SEUS_FAL_IDW' : 'gebco_2022_n35.4_s28.6_w-81.4_e-75.6.asc',
                        'SEUS_SPR_IDW' : 'gebco_2022_n35.4_s28.6_w-81.4_e-75.6.asc',
                        'SEUS_SUM_IDW' : 'gebco_2022_n35.4_s28.6_w-81.4_e-75.6.asc',
-                       #'WC_GLMME'     : 'gebco_2022_n48.6_s32.0_w-126.0_e-115.8.asc',
-                       #'WC_GFDL'      : 'gebco_2022_n48.6_s32.0_w-126.0_e-115.8.asc',
                        'WC_ANN_IDW'   : 'gebco_2022_n48.6_s32.0_w-126.0_e-115.8.asc',
                        'WC_TRI_IDW'   : 'gebco_2022_n49.2_s36.0_w-126.6_e-121.6.asc',
                       }
@@ -632,10 +542,10 @@ def gebco_bathymetry(project_gdb=""):
         for table_name in gebco_dict:
             gebco_file_name = gebco_dict[table_name]
 
-            gebco_grid   = rf"{base_folder}\Bathymetry\GEBCO Bathymetry\{gebco_file_name}"
-            bathy_grid   = rf"{base_folder}\Bathymetry\Bathymetry.gdb\{table_name}_Bathy_Grid"
-            bathy_raster = rf"{base_folder}\Bathymetry\Bathymetry.gdb\{table_name}_Bathy_Raster"
-            bathymetry   = rf"{base_folder}\Bathymetry\Bathymetry.gdb\{table_name}_Bathymetry"
+            gebco_grid   = rf"{project_folder}\Bathymetry\GEBCO Bathymetry\{gebco_file_name}"
+            bathy_grid   = rf"{project_folder}\Bathymetry\Bathymetry.gdb\{table_name}_Bathy_Grid"
+            bathy_raster = rf"{project_folder}\Bathymetry\Bathymetry.gdb\{table_name}_Bathy_Raster"
+            bathymetry   = rf"{project_folder}\Bathymetry\Bathymetry.gdb\{table_name}_Bathymetry"
 
             arcpy.AddMessage(f"Copy GEBCO File: {os.path.basename(gebco_grid)} to {os.path.basename(bathy_grid)}")
 
@@ -653,7 +563,7 @@ def gebco_bathymetry(project_gdb=""):
             # Get the reference system defined for the region in datasets
             # Set the output coordinate system to what is needed for the
             # DisMAP project
-            region_sr = arcpy.SpatialReference(rf"{project_folder}\Dataset_Shapefiles\{table_name}\{table_name}_Region.prj")
+            region_sr = arcpy.SpatialReference(rf"{project_folder}\Dataset Shapefiles\{table_name}\{table_name}_Region.prj")
 
             if region_sr.linearUnitName == "Kilometer":
                 arcpy.env.cellSize = 0.1
@@ -680,27 +590,20 @@ def gebco_bathymetry(project_gdb=""):
             del region_sr, transform
 
             arcpy.AddMessage(f"Set Null for positive elevation values to create: {os.path.basename(bathymetry)}")
-            #tmp_grid = arcpy.sa.SetNull(bathy_raster, bathy_raster, "Value >= 0.0")
-            tmp_grid = arcpy.sa.SetNull(bathy_raster, bathy_raster, "Value > 1.0")
-            arcpy.AddMessage("\tSet Null: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
-            tmp_grid.save(bathymetry)
-            # Cleanup after last use
-            del tmp_grid
-
-            arcpy.AddMessage(f"Copying: {os.path.basename(bathymetry)} to Bathymetry GDB")
-            arcpy.management.CopyRaster(bathymetry, rf"{project_folder}\Bathymetry\Bathymetry.gdb\{table_name}_Bathymetry")
-            arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
+            with arcpy.EnvManager(scratchWorkspace=arcpy.env.scratchGDB, workspace=arcpy.env.workspace):
+                out_raster = arcpy.sa.SetNull(
+                    in_conditional_raster       = bathy_raster,
+                    in_false_raster_or_constant = bathy_raster,
+                    where_clause="Value > 1.0"
+                )
+                arcpy.AddMessage("\tSet Null: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
+                out_raster.save(bathymetry)
+                del out_raster
 
             del gebco_grid, bathy_grid, bathy_raster, bathymetry
             del gebco_file_name, table_name
 
         del gebco_dict
-
-        gdb = rf"{base_folder}\Bathymetry\Bathymetry.gdb"
-        arcpy.AddMessage(f"Compacting the {os.path.basename(gdb)} GDB")
-        arcpy.management.Compact(gdb)
-        arcpy.AddMessage("\t"+arcpy.GetMessages(0).replace("\n", "\n\t"))
-        del gdb
 
         gdb = rf"{project_folder}\Bathymetry\Bathymetry.gdb"
         arcpy.AddMessage(f"Compacting the {os.path.basename(gdb)} GDB")
@@ -709,39 +612,39 @@ def gebco_bathymetry(project_gdb=""):
         del gdb
 
         # Declared Variables for this function only
-        del project_folder, base_folder
+
         # Imports
         del check_transformation
         # Function parameter
-        del project_gdb
+        del project_folder
 
-    except KeyboardInterrupt:
-        raise SystemExit
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        raise SystemExit
     except SystemExit:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        raise SystemExit
     except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        raise SystemExit
     except:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        raise SystemExit
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        else:
+            pass
+        del rk
         return True
     finally:
         pass
 
-def script_tool(project_gdb=""):
+def main(project_folder=""):
     try:
         from time import gmtime, localtime, strftime, time
         # Set a start time so that we can see how log things take
@@ -754,44 +657,67 @@ def script_tool(project_gdb=""):
         arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
         arcpy.AddMessage(f"{'-' * 80}\n")
 
-        # Set basic arcpy.env variables
-        arcpy.env.overwriteOutput          = True
-        arcpy.env.parallelProcessingFactor = "100%"
+        # Create Scratch Workspace for Project
+        if not arcpy.Exists(rf"{project_folder}\Scratch\scratch.gdb"):
+            if not arcpy.Exists(rf"{project_folder}\Scratch"):
+                os.makedirs(rf"{project_folder}\Scratch")
+            if not arcpy.Exists(rf"{project_folder}\Scratch\scratch.gdb"):
+                arcpy.management.CreateFileGDB(rf"{project_folder}\Scratch", f"scratch")
 
-        try:
+        # Base Bathymetry Folder
+        if not os.path.isdir(rf"{project_folder}\Bathymetry"):
+            arcpy.AddMessage("Create Folder: 'Bathymetry'")
+            arcpy.management.CreateFolder(rf"{project_folder}\Bathymetry")
+            get_messages = "\t" + arcpy.GetMessages().replace('\n', '\n\t') + "\n"
+            arcpy.AddMessage(f"{get_messages}")
+            del get_messages
+        else:
             pass
-            # Process base Alaska bathymetry
-            create_alasaka_bathymetry(project_gdb)
-
-        except SystemExit:
-            arcpy.AddError(arcpy.GetMessages(2))
-            traceback.print_exc()
-            raise SystemExit
-
-        try:
+        # Base Bathymetry GDB
+        if not arcpy.Exists(rf"{project_folder}\Bathymetry\Bathymetry.gdb"):
+            arcpy.AddMessage("Create File GDB: 'Bathymetry.gdb'")
+            arcpy.management.CreateFileGDB(rf"{project_folder}\Bathymetry", "Bathymetry")
+            get_messages = "\t" + arcpy.GetMessages().replace('\n', '\n\t') + "\n"
+            arcpy.AddMessage(f"{get_messages}")
+            del get_messages
+        else:
             pass
-            # Process base Hawaii bathymetry
-            create_hawaii_bathymetry(project_gdb)
 
-        except SystemExit:
-            arcpy.AddError(arcpy.GetMessages(2))
-            traceback.print_exc()
-            raise SystemExit
-
-        try:
+        test = True
+        # Process base Alaska bathymetry
+        if test:
+            result = create_alasaka_bathymetry(project_folder)
+            #arcpy.AddMessage(result)
+            del result
+        else:
             pass
-            # Process base GEBCO bathymetry
-            gebco_bathymetry(project_gdb)
 
-        except SystemExit:
-            arcpy.AddError(arcpy.GetMessages(2))
-            traceback.print_exc()
-            raise SystemExit
+        #test = True
+        # Process base Hawaii bathymetry
+        if test:
+            result = create_hawaii_bathymetry(project_folder)
+            #arcpy.AddMessage(result)
+            del result
+        else:
+            pass
 
-         # Declared Varaiables
+        #test = False
+        # Process base GEBCO bathymetry
+        if test:
+            result = gebco_bathymetry(project_folder)
+            #arcpy.AddMessage(result)
+            del result
+        else:
+            pass
+
+        del test
+
+        # Declared Varaiables
+
         # Imports
+
         # Function Parameters
-        del project_gdb
+        del project_folder
 
         # Elapsed time
         end_time = time()
@@ -804,51 +730,44 @@ def script_tool(project_gdb=""):
         del elapse_time, end_time, start_time
         del gmtime, localtime, strftime, time
 
-    except KeyboardInterrupt:
-        raise SystemExit
-    except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        raise SystemExit
-    except SystemExit:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        raise SystemExit
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        raise SystemExit
     except:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        raise SystemExit
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
         return True
     finally:
-        pass
+        # While in development, leave here. For test, move to finally
+        rk = [key for key in locals().keys() if not key.startswith('__')]
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        else:
+            pass
+        del rk
 
 if __name__ == '__main__':
     try:
+        arcgis_folder = rf"{os.path.expanduser('~')}\Documents\ArcGIS"
+        sys.path.append(arcgis_folder)
 
-        project_gdb = arcpy.GetParameterAsText(0)
-        if not project_gdb:
-            project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025\August 1 2025.gdb"
+        project_folder = arcpy.GetParameterAsText(0)
+
+        if not project_folder:
+            project_folder = rf"{arcgis_folder}\Projects\DisMAP\ArcGIS-Analysis-Python"
         else:
             pass
 
-        script_tool(project_gdb)
-        arcpy.SetParameterAsText(1, "Result")
-        del project_gdb
+        result = main(project_folder)
+        arcpy.SetParameterAsText(1, result)
+        del result
 
-    except SystemExit:
-        pass
+        # Declared Variables
+        del project_folder, arcgis_folder
+
     except:
-        arcpy.AddError(arcpy.GetMessages(2))
+        arcpy.AddMessage(arcpy.GetMessages(0))
         traceback.print_exc()
     else:
         pass
+        #print(f"Remaining Keys: ##--> '{', '.join([key for key in locals().keys() if not key.startswith('__')])}' <--##")
     finally:
         pass

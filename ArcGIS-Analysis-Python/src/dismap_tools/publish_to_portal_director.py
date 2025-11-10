@@ -590,6 +590,7 @@ def create_feature_class_services(project_gdb=""):
 
             arcpy.AddMessage(f"\tModify SD Draft")
             # https://pro.arcgis.com/en/pro-app/latest/arcpy/sharing/featuresharingdraft-class.htm
+            # https://www.esri.com/arcgis-blog/products/arcgis-pro/mapping/streamline-your-code-with-new-properties-in-arcpy-sharing
             import xml.dom.minidom as DOM
 
             docs = DOM.parse(sd_draft)

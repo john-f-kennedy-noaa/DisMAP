@@ -3204,6 +3204,8 @@ def script_tool(project_gdb=""):
         # Test if passed workspace exists, if not raise SystemExit
         if not arcpy.Exists(project_gdb):
             arcpy.AddMessage(f"{os.path.basename(project_gdb)} is missing!!")
+        else:
+            pass
 
         # ###--->>> dataset_title_dict Test #1
         DatasetTitleDict = False
