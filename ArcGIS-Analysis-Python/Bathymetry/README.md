@@ -3,13 +3,45 @@
 > This code is always in development. Find the code used for various reports in the code [releases](https://github.com/nmfs-fish-tools/DisMAP/releases).
 
 #### Explanation of Files and Folders
-1. Alaska Bathymetry - This folder contains the Arc/INFO GRID file provided by the Alaska Region
 
-2. GEBCO Bathymetry - This folder contains the ASCII GRID files downloaded from the GEBCO website
+**"Bathymetry" Folder Summary:**
 
-3. Hawaii Bathymetry - This folder contains the BFISH_SU shape file provided by the Hawaii Science Center
+This is a **shared bathymetry data repository** providing ocean depth reference datasets for the entire DisMAP project. It serves as the centralized source for depth rasters used during the `create_region_bathymetry` workflow step (director/worker pair #3).
 
-4. Python and ArcPy processing scripts located in the src folder: a) src/dismap_tools/create_base_bathymetry.py, b) create_region_bathymetry_director.py, and c) create_region_bathymetry_worker.py
+**Contents:**
+
+| Component | Source & Format |
+|-----------|-----------------|
+| **Alaska Bathymetry/** | Arc/INFO GRID format files provided by NOAA Alaska Region (regional depth coverage) |
+| **GEBCO Bathymetry/** | ASCII GRID files downloaded from GEBCO website (General Bathymetric Chart of the Oceans—global coverage) |
+| **Hawaii Bathymetry/** | BFISH_SU shapefile provided by NOAA Hawaii Science Center (regional depth data) |
+| **Bathymetry.gdb/** | ArcGIS geodatabase (processed/integrated bathymetry rasters) |
+| **README.md** | Documentation and processing reference |
+
+**Processing Pipeline Integration:**
+
+This folder feeds into the `create_region_bathymetry_director/worker` pair which:
+1. Reads regional source bathymetry (Alaska GRID, GEBCO, or Hawaii shapefile)
+2. Reprojects to match region-specific coordinate systems
+3. Calculates zonal statistics (median depth per fishnet cell)
+4. Outputs `{table_name}_Bathymetry` raster for each region (stored in main project GDB)
+
+**Key Scripts Referenced:**
+- `src/dismap_tools/create_base_bathymetry.py` — Base bathymetry preparation
+- `create_region_bathymetry_director.py` — Orchestrates regional processing
+- `create_region_bathymetry_worker.py` — Worker processes individual regions
+
+**Multi-Source Strategy:**
+
+- **Alaska**: Custom GRID format (ArcInfo native)
+- **GEBCO**: Public global bathymetry dataset (ASCII raster)
+- **Hawaii**: Custom shapefile (Science Center-specific)
+- **Result**: Unified bathymetry coverage across all 15 IDW regions with consistent depth aggregation methodology
+
+**Data Status:**
+- Shared across all project versions (referenced by both April 1 2023 and August 1 2025)
+- Read-only reference data (not modified during processing)
+- Reusable for multiple survey regions and years
 
 #### Suggestions and Comments
 

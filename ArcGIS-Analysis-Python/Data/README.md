@@ -3,7 +3,66 @@
 > This code is always in development. Find the code used for various reports in the code [releases](https://github.com/nmfs-fish-tools/DisMAP/releases).
 
 #### Explanation of Files and Folders
-1. 
+
+**"Data" Folder Summary:**
+
+This is the **centralized metadata and configuration repository** providing reference data, lookup tables, and survey information for the entire DisMAP processing pipeline. It contains static reference files updated as of August 1, 2025 (version date in filenames).
+
+**Core Configuration Files:**
+
+| File | Purpose | Format |
+|------|---------|--------|
+| **Datasets_20250801.csv** | Master dataset registry (survey names, regions, seasons, codes) | CSV |
+| **DisMAP_Survey_Info_20250801.csv** | Survey metadata (names, descriptions, methodologies, contacts) | CSV |
+| **Species_Filter_20250801.csv** | Species filtering criteria (core vs. non-core designation, persistence thresholds) | CSV |
+| **DisMAP_Regions_20220516.xml** | Regional boundary definitions (15 IDW regions, geographic extents) | XML |
+| **DisMAP Contacts 2025 08 01.xml** | Principal investigators and contacts for each survey | XML |
+
+**Data Lookup Tables:**
+
+| File | Purpose |
+|------|---------|
+| **RoleCd.txt** | Role code reference (PI, co-investigator, analyst, etc.) |
+| **SpeciesPersistenceIndicatorPercentileBin_20250801.csv** | Species persistence percentile thresholds (binning criteria) |
+| **SpeciesPersistenceIndicatorTrend_20250801.csv** | Species trend indicators (declining/stable/increasing designations) |
+
+**Archived Data Archives:**
+
+| File | Contents |
+|------|----------|
+| **CSV Data 2025 08 01.zip** | Raw survey observations (point-level catch/biomass data by species/year/location) |
+| **Dataset Shapefiles 2025 08 01.zip** | Regional shapefiles (polygon boundaries for 15 IDW regions) |
+
+**Pipeline Integration:**
+
+These files feed into multiple processing stages:
+
+1. **create_region_sample_locations** (Director #4)
+   - Reads raw CSV survey data
+   - Applies Species_Filter for core species identification
+   - Uses DisMAP_Survey_Info for metadata enrichment
+
+2. **create_rasters** (Director #5)
+   - References Datasets_20250801.csv for IDW region mapping
+   - Applies species persistence thresholds from SpeciesPersistenceIndicator* files
+
+3. **create_indicators_table** (Director #9)
+   - Uses Species_Filter to aggregate core vs. total species richness
+
+4. **Metadata publishing** (publish_to_portal_director)
+   - Embeds DisMAP Contacts XML for author attribution
+   - References DisMAP_Regions_20220516.xml for geographic descriptions
+
+**Data Status:**
+- Read-only reference (updated only when survey data refreshed)
+- Version-dated naming convention (20250801 suffix indicates August 1, 2025 release)
+- Shared across all project versions and processing runs
+- Critical dependencies: Cannot be omitted or corrupted without halting pipeline
+
+**Versioning Pattern:**
+- Files consistently dated: 2025-08-01 (current)
+- Historical versions available in archived project folders (e.g., April 1 2023, July 1 2024)
+- R data processing generates these CSVs from raw survey databases (via `data_processing_rcode/create_data_for_map_generation.R`)
 
 #### Suggestions and Comments
 
