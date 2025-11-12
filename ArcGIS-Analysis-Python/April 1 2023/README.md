@@ -1,58 +1,15 @@
-# DisMAP ArcGIS Pro Analysis using Python
+# [The Distribution Mapping and Analysis Portal (DisMAP)](https://github.com/nmfs-fish-tools/DisMAP) 
+## ArcGIS Processing and Analysis using Python
 > This code is always in development. Find the code used for various reports in the code [releases](https://github.com/nmfs-fish-tools/DisMAP/releases).
 
-### Explanation of Files and Folders
+#### Explanation of Files and Folders
+1. dismap_tools folder - This folder contains the current version of Python scripts for generating the interpolated biomass and calculating the distribution indicators (latitude, depth, range limits, etc). 
 
-1) 
+2. dismap_tools_v20230401 zip file - This file contains the Python scripts used in generating the 20230401 version of interpolated biomass and calculating the distribution indicators (latitude, depth, range limits, etc). 
 
-create_base_bathymetry.py
+3. dismap_tools_v20240701 zip file - This file contains the Python scripts used in generating the 20240701 version of interpolated biomass and calculating the distribution indicators (latitude, depth, range limits, etc).
 
-create_data_dictionary_json_files.py
-
-create_indicators_table_director.py
-create_indicators_table_worker.py
-
-create_metadata_json_files.py
-
-create_mosaics_director.py
-create_mosaics_worker.py
-
-create_rasters_director.py
-create_rasters_worker.py
-
-create_regions_from_shapefiles_director.py
-create_regions_from_shapefiles_worker.py
-
-create_region_bathymetry_director.py
-create_region_bathymetry_worker.py
-
-create_region_fishnets_director.py
-create_region_fishnets_worker.py
-
-create_region_sample_locations_director.py
-create_region_sample_locations_worker.py
-
-create_species_richness_rasters_director.py
-create_species_richness_rasters_worker.py
-
-create_species_year_image_name_table_director.py
-create_species_year_image_name_table_worker.py
-
-dev_dismap_director.py
-dev_dismap_metadata_processing.py
-dev_export_arcgis_metadata.py
-dev_zip_and_unzip_csv_data.py
-
-dismap_metadata_processing.py
-dismap_project_setup.py
-dismap_tools.py
-
-import_datasets_species_filter_csv_data.py
-
-publish_to_portal_director.py
-
-zip_and_unzip_csv_data.py
-zip_and_unzip_shapefile_data.py
+4. dismap_tools_v20250801 zip file - This file contains the Python scripts used in generating the 20250801 version of interpolated biomass and calculating the distribution indicators (latitude, depth, range limits, etc).
 
 #### Suggestions and Comments
 

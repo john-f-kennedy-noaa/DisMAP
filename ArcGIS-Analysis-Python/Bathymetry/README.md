@@ -1,66 +1,21 @@
-# DisMAP ArcGIS Pro Analysis using Python
+# [The Distribution Mapping and Analysis Portal (DisMAP)](https://github.com/nmfs-fish-tools/DisMAP) 
+## ArcGIS Processing and Analysis using Python
 > This code is always in development. Find the code used for various reports in the code [releases](https://github.com/nmfs-fish-tools/DisMAP/releases).
 
-### Explanation of Files and Folders
+#### Explanation of Files and Folders
+1. Alaska Bathymetry - This folder contains the Arc/INFO GRID file provided by the Alaska Region
 
-1) 
+2. GEBCO Bathymetry - This folder contains the ASCII GRID files downloaded from the GEBCO website
 
-create_base_bathymetry.py
+3. Hawaii Bathymetry - This folder contains the BFISH_SU shape file provided by the Hawaii Science Center
 
-create_data_dictionary_json_files.py
-
-create_indicators_table_director.py
-create_indicators_table_worker.py
-
-create_metadata_json_files.py
-
-create_mosaics_director.py
-create_mosaics_worker.py
-
-create_rasters_director.py
-create_rasters_worker.py
-
-create_regions_from_shapefiles_director.py
-create_regions_from_shapefiles_worker.py
-
-create_region_bathymetry_director.py
-create_region_bathymetry_worker.py
-
-create_region_fishnets_director.py
-create_region_fishnets_worker.py
-
-create_region_sample_locations_director.py
-create_region_sample_locations_worker.py
-
-create_species_richness_rasters_director.py
-create_species_richness_rasters_worker.py
-
-create_species_year_image_name_table_director.py
-create_species_year_image_name_table_worker.py
-
-dev_dismap_director.py
-dev_dismap_metadata_processing.py
-dev_export_arcgis_metadata.py
-dev_zip_and_unzip_csv_data.py
-
-dismap_metadata_processing.py
-dismap_project_setup.py
-dismap_tools.py
-
-import_datasets_species_filter_csv_data.py
-
-publish_to_portal_director.py
-
-zip_and_unzip_csv_data.py
-zip_and_unzip_shapefile_data.py
+4. Python and ArcPy processing scripts located in the src folder: a) src/dismap_tools/create_base_bathymetry.py, b) create_region_bathymetry_director.py, and c) create_region_bathymetry_worker.py
 
 #### Suggestions and Comments
 
 If you see that the data, product, or metadata can be improved, you are
-invited to create a [pull
-request](https://github.com/nmfs-fish-tools/DisMAP/pulls)
-or [submit an issue to the code’s
-repository](https://github.com/nmfs-fish-tools/DisMAP/issues).
+invited to create a [pull request](https://github.com/nmfs-fish-tools/DisMAP/pulls)
+or [submit an issue to the code’s repository](https://github.com/nmfs-fish-tools/DisMAP/issues).
 
 #### NOAA-NMFS GitHub Enterprise Disclaimer
 

@@ -77,7 +77,6 @@ $RECYCLE.BIN/
 # Mac crap
 .DS_Store
 
-
 #############
 ## Python
 #############
@@ -138,21 +137,20 @@ ImportLog
 .backups
 .ipynb_checkpoints
 __pycache__
-April 1 2023
-August 1 2025
-
-Bathymetry
+April 1 2023/*
+August 1 2025/*
+Bathymetry/*
 Data/*
 Dataset Shapefiles/*
-December 1 2024
+December 1 2024/*
 GpMessages
 ImportLog/*
-Index
-July 1 2024
-Layout
-May 16 2022
-RasterFunctionsHistory
-RasterFunctionTemplates
+Index/*
+July 1 2024/*
+Layout/*
+May 16 2022/*
+RasterFunctionsHistory/*
+RasterFunctionTemplates/*
 Scratch/*
 # Ignore Files
 *.ags
@@ -164,7 +162,10 @@ Scratch/*
 *.xsl
 *.zip
 __init__.py
+README.md
 
-# Do not ignore script files
+# Do not ignore these files
+!README.md
+!**/README.md
 !src/dismap_tools/*.py
 
