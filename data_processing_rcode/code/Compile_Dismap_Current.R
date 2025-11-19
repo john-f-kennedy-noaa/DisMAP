@@ -2161,8 +2161,7 @@ presyrsum <- left_join(presyrsum, maxyrs, by = "region")
 # retain all spp present at >5% of tows in at least 2 of the available years in a survey
 spplist <- presyrsum %>%
   filter(presyr >= 2) %>%
-  select(region, valid_name, common) %>%
-  rename(spp = valid_name)
+  select(region, valid_name, common)
 
 # This creates a df for Appendix I of tech report (list of all species in all the modules)
 # spp__techreport <- spplist %>%
@@ -2178,7 +2177,7 @@ spplist<-rbind(spplist, spp_addin) %>%
 
 # Trim dat to these species (for a given region, spp pair in spplist_final, in dat, keep only rows that match that region, spp pairing)
 trimmed_dat_fltr_expanded <- dat_fltr %>%
-  filter(paste(region, spp) %in% paste(spplist$region, spplist$spp))
+  filter(paste(region, valid_name) %in% paste(spplist$region, spplist$valid_name))
 
 
 #add an EBS+NBS combined region =========================
