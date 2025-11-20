@@ -2163,7 +2163,8 @@ spplist <- presyrsum %>%
   filter(presyr >= 2) %>%
   select(region, valid_name, common)
 
-# This creates a df for Appendix I of tech report (list of all species in all the modules)
+
+# rename()# This creates a df for Appendix I of tech report (list of all species in all the modules)
 # spp__techreport <- spplist %>%
 #   group_by(spp, common) %>%
 #   summarise(regions = paste(unique(region), collapse = ", "),
@@ -2171,9 +2172,11 @@ spplist <- presyrsum %>%
 # write.csv(spp__techreport, "spp_techreport.csv")
 
 # these species were removed based on the 3/4 years criteria above but we have decided to add them back in based on commercial/recreational importance
-spp_addin<-read.csv("data_processing_rcode/data/Add_managed_spp.csv",header=T, sep=",")
+spp_addin<-read.csv("data_processing_rcode/data/Add_managed_spp.csv",header=T, sep=",") %>%
+  rename(valid_name = spp)
 spplist<-rbind(spplist, spp_addin) %>%
   distinct()
+
 
 # Trim dat to these species (for a given region, spp pair in spplist_final, in dat, keep only rows that match that region, spp pairing)
 trimmed_dat_fltr_expanded <- dat_fltr %>%
