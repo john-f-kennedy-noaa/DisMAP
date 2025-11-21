@@ -167,6 +167,7 @@ conftest.py
 main.py
 setip.py
 utils.py
+Metadata.md
 
 #############
 # Do not ignore these files
