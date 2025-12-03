@@ -264,7 +264,7 @@ data_export <- data_full %>%
 ```{r}
 #load packages needed for visualization section
 library(tidyverse)
-library(hrbrthemes)
+# library(hrbrthemes)
 library(viridis)
 library(plotly)
 library(heatmaply)
@@ -411,8 +411,61 @@ data_ce <- data_ce_stable %>%
 
 # saveRDS(data_ce, file = "data_ce.RData")
 ```
+**Increasing or Decreasing Trend**
+This section of code aims to provide a similar analysis of that above, but with additional resolution. As opposed to solely focusing on presence/absence, here we add a second term that takes into account the abundance and/or haul frequency levels of each taxa over time to categorize each present trend as increasing or decreasing.
+
+```{r organization}
+data_inc_haul <- data_full %>% 
+  select(Region, SurveyName, Year, Species, Common, HaulProportion)
+```
+
+```{r inc vs dec, eval=FALSE}
+holding <- data.frame(SurveyName = character(), Species = character(), Year = numeric(), RegM = numeric(), RegR = numeric(), stringsAsFactors = FALSE)
 
 
+surveys <- unique(data_inc_haul$SurveyName)
+
+for(v in surveys) {
+
+  firstfilt <- data_inc_haul %>%
+    filter(SurveyName == v)
+
+  spps <- unique(firstfilt$Species)
+
+  for (p in spps) {
+
+    myfilt <- firstfilt %>%
+      filter(Species == p)
+
+    years <- c(myfilt$Year)
+    years <- years[order(years)]
+
+
+    for (i in 1:(length(years)-1)) {
+
+      var_1 <- myfilt %>%
+        filter(Year == years[i])
+
+      var_2 <- myfilt %>%
+        filter(Year == years[i+1])
+
+      Diff <- var_2$Absence_Presence[1] - var_1$Absence_Presence[1]
+
+      temp <- data.frame(
+      SurveyName = v,
+      Species = p,
+      Year = YearVal,
+      RegM = RegM,
+      RegR = RegR,
+      stringsAsFactors = FALSE)
+
+      holding <- rbind(holding, temp)
+
+    }
+  }
+}
+
+```
 **Trend Category Metrics**
 
 - *Persistently Present*: Observed in >=85% of survey years
