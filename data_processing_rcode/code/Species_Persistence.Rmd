@@ -415,7 +415,7 @@ data_ce <- data_ce_stable %>%
 **Increasing or Decreasing Trend**
 This section of code aims to provide a similar analysis of that above, but with additional resolution. As opposed to solely focusing on presence/absence, here we add a second term that takes into account the abundance and/or haul frequency levels of each taxa over time to categorize each present trend as increasing or decreasing.
  ***Haul frequency***
-```{r organization}
+```{r organization haul freq}
 data_inc_haul <- data_full %>% 
   select(Region, SurveyName, Year, Species, Common, HaulProportion)
 ```
@@ -511,7 +511,7 @@ for(v in surveys) {
 ```
 
 ***Biomass***
-```{r organization}
+```{r organization biomass}
 data_inc_wtcpue <- data_full %>% 
   select(Region, SurveyName, Year, Species, Common, WTCPUE)
 ```
@@ -600,7 +600,7 @@ for(v in surveys) {
       stringsAsFactors = FALSE
     )
 
-    holding <- rbind(holding, temp)
+    holding_bio <- rbind(holding_bio, temp)
   }
 }
 
@@ -608,9 +608,8 @@ for(v in surveys) {
 
 **Ground-truthing**
 ```{r haul freq}
-
 holding_noyear <- holding %>% select(!Year)
-  
+
 focal_spp <- data_inc_haul %>% 
   filter((Region== "Aleutian Islands" & Common == "Walleye pollock")|
         (Region== "Eastern Bering Sea" & Common == "Walleye pollock")|
@@ -636,29 +635,16 @@ focal_spp <- data_inc_haul %>%
         (Region== "West Coast" & Common == "Pacific halibut")|
         (Region== "West Coast" & Common == "Sablefish")
           ) %>% 
-  left_join(holding_noyear, by=c("SurveyName", "Species")) %>% 
+  left_join(holding_noyear, by=c("SurveyName", "Species")) %>%
   mutate(id = paste(Common, abbreviate(SurveyName, 11), sep = ", "))
 
 focal_spp$Year <- as.numeric(focal_spp$Year)
 
-library(plotly)
-
-focal_check_haul <- ggplot(focal_spp, aes(x = Year, y = HaulProportion)) +
-  annotate("rect", xmin= 2014, xmax = 2024, ymin = 0.00, ymax= 1.00, alpha = 0.2) +
-  geom_point(aes(color= c(id))) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  theme(legend.position="bottom")
-
-ggplotly(focal_check_haul)
-
-```
-
-```{r wtcpue}
-
-holding_noyear <- holding_bio %>% select(!Year)
+#same as above but filtering for only significant p-values
+holding_noyear_filt <- holding %>% select(!Year) %>% 
+  filter(RegP <= 0.05)
   
-focal_spp <- data_inc_wtcpue %>% 
+focal_spp_filt <- data_inc_haul %>% 
   filter((Region== "Aleutian Islands" & Common == "Walleye pollock")|
         (Region== "Eastern Bering Sea" & Common == "Walleye pollock")|
         (Region== "Gulf of Alaska" & Common == "Walleye pollock")|
@@ -683,25 +669,221 @@ focal_spp <- data_inc_wtcpue %>%
         (Region== "West Coast" & Common == "Pacific halibut")|
         (Region== "West Coast" & Common == "Sablefish")
           ) %>% 
-  left_join(holding_noyear, by=c("SurveyName", "Species")) %>% 
-  mutate(id = paste(Common, abbreviate(SurveyName, 11), sep = ", "))
+  left_join(holding_noyear_filt, by=c("SurveyName", "Species")) %>%
+  mutate(id = paste(Common, abbreviate(SurveyName, 11), sep = ", ")) %>% 
+  filter(!is.na(RegP))
 
-focal_spp$Year <- as.numeric(focal_spp$Year)
+focal_spp_filt$Year <- as.numeric(focal_spp_filt$Year)
 
+```
+
+```{r viz 1}
 library(plotly)
 
-focal_check_bio <- ggplot(focal_spp, aes(x = Year, y = WTCPUE)) +
+focal_check_haul <- ggplot(focal_spp, aes(x = Year, y = HaulProportion)) +
+  annotate("rect", xmin= 2014, xmax = 2024, ymin = 0.00, ymax= 1.00, alpha = 0.2) +
+  geom_point(aes(color= c(id))) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ggtitle("Haul Freq. - Full Focal Spp")
+
+ggplotly(focal_check_haul)
+```
+
+```{r viz 2}
+focal_check_haul_filt <- ggplot(focal_spp_filt, aes(x = Year, y = HaulProportion)) +
+  annotate("rect", xmin= 2014, xmax = 2024, ymin = 0.00, ymax= 1.00, alpha = 0.2) +
+  geom_point(aes(color= c(id))) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ggtitle("Haul Freq. - Focal Spp w/ p<=0.05")
+
+ggplotly(focal_check_haul_filt)
+```
+
+
+```{r wtcpue}
+
+holding_bio_noyear <- holding_bio %>% select(!Year)
+  
+focal_spp_bio <- data_inc_wtcpue %>% 
+  filter((Region== "Aleutian Islands" & Common == "Walleye pollock")|
+        (Region== "Eastern Bering Sea" & Common == "Walleye pollock")|
+        (Region== "Gulf of Alaska" & Common == "Walleye pollock")|
+        (Region== "Northern Bering Sea" & Common == "Walleye pollock")|
+        (Region== "Aleutian Islands" & Common == "Sablefish")|
+        (Region== "Eastern Bering Sea" & Common == "Sablefish")|
+        (Region== "Gulf of Alaska" & Common == "Sablefish")|
+        (Region== "Northern Bering Sea" & Common == "Sablefish")|
+        (Region== "Aleutian Islands" & Common == "Pacific cod")|
+        (Region== "Eastern Bering Sea" & Common == "Pacific cod")|
+        (Region== "Gulf of Alaska" & Common == "Pacific cod")|
+        (Region== "Northern Bering Sea" & Common == "Pacific cod")|
+        (Region== "Gulf of Mexico" & Common == "Red snapper")|
+        (Region== "Gulf of Mexico" & Common == "Gray snapper")|
+        (Region== "Northeast US" & Common == "Atlantic northern shrimp")|
+        (Region== "Northeast US" & Common == "Atlantic cod")|
+        (Region== "Northeast US" & Common == "American lobster")|
+        (Region== "Northeast US" & Common == "Black sea bass")|
+        (Region== "Southeast US" & Common == "Pink shrimp")|
+        (Region== "Southeast US" & Common == "King mackerel")|
+        (Region== "West Coast" & Common == "Yelloweye rockfish")|
+        (Region== "West Coast" & Common == "Pacific halibut")|
+        (Region== "West Coast" & Common == "Sablefish")
+          ) %>% 
+  left_join(holding_bio_noyear, by=c("SurveyName", "Species")) %>% 
+  mutate(id = paste(Common, abbreviate(SurveyName, 11), sep = ", "))
+
+focal_spp_bio$Year <- as.numeric(focal_spp_bio$Year)
+
+#filtering for significant p-values
+holding_bio_noyear_filt <- holding_bio %>% select(!Year) %>% 
+  filter(RegP <= 0.05)
+
+focal_spp_bio_filt <- data_inc_wtcpue %>% 
+  filter((Region== "Aleutian Islands" & Common == "Walleye pollock")|
+        (Region== "Eastern Bering Sea" & Common == "Walleye pollock")|
+        (Region== "Gulf of Alaska" & Common == "Walleye pollock")|
+        (Region== "Northern Bering Sea" & Common == "Walleye pollock")|
+        (Region== "Aleutian Islands" & Common == "Sablefish")|
+        (Region== "Eastern Bering Sea" & Common == "Sablefish")|
+        (Region== "Gulf of Alaska" & Common == "Sablefish")|
+        (Region== "Northern Bering Sea" & Common == "Sablefish")|
+        (Region== "Aleutian Islands" & Common == "Pacific cod")|
+        (Region== "Eastern Bering Sea" & Common == "Pacific cod")|
+        (Region== "Gulf of Alaska" & Common == "Pacific cod")|
+        (Region== "Northern Bering Sea" & Common == "Pacific cod")|
+        (Region== "Gulf of Mexico" & Common == "Red snapper")|
+        (Region== "Gulf of Mexico" & Common == "Gray snapper")|
+        (Region== "Northeast US" & Common == "Atlantic northern shrimp")|
+        (Region== "Northeast US" & Common == "Atlantic cod")|
+        (Region== "Northeast US" & Common == "American lobster")|
+        (Region== "Northeast US" & Common == "Black sea bass")|
+        (Region== "Southeast US" & Common == "Pink shrimp")|
+        (Region== "Southeast US" & Common == "King mackerel")|
+        (Region== "West Coast" & Common == "Yelloweye rockfish")|
+        (Region== "West Coast" & Common == "Pacific halibut")|
+        (Region== "West Coast" & Common == "Sablefish")
+          ) %>% 
+  left_join(holding_bio_noyear_filt, by=c("SurveyName", "Species")) %>% 
+  mutate(id = paste(Common, abbreviate(SurveyName, 11), sep = ", "))%>% 
+  filter(!is.na(RegP))
+
+focal_spp_bio_filt$Year <- as.numeric(focal_spp_bio_filt$Year)
+
+```
+
+```{r viz 3}
+focal_check_bio <- ggplot(focal_spp_bio, aes(x = Year, y = WTCPUE)) +
   annotate("rect", xmin= 2014, xmax = 2024, ymin = 0, ymax= 65000, alpha = 0.2) +
   geom_point(aes(color= c(id))) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  theme(legend.position="bottom")
+  ggtitle("WTCPUE - Full Focal Spp.")
 
 ggplotly(focal_check_bio)
-
 ```
 
-```{r pvalue hist}
+```{r viz 4}
+focal_check_bio_filt <- ggplot(focal_spp_bio_filt, aes(x = Year, y = WTCPUE)) +
+  annotate("rect", xmin= 2014, xmax = 2024, ymin = 0, ymax= 65000, alpha = 0.2) +
+  geom_point(aes(color= c(id))) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  ggtitle("WTCPUE - Focal Spp w/ p<=0.05")
+
+ggplotly(focal_check_bio_filt)
+```
+
+```{r non significant haul removed}
+
+focal_spp_haulremoved <- data_inc_haul %>% 
+  filter((Region== "Aleutian Islands" & Common == "Walleye pollock")|
+        (Region== "Eastern Bering Sea" & Common == "Walleye pollock")|
+        (Region== "Gulf of Alaska" & Common == "Walleye pollock")|
+        (Region== "Northern Bering Sea" & Common == "Walleye pollock")|
+        (Region== "Aleutian Islands" & Common == "Sablefish")|
+        (Region== "Eastern Bering Sea" & Common == "Sablefish")|
+        (Region== "Gulf of Alaska" & Common == "Sablefish")|
+        (Region== "Northern Bering Sea" & Common == "Sablefish")|
+        (Region== "Aleutian Islands" & Common == "Pacific cod")|
+        (Region== "Eastern Bering Sea" & Common == "Pacific cod")|
+        (Region== "Gulf of Alaska" & Common == "Pacific cod")|
+        (Region== "Northern Bering Sea" & Common == "Pacific cod")|
+        (Region== "Gulf of Mexico" & Common == "Red snapper")|
+        (Region== "Gulf of Mexico" & Common == "Gray snapper")|
+        (Region== "Northeast US" & Common == "Atlantic northern shrimp")|
+        (Region== "Northeast US" & Common == "Atlantic cod")|
+        (Region== "Northeast US" & Common == "American lobster")|
+        (Region== "Northeast US" & Common == "Black sea bass")|
+        (Region== "Southeast US" & Common == "Pink shrimp")|
+        (Region== "Southeast US" & Common == "King mackerel")|
+        (Region== "West Coast" & Common == "Yelloweye rockfish")|
+        (Region== "West Coast" & Common == "Pacific halibut")|
+        (Region== "West Coast" & Common == "Sablefish")
+          ) %>% 
+  left_join(holding_noyear_filt, by=c("SurveyName", "Species")) %>%
+  mutate(id = paste(Common, abbreviate(SurveyName, 11), sep = ", ")) %>% 
+  filter(is.na(RegP))
+
+focal_spp_haulremoved$Year <- as.numeric(focal_spp_haulremoved$Year)
+
+focal_check_haul_removed <- ggplot(focal_spp_haulremoved, aes(x = Year, y = HaulProportion)) +
+  annotate("rect", xmin= 2014, xmax = 2024, ymin = 0.00, ymax= 1.00, alpha = 0.2) +
+  geom_point(aes(color= c(id))) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ggtitle("Haul Freq - REMOVED Focal, p>0.05")
+
+ggplotly(focal_check_haul_removed)
+```
+
+
+```{r non significant bio removed}
+
+focal_spp_bioremoved <- data_inc_wtcpue %>% 
+  filter((Region== "Aleutian Islands" & Common == "Walleye pollock")|
+        (Region== "Eastern Bering Sea" & Common == "Walleye pollock")|
+        (Region== "Gulf of Alaska" & Common == "Walleye pollock")|
+        (Region== "Northern Bering Sea" & Common == "Walleye pollock")|
+        (Region== "Aleutian Islands" & Common == "Sablefish")|
+        (Region== "Eastern Bering Sea" & Common == "Sablefish")|
+        (Region== "Gulf of Alaska" & Common == "Sablefish")|
+        (Region== "Northern Bering Sea" & Common == "Sablefish")|
+        (Region== "Aleutian Islands" & Common == "Pacific cod")|
+        (Region== "Eastern Bering Sea" & Common == "Pacific cod")|
+        (Region== "Gulf of Alaska" & Common == "Pacific cod")|
+        (Region== "Northern Bering Sea" & Common == "Pacific cod")|
+        (Region== "Gulf of Mexico" & Common == "Red snapper")|
+        (Region== "Gulf of Mexico" & Common == "Gray snapper")|
+        (Region== "Northeast US" & Common == "Atlantic northern shrimp")|
+        (Region== "Northeast US" & Common == "Atlantic cod")|
+        (Region== "Northeast US" & Common == "American lobster")|
+        (Region== "Northeast US" & Common == "Black sea bass")|
+        (Region== "Southeast US" & Common == "Pink shrimp")|
+        (Region== "Southeast US" & Common == "King mackerel")|
+        (Region== "West Coast" & Common == "Yelloweye rockfish")|
+        (Region== "West Coast" & Common == "Pacific halibut")|
+        (Region== "West Coast" & Common == "Sablefish")
+          ) %>% 
+  left_join(holding_bio_noyear_filt, by=c("SurveyName", "Species")) %>% 
+  mutate(id = paste(Common, abbreviate(SurveyName, 11), sep = ", "))%>% 
+  filter(is.na(RegP))
+
+focal_spp_bioremoved$Year <- as.numeric(focal_spp_bioremoved$Year)
+
+focal_check_bio_removed <- ggplot(focal_spp_bioremoved, aes(x = Year, y = WTCPUE)) +
+  annotate("rect", xmin= 2014, xmax = 2024, ymin = 0, ymax= 65000, alpha = 0.2) +
+  geom_point(aes(color= c(id))) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  ggtitle("WTCPUE - REMOVED Focal Spp, p>0.05")
+
+ggplotly(focal_check_bio_removed)
+```
+
+
+```{r pvalue hist, eval = FALSE}
 pval_haul <- ggplot(holding, aes(x = RegP)) +
   geom_histogram() +
   theme_minimal()
