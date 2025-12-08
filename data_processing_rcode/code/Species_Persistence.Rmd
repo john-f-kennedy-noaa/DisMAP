@@ -24,6 +24,7 @@ library(ggplot2)
 library(RColorBrewer)
 library(readr)
 library(tidyverse)
+library(broom)
 ```
 
 
@@ -413,14 +414,14 @@ data_ce <- data_ce_stable %>%
 ```
 **Increasing or Decreasing Trend**
 This section of code aims to provide a similar analysis of that above, but with additional resolution. As opposed to solely focusing on presence/absence, here we add a second term that takes into account the abundance and/or haul frequency levels of each taxa over time to categorize each present trend as increasing or decreasing.
-
+ ***Haul frequency***
 ```{r organization}
 data_inc_haul <- data_full %>% 
   select(Region, SurveyName, Year, Species, Common, HaulProportion)
 ```
 
-```{r inc vs dec, eval=FALSE}
-holding <- data.frame(SurveyName = character(), Species = character(), Year = numeric(), RegM = numeric(), RegR = numeric(), stringsAsFactors = FALSE)
+```{r  haul freq inc vs dec, eval= TRUE}
+holding <- data.frame(SurveyName = character(), Species = character(), Year = numeric(), RegM = numeric(), RegR = numeric(), RegP = numeric(), stringsAsFactors = FALSE)
 
 
 surveys <- unique(data_inc_haul$SurveyName)
@@ -435,37 +436,279 @@ for(v in surveys) {
   for (p in spps) {
 
     myfilt <- firstfilt %>%
-      filter(Species == p)
-
-    years <- c(myfilt$Year)
-    years <- years[order(years)]
-
-
-    for (i in 1:(length(years)-1)) {
-
-      var_1 <- myfilt %>%
-        filter(Year == years[i])
-
-      var_2 <- myfilt %>%
-        filter(Year == years[i+1])
-
-      Diff <- var_2$Absence_Presence[1] - var_1$Absence_Presence[1]
-
-      temp <- data.frame(
+      filter(Species == p) %>%
+      mutate(
+        Year = as.numeric(Year), # character -> numeric 
+        HaulProportion = as.numeric(as.character(HaulProportion)) # safe conversion for response
+        ) %>%
+      filter(!is.na(Year), !is.na(HaulProportion))
+    
+    myfilt$Year <- as.numeric(myfilt$Year)
+    
+    # default output if regression is not possible
+    RegM <- NA_real_
+    RegR <- NA_real_
+    RegP <- NA_real_
+    YearVal <- NA_real_
+    
+    # determine the last-10-year window (min = max(Year) - 10, inclusive)
+    if (nrow(myfilt) > 0 && any(!is.na(myfilt$Year))) {
+      max_year <- max(myfilt$Year, na.rm = TRUE)
+      min_year <- max_year - 10
+      # subset to the last 10-year window (inclusive)
+      window_filt <- myfilt %>% filter(Year >= min_year & Year <= max_year)
+      } else {
+      window_filt <- myfilt[0, ]  # empty
+      }
+    
+    if (nrow(window_filt) >= 2 && 
+        dplyr::n_distinct(window_filt$Year) >= 2 &&
+        sd(window_filt$HaulProportion, na.rm = TRUE) > 0) {
+        
+        model <- tryCatch(
+          lm(HaulProportion ~ Year, data = window_filt),
+          error = function(e) NULL
+          )
+        
+         if (!is.null(model)) {
+          # use broom to extract coefficients and model-level stats, but guard with tryCatch
+           tid <- tryCatch(broom::tidy(model), error = function(e) NULL)
+           gl  <- tryCatch(broom::glance(model), error = function(e) NULL)
+          
+           #extract slope and P-value (if present) using tidy output
+           #if_else statements are used here to ensure that nothing is extracted from any tests that run as NULL
+           if (!is.null(tid) && "term" %in% names(tid) && any(tid$term == "Year")) {
+             yr_row <- tid[tid$term == "Year", , drop = FALSE]
+             RegM <- if (!is.null(yr_row$estimate)) as.numeric(yr_row$estimate) else NA_real_
+             RegP <- if ("p.value" %in% names(yr_row)) as.numeric(yr_row$p.value) else NA_real_
+           }
+           
+           #extract adjusted R-squared value using glance output
+           if (!is.null(gl) && "adj.r.squared" %in% names(gl)) {
+             RegR <- as.numeric(gl$adj.r.squared)
+           } else{
+             RegR<- NA_real_
+           }
+           
+          YearVal <- max(window_filt$Year, na.rm = TRUE)#FLAG:This is likely not needed as we drop this column later
+         }
+    }
+    
+    temp <- data.frame(
       SurveyName = v,
       Species = p,
       Year = YearVal,
       RegM = RegM,
       RegR = RegR,
-      stringsAsFactors = FALSE)
+      RegP= RegP,
+      stringsAsFactors = FALSE
+    )
 
-      holding <- rbind(holding, temp)
+    holding <- rbind(holding, temp)
+  }
+}
+  
+```
 
+***Biomass***
+```{r organization}
+data_inc_wtcpue <- data_full %>% 
+  select(Region, SurveyName, Year, Species, Common, WTCPUE)
+```
+
+```{r biomass inc vs dec}
+holding_bio <- data.frame(SurveyName = character(), Species = character(), Year = numeric(), RegM = numeric(), RegR = numeric(), RegP = numeric(), stringsAsFactors = FALSE)
+
+
+surveys <- unique(data_inc_wtcpue$SurveyName)
+
+for(v in surveys) {
+
+  firstfilt <- data_inc_wtcpue %>%
+    filter(SurveyName == v)
+
+  spps <- unique(firstfilt$Species)
+
+  for (p in spps) {
+
+    myfilt <- firstfilt %>%
+      filter(Species == p) %>%
+      mutate(
+        Year = as.numeric(Year), # character -> numeric 
+        WTCPUE = as.numeric(as.character(WTCPUE)) # safe conversion for response
+        ) %>%
+      filter(!is.na(Year), !is.na(WTCPUE))
+    
+    myfilt$Year <- as.numeric(myfilt$Year)
+    
+    # default output if regression is not possible
+    RegM <- NA_real_
+    RegR <- NA_real_
+    RegP <- NA_real_
+    YearVal <- NA_real_
+    
+    # determine the last-10-year window (min = max(Year) - 10, inclusive)
+    if (nrow(myfilt) > 0 && any(!is.na(myfilt$Year))) {
+      max_year <- max(myfilt$Year, na.rm = TRUE)
+      min_year <- max_year - 10
+      # subset to the last 10-year window (inclusive)
+      window_filt <- myfilt %>% filter(Year >= min_year & Year <= max_year)
+      } else {
+      window_filt <- myfilt[0, ]  # empty
+      }
+    
+    if (nrow(window_filt) >= 2 && 
+        dplyr::n_distinct(window_filt$Year) >= 2 &&
+        sd(window_filt$WTCPUE, na.rm = TRUE) > 0) {
+        
+        model <- tryCatch(
+          lm(WTCPUE ~ Year, data = window_filt),
+          error = function(e) NULL
+          )
+        
+         if (!is.null(model)) {
+          # use broom to extract coefficients and model-level stats, but guard with tryCatch
+           tid <- tryCatch(broom::tidy(model), error = function(e) NULL)
+           gl  <- tryCatch(broom::glance(model), error = function(e) NULL)
+          
+           #extract slope and P-value (if present) using tidy output
+           #if_else statements are used here to ensure that nothing is extracted from any tests that run as NULL
+           if (!is.null(tid) && "term" %in% names(tid) && any(tid$term == "Year")) {
+             yr_row <- tid[tid$term == "Year", , drop = FALSE]
+             RegM <- if (!is.null(yr_row$estimate)) as.numeric(yr_row$estimate) else NA_real_
+             RegP <- if ("p.value" %in% names(yr_row)) as.numeric(yr_row$p.value) else NA_real_
+           }
+           
+           #extract adjusted R-squared value using glance output
+           if (!is.null(gl) && "adj.r.squared" %in% names(gl)) {
+             RegR <- as.numeric(gl$adj.r.squared)
+           } else{
+             RegR<- NA_real_
+           }
+           
+          YearVal <- max(window_filt$Year, na.rm = TRUE)#FLAG:This is likely not needed as we drop this column later
+         }
     }
+    
+    temp <- data.frame(
+      SurveyName = v,
+      Species = p,
+      Year = YearVal,
+      RegM = RegM,
+      RegR = RegR,
+      RegP= RegP,
+      stringsAsFactors = FALSE
+    )
+
+    holding <- rbind(holding, temp)
   }
 }
 
 ```
+
+**Ground-truthing**
+```{r haul freq}
+
+holding_noyear <- holding %>% select(!Year)
+  
+focal_spp <- data_inc_haul %>% 
+  filter((Region== "Aleutian Islands" & Common == "Walleye pollock")|
+        (Region== "Eastern Bering Sea" & Common == "Walleye pollock")|
+        (Region== "Gulf of Alaska" & Common == "Walleye pollock")|
+        (Region== "Northern Bering Sea" & Common == "Walleye pollock")|
+        (Region== "Aleutian Islands" & Common == "Sablefish")|
+        (Region== "Eastern Bering Sea" & Common == "Sablefish")|
+        (Region== "Gulf of Alaska" & Common == "Sablefish")|
+        (Region== "Northern Bering Sea" & Common == "Sablefish")|
+        (Region== "Aleutian Islands" & Common == "Pacific cod")|
+        (Region== "Eastern Bering Sea" & Common == "Pacific cod")|
+        (Region== "Gulf of Alaska" & Common == "Pacific cod")|
+        (Region== "Northern Bering Sea" & Common == "Pacific cod")|
+        (Region== "Gulf of Mexico" & Common == "Red snapper")|
+        (Region== "Gulf of Mexico" & Common == "Gray snapper")|
+        (Region== "Northeast US" & Common == "Atlantic northern shrimp")|
+        (Region== "Northeast US" & Common == "Atlantic cod")|
+        (Region== "Northeast US" & Common == "American lobster")|
+        (Region== "Northeast US" & Common == "Black sea bass")|
+        (Region== "Southeast US" & Common == "Pink shrimp")|
+        (Region== "Southeast US" & Common == "King mackerel")|
+        (Region== "West Coast" & Common == "Yelloweye rockfish")|
+        (Region== "West Coast" & Common == "Pacific halibut")|
+        (Region== "West Coast" & Common == "Sablefish")
+          ) %>% 
+  left_join(holding_noyear, by=c("SurveyName", "Species")) %>% 
+  mutate(id = paste(Common, abbreviate(SurveyName, 11), sep = ", "))
+
+focal_spp$Year <- as.numeric(focal_spp$Year)
+
+library(plotly)
+
+focal_check_haul <- ggplot(focal_spp, aes(x = Year, y = HaulProportion)) +
+  annotate("rect", xmin= 2014, xmax = 2024, ymin = 0.00, ymax= 1.00, alpha = 0.2) +
+  geom_point(aes(color= c(id))) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position="bottom")
+
+ggplotly(focal_check_haul)
+
+```
+
+```{r wtcpue}
+
+holding_noyear <- holding_bio %>% select(!Year)
+  
+focal_spp <- data_inc_wtcpue %>% 
+  filter((Region== "Aleutian Islands" & Common == "Walleye pollock")|
+        (Region== "Eastern Bering Sea" & Common == "Walleye pollock")|
+        (Region== "Gulf of Alaska" & Common == "Walleye pollock")|
+        (Region== "Northern Bering Sea" & Common == "Walleye pollock")|
+        (Region== "Aleutian Islands" & Common == "Sablefish")|
+        (Region== "Eastern Bering Sea" & Common == "Sablefish")|
+        (Region== "Gulf of Alaska" & Common == "Sablefish")|
+        (Region== "Northern Bering Sea" & Common == "Sablefish")|
+        (Region== "Aleutian Islands" & Common == "Pacific cod")|
+        (Region== "Eastern Bering Sea" & Common == "Pacific cod")|
+        (Region== "Gulf of Alaska" & Common == "Pacific cod")|
+        (Region== "Northern Bering Sea" & Common == "Pacific cod")|
+        (Region== "Gulf of Mexico" & Common == "Red snapper")|
+        (Region== "Gulf of Mexico" & Common == "Gray snapper")|
+        (Region== "Northeast US" & Common == "Atlantic northern shrimp")|
+        (Region== "Northeast US" & Common == "Atlantic cod")|
+        (Region== "Northeast US" & Common == "American lobster")|
+        (Region== "Northeast US" & Common == "Black sea bass")|
+        (Region== "Southeast US" & Common == "Pink shrimp")|
+        (Region== "Southeast US" & Common == "King mackerel")|
+        (Region== "West Coast" & Common == "Yelloweye rockfish")|
+        (Region== "West Coast" & Common == "Pacific halibut")|
+        (Region== "West Coast" & Common == "Sablefish")
+          ) %>% 
+  left_join(holding_noyear, by=c("SurveyName", "Species")) %>% 
+  mutate(id = paste(Common, abbreviate(SurveyName, 11), sep = ", "))
+
+focal_spp$Year <- as.numeric(focal_spp$Year)
+
+library(plotly)
+
+focal_check_bio <- ggplot(focal_spp, aes(x = Year, y = WTCPUE)) +
+  annotate("rect", xmin= 2014, xmax = 2024, ymin = 0, ymax= 65000, alpha = 0.2) +
+  geom_point(aes(color= c(id))) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position="bottom")
+
+ggplotly(focal_check_bio)
+
+```
+
+```{r pvalue hist}
+pval_haul <- ggplot(holding, aes(x = RegP)) +
+  geom_histogram() +
+  theme_minimal()
+
+```
+
+
 **Trend Category Metrics**
 
 - *Persistently Present*: Observed in >=85% of survey years
