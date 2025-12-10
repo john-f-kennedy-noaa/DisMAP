@@ -66,7 +66,11 @@ The goals for this analysis are four-fold:
 data <- data.frame(base::readRDS(file = here::here("data_processing_rcode/output/data_clean/alldata_withzeros.rds"))) %>% 
   select(region, haulid, year, spp, common, wtcpue, stratum, stratumarea, lat, lon, depth)
 
-bfish <- read_csv(here::here("data_processing_rcode/data", "BFISH_DisMAP_2024_update_v2.csv"))
+bfish <- read_csv(here::here("data_processing_rcode/data", "BFISH_DisMAP_2024_update.csv")) %>% 
+  mutate(haulid = psu,
+         stratumarea = NA,
+         region = case_when(region == "Hawaii" ~ "Hawai'i Islands")) %>% 
+  select(region, haulid, year, spp, common, wtcpue, stratum, stratumarea, lat, lon, depth)
 
 
 data <- rbind(data, bfish)
@@ -412,15 +416,114 @@ data_ce <- data_ce_stable %>%
 
 # saveRDS(data_ce, file = "data_ce.RData")
 ```
-**Increasing or Decreasing Trend**
+### Increasing or Decreasing Trend
+
 This section of code aims to provide a similar analysis of that above, but with additional resolution. As opposed to solely focusing on presence/absence, here we add a second term that takes into account the abundance and/or haul frequency levels of each taxa over time to categorize each present trend as increasing or decreasing.
- ***Haul frequency***
+
+***Haul frequency***
+
+This section is calculating a linear regression for the last 10 years to determine if there is any significant change (increase vs decrease) in *haul frequency*.
 ```{r organization haul freq}
 data_inc_haul <- data_full %>% 
   select(Region, SurveyName, Year, Species, Common, HaulProportion)
 ```
 
-```{r  haul freq inc vs dec, eval= TRUE}
+To run a glm(), I need to break down the haul frequency term by breaking it back into haul present/total hauls
+```{r}
+haulsyr_max <- haulsyr_max %>% 
+  rename(
+    SurveyName = survey,
+    Year = year
+  )
+    
+data_haul_glm <- data_full %>% 
+  select(Region, SurveyName, Year, Species, Common, HaulPresence) %>% 
+  left_join(haulsyr_max, by = c("SurveyName", "Year"))
+```
+
+```{r  haul freq glm, eval= TRUE}
+holding_glm <- data.frame(SurveyName = character(), Species = character(), Year = numeric(), glmM = numeric(), glmP = numeric(), stringsAsFactors = FALSE)
+
+
+surveys <- unique(data_haul_glm$SurveyName)
+
+for(v in surveys) {
+
+  firstfilt <- data_haul_glm %>%
+    filter(SurveyName == v)
+
+  spps <- unique(firstfilt$Species)
+
+  for (p in spps) {
+
+    myfilt <- firstfilt %>%
+      filter(Species == p) %>%
+      mutate(
+        Year = as.numeric(Year), # character -> numeric 
+        maxhauls = as.numeric(maxhauls) # safe conversion for response
+        ) %>%
+      filter(!is.na(Year), !is.na(HaulPresence), !is.na(maxhauls))
+    
+    # default output if regression is not possible
+    glmM <- NA_real_
+    glmP <- NA_real_
+    YearVal <- NA_real_
+    
+    # determine the last-10-year window (min = max(Year) - 10, inclusive)
+    if (nrow(myfilt) > 0 && any(!is.na(myfilt$Year))) {
+      max_year <- max(myfilt$Year, na.rm = TRUE)
+      min_year <- max_year - 10
+      # subset to the last 10-year window (inclusive)
+      window_filt <- myfilt %>% filter(Year >= min_year & Year <= max_year)
+      } else {
+      window_filt <- myfilt[0, ]  # empty
+      }
+    
+    if (nrow(window_filt) >= 2 && 
+        dplyr::n_distinct(window_filt$Year) >= 2
+        # &&
+        # sd(window_filt$HaulProportion, na.rm = TRUE) > 0
+        ) {
+        fit_glm <- glm(
+          cbind(HaulPresence, maxhauls - HaulPresence) ~ Year,
+          data = window_filt,
+          family = binomial
+          )
+        summary(fit_glm)
+        
+         if (!is.null(model)) {
+          # use broom to extract coefficients and model-level stats, but guard with tryCatch
+           tid <- tryCatch(broom::tidy(fit_glm), error = function(e) NULL)
+           # gl  <- tryCatch(broom::glance(fit_glm), error = function(e) NULL)
+          
+           #extract slope and P-value (if present) using tidy output
+           #if_else statements are used here to ensure that nothing is extracted from any tests that run as NULL
+           if (!is.null(tid) && "term" %in% names(tid) && any(tid$term == "Year")) {
+             yr_row <- tid[tid$term == "Year", , drop = FALSE]
+             glmM <- if (!is.null(yr_row$estimate)) as.numeric(yr_row$estimate) else NA_real_
+             glmP <- if ("p.value" %in% names(yr_row)) as.numeric(yr_row$p.value) else NA_real_
+           }
+           
+          YearVal <- max(window_filt$Year, na.rm = TRUE)#FLAG:This is likely not needed as we drop this column later
+         }
+    }
+    
+    temp <- data.frame(
+      SurveyName = v,
+      Species = p,
+      Year = YearVal,
+      glmM = glmM,
+      glmP = glmP,
+      stringsAsFactors = FALSE
+    )
+
+    holding_glm <- rbind(holding_glm, temp)
+  }
+}
+  
+```
+
+```{r  haul freq inc vs dec, eval= FALSE}
 holding <- data.frame(SurveyName = character(), Species = character(), Year = numeric(), RegM = numeric(), RegR = numeric(), RegP = numeric(), stringsAsFactors = FALSE)
 
 
@@ -511,6 +614,8 @@ for(v in surveys) {
 ```
 
 ***Biomass***
+
+This section is calculating a linear regression for the last 10 years to determine if there is any significant change (increase vs decrease) in *biomass*.
 ```{r organization biomass}
 data_inc_wtcpue <- data_full %>% 
   select(Region, SurveyName, Year, Species, Common, WTCPUE)
@@ -606,7 +711,12 @@ for(v in surveys) {
 
 ```
 
-**Ground-truthing**
+### Ground-truthing
+
+This section visualizes the trends in *haul frequency* and *biomass* for a set of "focal species". The goal of these visualizations is to help us ground-truth our analyses and determine if the trends of these "focal species" successfully match the trends that we know they should have in each region. The last 10 years are represented by a gray window to highlight that these years are captured by the linear regression model.
+
+We also provide a subset of the visualizations that only include "focal species" with significant trends (p<=0.5).
+
 ```{r haul freq}
 holding_noyear <- holding %>% select(!Year)
 
@@ -633,7 +743,14 @@ focal_spp <- data_inc_haul %>%
         (Region== "Southeast US" & Common == "King mackerel")|
         (Region== "West Coast" & Common == "Yelloweye rockfish")|
         (Region== "West Coast" & Common == "Pacific halibut")|
-        (Region== "West Coast" & Common == "Sablefish")
+        (Region== "West Coast" & Common == "Sablefish") |
+        (Region== "Hawai'i Islands" & Common =="Hapu'upu'u")|
+        (Region== "Hawai'i Islands" & Common == "Gindai")| 
+        (Region== "Hawai'i Islands" & Common =="Lehi")|
+        (Region== "Hawai'i Islands" & Common == "Ehu")|
+        (Region== "Hawai'i Islands" & Common == "Onaga")| 
+        (Region== "Hawai'i Islands" & Common =="Opakapaka")|
+        (Region== "Hawai'i Islands" & Common == "Kalekale")
           ) %>% 
   left_join(holding_noyear, by=c("SurveyName", "Species")) %>%
   mutate(id = paste(Common, abbreviate(SurveyName, 11), sep = ", "))
@@ -667,7 +784,14 @@ focal_spp_filt <- data_inc_haul %>%
         (Region== "Southeast US" & Common == "King mackerel")|
         (Region== "West Coast" & Common == "Yelloweye rockfish")|
         (Region== "West Coast" & Common == "Pacific halibut")|
-        (Region== "West Coast" & Common == "Sablefish")
+        (Region== "West Coast" & Common == "Sablefish")|
+        (Region== "Hawai'i Islands" & Common =="Hapu'upu'u")|
+        (Region== "Hawai'i Islands" & Common == "Gindai")| 
+        (Region== "Hawai'i Islands" & Common =="Lehi")|
+        (Region== "Hawai'i Islands" & Common == "Ehu")|
+        (Region== "Hawai'i Islands" & Common == "Onaga")| 
+        (Region== "Hawai'i Islands" & Common =="Opakapaka")|
+        (Region== "Hawai'i Islands" & Common == "Kalekale")
           ) %>% 
   left_join(holding_noyear_filt, by=c("SurveyName", "Species")) %>%
   mutate(id = paste(Common, abbreviate(SurveyName, 11), sep = ", ")) %>% 
@@ -689,6 +813,7 @@ focal_check_haul <- ggplot(focal_spp, aes(x = Year, y = HaulProportion)) +
 
 ggplotly(focal_check_haul)
 ```
+
 
 ```{r viz 2}
 focal_check_haul_filt <- ggplot(focal_spp_filt, aes(x = Year, y = HaulProportion)) +
@@ -729,7 +854,14 @@ focal_spp_bio <- data_inc_wtcpue %>%
         (Region== "Southeast US" & Common == "King mackerel")|
         (Region== "West Coast" & Common == "Yelloweye rockfish")|
         (Region== "West Coast" & Common == "Pacific halibut")|
-        (Region== "West Coast" & Common == "Sablefish")
+        (Region== "West Coast" & Common == "Sablefish")|
+        (Region== "Hawai'i Islands" & Common =="Hapu'upu'u")|
+        (Region== "Hawai'i Islands" & Common == "Gindai")| 
+        (Region== "Hawai'i Islands" & Common =="Lehi")|
+        (Region== "Hawai'i Islands" & Common == "Ehu")|
+        (Region== "Hawai'i Islands" & Common == "Onaga")| 
+        (Region== "Hawai'i Islands" & Common =="Opakapaka")|
+        (Region== "Hawai'i Islands" & Common == "Kalekale")
           ) %>% 
   left_join(holding_bio_noyear, by=c("SurveyName", "Species")) %>% 
   mutate(id = paste(Common, abbreviate(SurveyName, 11), sep = ", "))
@@ -763,7 +895,14 @@ focal_spp_bio_filt <- data_inc_wtcpue %>%
         (Region== "Southeast US" & Common == "King mackerel")|
         (Region== "West Coast" & Common == "Yelloweye rockfish")|
         (Region== "West Coast" & Common == "Pacific halibut")|
-        (Region== "West Coast" & Common == "Sablefish")
+        (Region== "West Coast" & Common == "Sablefish")|
+        (Region== "Hawai'i Islands" & Common =="Hapu'upu'u")|
+        (Region== "Hawai'i Islands" & Common == "Gindai")| 
+        (Region== "Hawai'i Islands" & Common =="Lehi")|
+        (Region== "Hawai'i Islands" & Common == "Ehu")|
+        (Region== "Hawai'i Islands" & Common == "Onaga")| 
+        (Region== "Hawai'i Islands" & Common =="Opakapaka")|
+        (Region== "Hawai'i Islands" & Common == "Kalekale")
           ) %>% 
   left_join(holding_bio_noyear_filt, by=c("SurveyName", "Species")) %>% 
   mutate(id = paste(Common, abbreviate(SurveyName, 11), sep = ", "))%>% 
@@ -795,7 +934,7 @@ focal_check_bio_filt <- ggplot(focal_spp_bio_filt, aes(x = Year, y = WTCPUE)) +
 ggplotly(focal_check_bio_filt)
 ```
 
-```{r non significant haul removed}
+```{r non significant haul removed, eval=FALSE}
 
 focal_spp_haulremoved <- data_inc_haul %>% 
   filter((Region== "Aleutian Islands" & Common == "Walleye pollock")|
@@ -839,7 +978,7 @@ ggplotly(focal_check_haul_removed)
 ```
 
 
-```{r non significant bio removed}
+```{r non significant bio removed, eval=FALSE}
 
 focal_spp_bioremoved <- data_inc_wtcpue %>% 
   filter((Region== "Aleutian Islands" & Common == "Walleye pollock")|
@@ -888,6 +1027,53 @@ pval_haul <- ggplot(holding, aes(x = RegP)) +
   geom_histogram() +
   theme_minimal()
 
+```
+
+```{r}
+# This code is pretty generic and the cbind() approach can be applied to
+# GAMs, brms, GLMs, sdmTMB, glmmTMB, etc
+set.seed(123)
+d <- data.frame(year = 1:20,
+                n_tows = ceiling(100 * runif(20, 7, 10)),
+                present_tows = ceiling(100 * runif(20, 1, 3)))
+
+# example of linear trend using the cbind() approach, which we'll call the compact model
+fit <- glm(
+  cbind(present_tows, n_tows - present_tows) ~ year,
+  data = d,
+  family = binomial
+)
+summary(fit)
+
+# example of using an indicator testing if last 10 years is different
+d$last10 <- ifelse(d$year > 10, 1, 0)
+fit2 <- glm(
+  cbind(present_tows, n_tows - present_tows) ~ last10,
+  data = d,
+  family = binomial
+)
+
+
+# You could also replicate the rows to be individual observations
+d_long <- do.call(rbind,
+                  lapply(1:nrow(d), function(i) {
+                    data.frame(
+                      year = d$year[i],
+                      tow_present = c(rep(1, d$present_tows[i]),
+                                      rep(0, d$n_tows[i] - d$present_tows[i]))
+                    )
+                  })
+)
+fit_long <- glm(
+  tow_present ~ year,
+  data = d_long,
+  family = binomial
+)
+
+# compare trends -- they're exactly the same
+summary(fit)$coefficients
+
+summary(fit_long)$coefficients
 ```
 
 
