@@ -1,14 +1,69 @@
 # DisMAP ArcGIS Pro Analysis using Python
 > This code is always in development. Find the code used for various reports in the code [releases](https://github.com/nmfs-fish-tools/DisMAP/releases).
 
-### Explanation of Files and Folders
+#### This code is primarally maintained by: ####
 
-***Summary of Python files in `src/dismap_tools`:***
+**John F. Kennedy** (John.F.Kennedy AT noaa.gov;
+[@john-f-kennedy-noaa](https://github.com/john-f-kennedy-noaa)) - National Marine Fisheries Service, - National Oceanic and Atmospheric Administration, - Silver Spring MD
 
-**Core Infrastructure:**
+### Table of contents ###
+
+> - [*Purpose*](#purpose)
+> - [*Summary of Python Files*](#summary-of-python-files)
+>   - [Project Setup and Data Import](#project-setup-and-data-import)
+>     - [dismap_project_setup.py](#dismap_project_setup)
+>     - [create_base_bathymetry.py](#create_base_bathymetry)
+>   - [*Example 2*](#example-2)
+>   - [*Example 3*](#example-3)
+>   - [*Example 4*](#example-4)
+> - [*Additional Resources*](#additional-resources)
+> - [*Suggestions and Comments*](#suggestions-and-comments)
+> - [*NOAA README*](#noaa-readme)
+> - [*NOAA-NMFS GitHub Enterprise Disclaimer*](#noaa-nmfs-github-enterprise-disclaimer)
+> - [*NOAA License*](#noaa-license)
+
+### *Purpose*
+
+These Python scrips materials were developed for DisMAP ArcGIS Python Processing
+
+### *Summary of Python Files*
+
+### Project Setup and Data Import:
+#### dismap_project_setup.py
+Creates ArcGIS Pro project folder structure: GDB, scratch workspace, subfolders, and configures toolboxes/databases in `.aprx`
+
+- #### create_base_bathymetry.py
+- Converts Alaska/Hawaii bathymetry grids to rasters (ASCII GRID converted GDB rasters)
+- **import_datasets_species_filter_csv_data.py** — Loads CSV survey metadata into project GDB
+- **zip_and_unzip_csv_data.py** — Archives/extracts CSV inputs (regions, species filter, survey data)
+- **zip_and_unzip_shapefile_data.py** — Archives/extracts shapefiles
+
 - **dismap_tools.py** (3354 lines) — Utility library with XML/metadata parsing, field transformation, and spatial analysis helpers using lxml & ArcPy.
-- **__init__.py** — Module entry point; imports key submodules (directors, workers, setup utilities).
-- **dismap_project_setup.py** — Creates ArcGIS Pro project folder structure: GDB, scratch workspace, subfolders, and configures toolboxes/databases in `.aprx`.
+
+***create_base_bathymetry.py summary:***
+
+This is an ArcGIS/ArcPy script that processes bathymetry data for Alaska,Hawaii, and all other regions. All functions follow ArcGIS Pro logging/error handling patterns, manage ArcPy environments (workspace, cellsize, resampling), and clean up local variables at the end. It contains four main functions:
+
+1. **`raster_properties_report()`** — Utility that logs raster metadata (spatial reference, extent, cell size, statistics, pixel type) using `arcpy.AddMessage()`.
+
+2. **`create_alasaka_bathymetry(project_folder)`** — Processes Alaska bathymetry:
+   - Copies ASCII GRID files (AI, EBS, GOA) into a geodatabase
+   - Converts positive depth values to negative
+   - Appends/clips rasters to ensure full coverage
+   - Reprojects each region's bathymetry to its regional spatial reference (AI_IDW, EBS_IDW, etc.)
+   - Copies final rasters to the project bathymetry GDB and compacts the database
+
+3. **`create_hawaii_bathymetry(project_folder)`** — Processes Hawaii bathymetry:
+   - Converts a polygon shapefile grid (BFISH_PSU.shp) to a raster using depth field
+   - Negates values and saves to GDB
+   - Copies final rasters to the project bathymetry GDB and compacts the database
+
+4. **`gebco_bathymetry(project_folder)`** — Processes GEBCO data for all other regions:
+   - Converts GEBCO ASCII rasters to GDM rasters for each region
+   - Copies final rasters to the project bathymetry GDB and compacts the database
+
+
+
 
 **Director/Worker Pattern (parallel-capable processing):**
 The codebase follows a **director** → **worker** architecture for scalability:
@@ -23,15 +78,8 @@ The codebase follows a **director** → **worker** architecture for scalability:
   - create_regions_from_shapefiles_worker.py — Converts shapefiles to GDB regions
   - And corresponding worker files for each director
 
-**Data Import/Export:**
-- **import_datasets_species_filter_csv_data.py** — Loads CSV survey metadata into project GDB
-- **zip_and_unzip_csv_data.py** — Archives/extracts CSV inputs (regions, species filter, survey data)
-- **zip_and_unzip_shapefile_data.py** — Archives/extracts shapefiles
-
 **Specialized Processing:**
-- **create_base_bathymetry.py** — Converts Alaska/Hawaii bathymetry grids to rasters (ASCII GRID → GDB rasters)
-- **dismap_metadata_processing.py** — ArcGIS metadata XML manipulation (ArcGIS2InPort XSL transforms)
-- **dev_dismap_director.py** — Development orchestrator; conditionally enables/disables pipeline steps (bathymetry, metadata, publish)
+
 - **publish_to_portal_director.py** — Publishes processed datasets to ArcGIS Portal with credentials
 
 **Pattern Notes:**
@@ -40,25 +88,7 @@ The codebase follows a **director** → **worker** architecture for scalability:
 - Functions clear local variables at completion (`del var`) and warn about remaining keys
 - ArcGIS Pro logging is configured (history, metadata, message levels)
 
-***create_base_bathymetry.py summary:***
 
-This is an ArcGIS/ArcPy script that processes bathymetry data for Alaska and Hawaii regions. It contains three main functions:
-
-1. **`raster_properties_report()`** — Utility that logs raster metadata (spatial reference, extent, cell size, statistics, pixel type) using `arcpy.AddMessage()`.
-
-2. **`create_alasaka_bathymetry(project_folder)`** — Processes Alaska bathymetry:
-   - Copies ASCII GRID files (AI, EBS, GOA) into a geodatabase
-   - Converts positive depth values to negative
-   - Appends/clips rasters to ensure full coverage
-   - Reprojects each region's bathymetry to its regional spatial reference (AI_IDW, EBS_IDW, etc.)
-   - Copies final rasters to the project bathymetry GDB and compacts the database
-
-3. **`create_hawaii_bathymetry(project_folder)`** — Processes Hawaii bathymetry:
-   - Converts a polygon shapefile grid (BFISH_PSU.shp) to a raster using depth field
-   - Negates values and saves to GDB
-   - Compacts the database
-
-Both functions follow ArcGIS Pro logging/error handling patterns, manage ArcPy environments (workspace, cellsize, resampling), and clean up local variables at the end. A third function `gebco_bathymetry()` starts but is cut off in the visible portion.
 
 ***zip_and_unzip_csv_data.py and zip_and_unzip_shapefile_data.py summary:***
 
@@ -1956,9 +1986,6 @@ Publishing outputs:
 - Layer files pre-created (normally output from `create_feature_class_layers()`)
 - Scratch workspace for temporary operations
 - Network access to Portal for upload/publish operations
-- Write permissions to `Layers\`, `Publish\`, `Metadata_Export\` folders
-
-This completes the **10 of 10 file documentation** for the DisMAP pipeline. The file represents the publishing terminus: all processed data (regions, sample locations, interpolations, indicators, mosaics) flows through these functions to become discoverable, accessible web services on ArcGIS Portal.
 
 #### Suggestions and Comments
 

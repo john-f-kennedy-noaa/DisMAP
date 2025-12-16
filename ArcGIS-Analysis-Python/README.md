@@ -1,16 +1,9 @@
 # DisMAP ArcGIS Pro Analysis using Python
 > This code is always in development. Find the code used for various reports in the code [releases](https://github.com/nmfs-fish-tools/DisMAP/releases).
 
-#### Explanation of Files and Folders
+#### Explanation of this Folder 
 
-This folder sets up the directory structure needed to run the analysis steps to generate the interpolated biomass rasters, indicators, and associated metadata using the python scripts and ArcGIS.
-
-* Data Folders -- These folder contain input data needed for the DisMAP Python processing. Within each folder there is a README.md that lists datasources
-    + Bathymetry -- This folder contains the sourece bathymetry data for all regions and the processed bathymetry contained in the Bathymetry.gdb 
-    + Data -- This folder contains the CSV IDW data for each region, plus CSV support tables
-    + Dataset Shapefiles -- This folder contains the shapefiles for each region
-
-* src Folder -- This folder contains the current and past versions of Python scripts for generating the interpolated biomass and calculating the distribution indicators (latitude, depth, range limits, etc). Within each folder there is a README.md that lists the folder contents. The README.md file located in src/dismap_tools desacribes in general each Python script
+This folder is part of the overall DisMAP repository and inparticular the ArcGIS Python Process fork. The "src" folder coontains a folder called "dismap_tools", which contains the set of Python scripts to process raw data into other datasets and eventually the interpolated biomass rasters.
 
 #### Suggestions and Comments
 
