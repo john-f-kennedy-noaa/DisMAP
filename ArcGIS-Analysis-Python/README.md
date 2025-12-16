@@ -2,12 +2,8 @@
 > This code is always in development. Find the code used for various reports in the code [releases](https://github.com/nmfs-fish-tools/DisMAP/releases).
 
 #### Explanation of Files and Folders
-* Version Folders -- The version folders (i.e. April 1 2023) contain all the files, datasets, and databases for the listed version. Within each folder there is a README.md that lists the links to the datasets published to the NOAA Geoplatform and the Fisheries Portal
-    + May 16 2022 -- 20220516 version (e.g. DisMAP_Regions_20220516)
-    + April 1 2023 -- 20230401 version (e.g. DisMAP_Regions_20230401)
-    + July 1 2024 -- 20240701 version (e.g. DisMAP_Regions_20240701)
-    + December 1 2024 -- 20241201 version (e.g.HI_Sample_Locations_20241201)
-    + August 1 2025 -- 20250801 version (e.g. DisMAP_Regions_20250801), Current Version
+
+This folder sets up the directory structure needed to run the analysis steps to generate the interpolated biomass rasters, indicators, and associated metadata using the python scripts and ArcGIS.
 
 * Data Folders -- These folder contain input data needed for the DisMAP Python processing. Within each folder there is a README.md that lists datasources
     + Bathymetry -- This folder contains the sourece bathymetry data for all regions and the processed bathymetry contained in the Bathymetry.gdb 
