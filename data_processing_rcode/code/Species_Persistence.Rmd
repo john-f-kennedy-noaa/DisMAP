@@ -441,6 +441,7 @@ data_haul_glm <- data_full %>%
   left_join(haulsyr_max, by = c("SurveyName", "Year"))
 ```
 
+
 ```{r  haul freq glm, eval= TRUE}
 holding_glm <- data.frame(SurveyName = character(), Species = character(), Year = numeric(), glmM = numeric(), glmP = numeric(), stringsAsFactors = FALSE)
 
@@ -479,19 +480,39 @@ for(v in surveys) {
       window_filt <- myfilt[0, ]  # empty
       }
     
+    # Utilize `tryCatch()` to incorporate safe guards 
     if (nrow(window_filt) >= 2 && 
-        dplyr::n_distinct(window_filt$Year) >= 2
-        # &&
-        # sd(window_filt$HaulProportion, na.rm = TRUE) > 0
-        ) {
-        fit_glm <- glm(
+        dplyr::n_distinct(window_filt$Year) >= 2 &&
+        sum(window_filt$HaulPresence, na.rm = TRUE) > 0 &&
+        sum(window_filt$maxhauls - window_filt$HaulPresence, na.rm = TRUE) > 0) {
+      
+        fit_glm <- tryCatch({
+          # !This section inside the brackets is the meat of the regression! 
+          # To run this regression without the `tryCatch()` safeguards, the glm could be run on its own, but the `control  glm.control(maxit = 50)` could be removed from the function 
+          glm(
           cbind(HaulPresence, maxhauls - HaulPresence) ~ Year,
           data = window_filt,
-          family = binomial
+          family = binomial,
+          control = glm.control(maxit = 50) # increase iterations if needed
           )
+        }, warning = function(w) {
+        # return the model anyway when a warning occurs to inspect it, or return NULL if you prefer
+        # message("glm warning: ", conditionMessage(w))
+        tryCatch(glm(
+          cbind(HaulPresence, maxhauls - HaulPresence) ~ Year,
+          data = window_filt,
+          family = binomial,
+          control = glm.control(maxit = 200)
+        ), error = function(e) NULL)
+        }, error = function(e) {
+        # fit failed
+        NULL
+      })
+        
         summary(fit_glm)
         
-         if (!is.null(model)) {
+        
+         if (!is.null(fit_glm)) {
           # use broom to extract coefficients and model-level stats, but guard with tryCatch
            tid <- tryCatch(broom::tidy(fit_glm), error = function(e) NULL)
            # gl  <- tryCatch(broom::glance(fit_glm), error = function(e) NULL)
@@ -523,95 +544,6 @@ for(v in surveys) {
   
 ```
 
-```{r  haul freq inc vs dec, eval= FALSE}
-holding <- data.frame(SurveyName = character(), Species = character(), Year = numeric(), RegM = numeric(), RegR = numeric(), RegP = numeric(), stringsAsFactors = FALSE)
-
-
-surveys <- unique(data_inc_haul$SurveyName)
-
-for(v in surveys) {
-
-  firstfilt <- data_inc_haul %>%
-    filter(SurveyName == v)
-
-  spps <- unique(firstfilt$Species)
-
-  for (p in spps) {
-
-    myfilt <- firstfilt %>%
-      filter(Species == p) %>%
-      mutate(
-        Year = as.numeric(Year), # character -> numeric 
-        HaulProportion = as.numeric(as.character(HaulProportion)) # safe conversion for response
-        ) %>%
-      filter(!is.na(Year), !is.na(HaulProportion))
-    
-    myfilt$Year <- as.numeric(myfilt$Year)
-    
-    # default output if regression is not possible
-    RegM <- NA_real_
-    RegR <- NA_real_
-    RegP <- NA_real_
-    YearVal <- NA_real_
-    
-    # determine the last-10-year window (min = max(Year) - 10, inclusive)
-    if (nrow(myfilt) > 0 && any(!is.na(myfilt$Year))) {
-      max_year <- max(myfilt$Year, na.rm = TRUE)
-      min_year <- max_year - 10
-      # subset to the last 10-year window (inclusive)
-      window_filt <- myfilt %>% filter(Year >= min_year & Year <= max_year)
-      } else {
-      window_filt <- myfilt[0, ]  # empty
-      }
-    
-    if (nrow(window_filt) >= 2 && 
-        dplyr::n_distinct(window_filt$Year) >= 2 &&
-        sd(window_filt$HaulProportion, na.rm = TRUE) > 0) {
-        
-        model <- tryCatch(
-          lm(HaulProportion ~ Year, data = window_filt),
-          error = function(e) NULL
-          )
-        
-         if (!is.null(model)) {
-          # use broom to extract coefficients and model-level stats, but guard with tryCatch
-           tid <- tryCatch(broom::tidy(model), error = function(e) NULL)
-           gl  <- tryCatch(broom::glance(model), error = function(e) NULL)
-          
-           #extract slope and P-value (if present) using tidy output
-           #if_else statements are used here to ensure that nothing is extracted from any tests that run as NULL
-           if (!is.null(tid) && "term" %in% names(tid) && any(tid$term == "Year")) {
-             yr_row <- tid[tid$term == "Year", , drop = FALSE]
-             RegM <- if (!is.null(yr_row$estimate)) as.numeric(yr_row$estimate) else NA_real_
-             RegP <- if ("p.value" %in% names(yr_row)) as.numeric(yr_row$p.value) else NA_real_
-           }
-           
-           #extract adjusted R-squared value using glance output
-           if (!is.null(gl) && "adj.r.squared" %in% names(gl)) {
-             RegR <- as.numeric(gl$adj.r.squared)
-           } else{
-             RegR<- NA_real_
-           }
-           
-          YearVal <- max(window_filt$Year, na.rm = TRUE)#FLAG:This is likely not needed as we drop this column later
-         }
-    }
-    
-    temp <- data.frame(
-      SurveyName = v,
-      Species = p,
-      Year = YearVal,
-      RegM = RegM,
-      RegR = RegR,
-      RegP= RegP,
-      stringsAsFactors = FALSE
-    )
-
-    holding <- rbind(holding, temp)
-  }
-}
-  
-```
 
 ***Biomass***
 
@@ -718,7 +650,7 @@ This section visualizes the trends in *haul frequency* and *biomass* for a set o
 We also provide a subset of the visualizations that only include "focal species" with significant trends (p<=0.5).
 
 ```{r haul freq}
-holding_noyear <- holding %>% select(!Year)
+holding_noyear <- holding_glm %>% select(!Year)
 
 focal_spp <- data_inc_haul %>% 
   filter((Region== "Aleutian Islands" & Common == "Walleye pollock")|
@@ -758,8 +690,8 @@ focal_spp <- data_inc_haul %>%
 focal_spp$Year <- as.numeric(focal_spp$Year)
 
 #same as above but filtering for only significant p-values
-holding_noyear_filt <- holding %>% select(!Year) %>% 
-  filter(RegP <= 0.05)
+holding_noyear_filt <- holding_glm %>% select(!Year) %>% 
+  filter(glmP <= 0.05)
   
 focal_spp_filt <- data_inc_haul %>% 
   filter((Region== "Aleutian Islands" & Common == "Walleye pollock")|
