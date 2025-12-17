@@ -169,6 +169,7 @@ setip.py
 utils.py
 Metadata.md
 src/dismap_tools/esri/*
+src/dismap_tools_dev/*
 #############
 # Do not ignore these files
 !README.md
