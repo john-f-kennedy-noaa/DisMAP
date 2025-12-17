@@ -1,21 +1,15 @@
 # DisMAP ArcGIS Pro Analysis using Python
 > This code is always in development. Find the code used for various reports in the code [releases](https://github.com/nmfs-fish-tools/DisMAP/releases).
 
-#### This code is primarally maintained by: ####
-
-**John F. Kennedy** (John.F.Kennedy AT noaa.gov;
-[@john-f-kennedy-noaa](https://github.com/john-f-kennedy-noaa)) - National Marine Fisheries Service, - National Oceanic and Atmospheric Administration, - Silver Spring MD
-
 ### Table of contents ###
 
 > - [*Purpose*](#purpose)
-> - [*Summary of Python Files*](#summary-of-python-files)
->   - [Project Setup and Data Import](#project-setup-and-data-import)
->     - [dismap_project_setup.py](#dismap_project_setup)
->     - [create_base_bathymetry.py](#create_base_bathymetry)
->   - [*Example 2*](#example-2)
->   - [*Example 3*](#example-3)
->   - [*Example 4*](#example-4)
+> - [*DisMAP ArcGIS Python Processing*](#dismap-arcigs-python-processing)
+>   - [DisMAP Project Setup](#dismap-project-setup)
+>   - [Create Base Bathymetry](#create-base-bathymetry)
+>   - [Import Datasets Species Filter CSV Data](#import-datasets-species-filter-csv-data)
+> - [*Example 3*](#example-3)
+> - [*Example 4*](#example-4)
 > - [*Additional Resources*](#additional-resources)
 > - [*Suggestions and Comments*](#suggestions-and-comments)
 > - [*NOAA README*](#noaa-readme)
@@ -23,22 +17,22 @@
 > - [*NOAA License*](#noaa-license)
 
 ### *Purpose*
+These Python scripts were developed for the DisMAP ArcGIS Python Processing phase of the project. In general the scripts listed below are ran in the order they are presented in a Python IDE such as [*Pyscripter*](https://sourceforge.net/projects/pyscripter/).
 
-These Python scrips materials were developed for DisMAP ArcGIS Python Processing
+### *DisMAP ArcGIS Python Processing*
+- #### DisMAP Project Setup
+  - Creates ArcGIS Pro project folder structure: GDB, scratch workspace, subfolders, and configures toolboxes/databases in `.aprx`
 
-### *Summary of Python Files*
-
-### Project Setup and Data Import:
-#### dismap_project_setup.py
-Creates ArcGIS Pro project folder structure: GDB, scratch workspace, subfolders, and configures toolboxes/databases in `.aprx`
-
-- #### create_base_bathymetry.py
-- Converts Alaska/Hawaii bathymetry grids to rasters (ASCII GRID converted GDB rasters)
-- **import_datasets_species_filter_csv_data.py** — Loads CSV survey metadata into project GDB
-- **zip_and_unzip_csv_data.py** — Archives/extracts CSV inputs (regions, species filter, survey data)
-- **zip_and_unzip_shapefile_data.py** — Archives/extracts shapefiles
-
-- **dismap_tools.py** (3354 lines) — Utility library with XML/metadata parsing, field transformation, and spatial analysis helpers using lxml & ArcPy.
+- #### Create Base Bathymetry
+  Converts Alaska/Hawaii bathymetry grids to rasters (ASCII GRID converted GDB rasters)
+- #### Import Datasets Species Filter CSV Data
+  Loads CSV survey metadata into project GDB
+- #### Zip and Unzip CSV Data
+  Archives/extracts CSV inputs (regions, species filter, survey data)
+- #### Zip and Unzip Shapefile Data
+  zip_and_unzip_shapefile_data.py Archives/extracts shapefiles
+- #### DisMAP Tools
+  - **dismap_tools.py** — Utility library with XML/metadata parsing, field transformation, and spatial analysis helpers using lxml & ArcPy.
 
 ***create_base_bathymetry.py summary:***
 
