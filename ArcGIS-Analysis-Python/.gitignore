@@ -177,4 +177,3 @@ src/dismap_tools_dev/*
 src/dismap_tools/dev_*.py
 src/dismap_tools/__init__.py
 !src/dismap_tools/README.md
-src/dismap_tools/arcpy da Editor.py
