@@ -137,21 +137,21 @@ ImportLog
 .backups
 .ipynb_checkpoints
 __pycache__
-April 1 2023/*
-August 1 2025/*
-Bathymetry/*
-Data/*
-Dataset Shapefiles/*
-December 1 2024/*
+April 1 2023
+August 1 2025
+Bathymetry
+Data
+Dataset Shapefiles
+December 1 2024
 GpMessages
-ImportLog/*
-Index/*
-July 1 2024/*
-Layout/*
-May 16 2022/*
-RasterFunctionsHistory/*
-RasterFunctionTemplates/*
-Scratch/*
+ImportLog
+Index
+July 1 2024
+Layout
+May 16 2022
+RasterFunctionsHistory
+RasterFunctionTemplates
+Scratch
 # Ignore Files
 *.ags
 *.docx
@@ -168,8 +168,8 @@ main.py
 setip.py
 utils.py
 Metadata.md
-src/dismap_tools/esri/*
-src/dismap_tools_dev/*
+src/dismap_tools/esri
+src/dismap_tools_dev
 #############
 # Do not ignore these files
 !README.md
