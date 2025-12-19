@@ -14,8 +14,15 @@
 >   - [Create Metadata JSON Files](#create-metadata-json-files)
 >   - [Import Datasets Species Filter CSV Data](#import-datasets-species-filter-csv-data)
 > - [*DisMAP ArcGIS Python Processing*](#dismap-arcigs-python-processing)
-> - [*Example 4*](#example-4)
-> - [*Additional Resources*](#additional-resources)
+>   - [Create Regions from Shapefiles Director and Worker](#create-regions-from-shapefiles-director-and-worker)
+>   - [Create Region Fishnets Director and Worker](#create-region-fishnets-director-and-worker)
+>   - [Create Region Bathymetry Director and Worker](#create-region-bathymetry-director-and-worker)
+>   - [Create Region Sample Locations Director and Worker](#create-region-sample-locations-director-and-worker)
+>   - [Create Region Species Year Image Name Table Director and Worker](#create-region-species-year-image-name-table-director-and-worker)
+>   - [Create Region Rasters Director and Worker](#create-region-rasters-director-and-worker)
+>   - [Create Region Species Richness Director and Worker](#create-region-species-richness-director-and-worker)
+>   - [Create Region Mosaics Director and Worker](#create-region-mosaics-director-and-worker)
+> 
 > - [*Suggestions and Comments*](#suggestions-and-comments)
 > - [*NOAA README*](#noaa-readme)
 > - [*NOAA-NMFS GitHub Enterprise Disclaimer*](#noaa-nmfs-github-enterprise-disclaimer)
@@ -265,11 +272,10 @@ These Python scripts were developed for the DisMAP ArcGIS Python Processing phas
 
   - Key pattern: Heavy use of pandas for CSV parsing + NumPy array conversion to ensure type safety between CSV and GDB; metadata synchronization with lxml XML manipulation
  
-
 ### *DisMAP ArcGIS Python Processing*
 
-**Director/Worker Pattern (parallel-capable processing):**
-The codebase follows a **director** → **worker** architecture for scalability:
+- #### Director/Worker Pattern (parallel-capable processing): 
+  The codebase follows a **director** → **worker** architecture for scalability:
 - **Directors** orchestrate workflows and can spawn parallel jobs using `multiprocessing.Pool`
   - create_rasters_director.py — Orchestrates raster creation; supports sequential or multiprocess execution
   - create_regions_from_shapefiles_director.py — Builds region geometries
@@ -281,651 +287,843 @@ The codebase follows a **director** → **worker** architecture for scalability:
   - create_regions_from_shapefiles_worker.py — Converts shapefiles to GDB regions
   - And corresponding worker files for each director
 
-**Specialized Processing:**
+- **Pattern Notes:**
+  - All modules use raw f-strings with Windows paths (e.g., `rf"{project_folder}\Bathymetry\Bathymetry.gdb"`)
+  - Consistent error handling: ArcPy exception catching + traceback + `sys.exit()`
+  - Functions clear local variables at completion (`del var`) and warn about remaining keys
+  - ArcGIS Pro logging is configured (history, metadata, message levels)
 
-- **publish_to_portal_director.py** — Publishes processed datasets to ArcGIS Portal with credentials
+- ### Create Regions from Shapefiles Director and Worker
+  - This director/worker pair converts survey region shapefiles into feature classes within the DisMAP geodatabase.
 
-**Pattern Notes:**
-- All modules use raw f-strings with Windows paths (e.g., `rf"{project_folder}\Bathymetry\Bathymetry.gdb"`)
-- Consistent error handling: ArcPy exception catching + traceback + `sys.exit()`
-- Functions clear local variables at completion (`del var`) and warn about remaining keys
-- ArcGIS Pro logging is configured (history, metadata, message levels)
+  - #### **Director (create_regions_from_shapefiles_director.py)**
 
+    - **Purpose**: Orchestrates the creation of region boundaries and extent polygons from shapefiles for all IDW regions (AI, EBS, GOA, GMEX, SEUS, etc.).
 
----
+    - **Key Functions:**
 
+      1. **`create_dismap_regions(project_gdb)`** — Initializes the DisMAP_Regions polyline template feature class:
+         - Creates empty `DisMAP_Regions` feature class in project GDB (spatial reference: WGS_1984_Web_Mercator_Auxiliary_Sphere)
+         - Adds schema fields via `dismap_tools.add_fields()`
+         - Imports metadata via `dismap_tools.import_metadata()`
 
-## Summary: create_regions_from_shapefiles_director.py and create_regions_from_shapefiles_worker.py
+      2. **`director(project_gdb, Sequential, table_names)`** — Main orchestration function:
+         - **Pre-processing** (sequential):
+           - Calls `create_dismap_regions()` to initialize template
+           - For each region (e.g., "AI_IDW", "EBS_IDW"):
+             - Creates region-specific GDB and scratch workspace (`{scratch_folder}\{table_name}.gdb`)
+             - Copies `Datasets` table and `DisMAP_Regions` template to region GDB
+             - Synchronizes metadata via `arcpy.metadata.Metadata`
+         
+         - **Sequential or parallel processing**:
+           - **Sequential mode**: Calls `worker()` for each region sequentially
+           - **Parallel mode**: Uses `multiprocessing.Pool` (processes = CPU count - 2) with `apply_async()` to spawn workers; monitors job completion with status polling every ~7.5×processes seconds; gracefully handles exceptions with pool termination
+         
+         - **Post-processing** (sequential):
+           - Walks scratch folder for all generated feature classes (Polygon/Polyline)
+           - Copies each result to project GDB
+           - For `*_Boundary` feature classes, appends them to the master `DisMAP_Regions` feature class
+           - Compacts project GDB
 
-This director/worker pair converts survey region shapefiles into feature classes within the DisMAP geodatabase.
+      3. **`script_tool(project_gdb)`** — Entry point (ArcGIS Pro tool parameter wrapper):
+         - Supports test/dev toggles for processing specific regions (hardcoded table names or empty list)
+         - Calls `director()` with default parallel processing (`Sequential=False`)
+         - Logs timing and environment info
 
-### **Director (create_regions_from_shapefiles_director.py)**
+  - #### **Worker (create_regions_from_shapefiles_worker.py)**
 
-**Purpose**: Orchestrates the creation of region boundaries and extent polygons from shapefiles for all IDW regions (AI, EBS, GOA, GMEX, SEUS, etc.).
+    - **Purpose**: Processes a single region; converts a region's boundary shapefile to feature classes (Region polygon + Boundary polyline).
 
-**Key Functions:**
+    - **Key Steps in `worker(region_gdb)`:**
 
-1. **`create_dismap_regions(project_gdb)`** — Initializes the DisMAP_Regions polyline template feature class:
-   - Creates empty `DisMAP_Regions` feature class in project GDB (spatial reference: WGS_1984_Web_Mercator_Auxiliary_Sphere)
-   - Adds schema fields via `dismap_tools.add_fields()`
-   - Imports metadata via `dismap_tools.import_metadata()`
+      1. **Extract region metadata** — Queries `Datasets` table to fetch region info:
+           - Fields: TableName, GeographicArea, DatasetCode, Region, Season, DistributionProjectCode
+           - Example result: `['AI_IDW', 'AI_IDW_Region', 'AI', 'Aleutian Islands', None, 'IDW']`
 
-2. **`director(project_gdb, Sequential, table_names)`** — Main orchestration function:
-   - **Pre-processing** (sequential):
-     - Calls `create_dismap_regions()` to initialize template
-     - For each region (e.g., "AI_IDW", "EBS_IDW"):
-       - Creates region-specific GDB and scratch workspace (`{scratch_folder}\{table_name}.gdb`)
-       - Copies `Datasets` table and `DisMAP_Regions` template to region GDB
+      2. **Set spatial reference** — Loads `.prj` file from `Dataset_Shapefiles\{table_name}\{geographic_area}.prj`:
+           - Adjusts cell size and XY tolerance based on linear unit (Kilometer → 1 cell size; Meter → 1000 cell size)
+
+      3. **Create region feature class** — Creates POLYGON feature class:
+           - Uses `DisMAP_Regions` template as schema source
+           - Applies region-specific spatial reference
+
+      4. **Append shapefile data** — Imports geometry and attributes from source shapefile:
+           - `arcpy.management.Append()` copies features from `{geographic_area}.shp` into the new feature class
+
+      5. **Calculate region fields** — Populates DatasetCode, Region, Season, DistributionProjectCode fields with values from Datasets table
+
+      6. **Create boundary feature class** — Uses `FeatureToLine()` to extract boundary polylines from the region polygon; deletes auto-generated FID field
+
+      7. **Alter field metadata** — Calls `dismap_tools.alter_fields()` to set field aliases and properties for both Region and Boundary feature classes
+
+      8. **Synchronize metadata** — Copies metadata from source region feature class to boundary feature class via `arcpy.metadata.Metadata`
+
+      9. **Cleanup** — Deletes template tables (`DisMAP_Regions`, `Datasets`), compacts region GDB
+
+    - ##### **Key Architectural Patterns**
+
+      - **Scalable parallelism**: Director spawns region workers in parallel pool; each worker processes independently with isolated GDB workspaces
+      - **Metadata cascade**: Copies metadata templates between feature classes to maintain consistency
+      - **Region isolation**: Each worker uses separate `.gdb` to avoid locking; director merges results post-processing
+      - **Workspace cleanup**: Removes intermediate templates and compacts GDBs to minimize database size
+
+    - ##### **Integration Points**
+
+      - Depends on `Dataset_Shapefiles\{region}\{geographic_area}.shp/.prj` files
+      - Reads region metadata from `Datasets` table (populated by `import_datasets_species_filter_csv_data.py`)
+      - Outputs region boundaries appended to master `DisMAP_Regions` feature class
+      - Boundary feature classes available for fishnet creation and region extent workflows downstream
+
+  - ### Create Region Fishnets Director and Worker
+    - This director/worker pair generates fishnet grids, extent points, and latitude/longitude rasters for each survey region.
+
+    - #### **Director (create_region_fishnets_director.py)**
+
+      - **Purpose**: Orchestrates fishnet generation for all IDW regions, supporting parallel processing with batch grouping for CPU efficiency.
+
+      - **Key Functions:**
+
+        1. **`director(project_gdb, Sequential, table_names)`** — Main orchestration function:
+          - **Pre-processing** (sequential):
+            - Validates that `Datasets` and `*_Region` feature classes exist and contain records
+            - Creates region-specific GDB and scratch workspaces (`{scratch_folder}\{table_name}.gdb`)
+            - Copies `Datasets` table and `{table_name}_Region` feature class to each region GDB
+          
+          - **Sequential or parallel processing**:
+            - **Sequential mode**: Calls `worker()` sequentially for each region
+            - **Parallel mode**: Uses `multiprocessing.Pool` (processes = CPU count - 2, maxtasksperchild=1); monitors job completion with status polling every ~7.5×processes seconds
+          
+          - **Post-processing** (sequential):
+            - Walks scratch folder collecting all generated datasets (rasters, feature classes)
+            - Copies each result to project GDB
+            - Deletes source intermediate files from scratch workspace
+            - Compacts each region GDB and the project GDB
+
+        2. **`script_tool(project_gdb)`** — Entry point with hardcoded batch grouping:
+          - Supports test/dev toggles with region subsets
+          - **Production batches** (parallel): Processes regions in two parallel director calls:
+            - Batch 1: `WC_TRI_IDW, GMEX_IDW, AI_IDW, GOA_IDW, WC_ANN_IDW`
+            - Batch 2: `NEUS_SPR_IDW, EBS_IDW, NEUS_FAL_IDW, SEUS_SUM_IDW`
+          - Logs timing and environment info
+
+  - #### **Worker (create_region_fishnets_worker.py)**
+
+    **Purpose**: For a single region, creates fishnet grid cells, extent points, and geographic coordinate rasters.
+
+    **Key Outputs Generated:**
+
+    1. **Raster Mask** (`{table_name}_Raster_Mask`):
+       - Converts region boundary polygon to raster using cell size from Datasets table
+       - Serves as template for coordinate rasters
+
+    2. **Extent Points** (`{table_name}_Extent_Points`):
+       - Creates 3 corner points (lower-left, upper-left, upper-right) of region boundary
+       - Calculates both projected (Easting/Northing) and geographic (Longitude/Latitude) coordinates using `AddXY()` and field aliasing
+
+    3. **Fishnet** (`{table_name}_Fishnet`):
+       - Creates regular grid of POLYGON cells (cell size from Datasets table)
+       - Overlays fishnet on region boundary and removes cells outside region using `SelectLayerByLocation()` with 2×cell_size buffer
+       - Result: Only cells intersecting the region are retained
+
+    4. **Lat-Long Centroids** (`{table_name}_Lat_Long`):
+       - Extracts fishnet cell centroids as point feature class
+       - Calculates both projected (Easting/Northing) and geographic (Longitude/Latitude) coordinates
+
+    5. **Latitude Raster** (`{table_name}_Latitude`):
+       - Converts Lat-Long point centroids to raster using "Latitude" field
+       - Extracts values within raster mask using `ExtractByMask()`
+
+    6. **Longitude Raster** (`{table_name}_Longitude`):
+       - Converts Lat-Long point centroids to raster using "Longitude" field
+       - Extracts values within raster mask using `ExtractByMask()`
+
+    **Technical Details:**
+
+    - **Coordinate system handling**: 
+      - Uses `EnvManager` context managers to temporarily override output coordinate system
+      - Converts from region's projected system (via `.prj` file) to WGS84 (EPSG:4326) for geographic coordinates
+      - Uses `dismap_tools.check_transformation()` to get geographic transformation parameters
+
+    - **Field renaming pattern**:
+      - `POINT_X` → `Easting` (projected) or `Longitude` (geographic)
+      - `POINT_Y` → `Northing` (projected) or `Latitude` (geographic)
+
+    - **Metadata & cleanup**:
+      - Calls `dismap_tools.alter_fields()` for field aliases
+      - Calls `dismap_tools.import_metadata()` to attach standardized metadata
        - Synchronizes metadata via `arcpy.metadata.Metadata`
-   
-   - **Sequential or parallel processing**:
-     - **Sequential mode**: Calls `worker()` for each region sequentially
-     - **Parallel mode**: Uses `multiprocessing.Pool` (processes = CPU count - 2) with `apply_async()` to spawn workers; monitors job completion with status polling every ~7.5×processes seconds; gracefully handles exceptions with pool termination
-   
-   - **Post-processing** (sequential):
-     - Walks scratch folder for all generated feature classes (Polygon/Polyline)
-     - Copies each result to project GDB
-     - For `*_Boundary` feature classes, appends them to the master `DisMAP_Regions` feature class
-     - Compacts project GDB
-
-3. **`script_tool(project_gdb)`** — Entry point (ArcGIS Pro tool parameter wrapper):
-   - Supports test/dev toggles for processing specific regions (hardcoded table names or empty list)
-   - Calls `director()` with default parallel processing (`Sequential=False`)
-   - Logs timing and environment info
-
-### **Worker (create_regions_from_shapefiles_worker.py)**
-
-**Purpose**: Processes a single region; converts a region's boundary shapefile to feature classes (Region polygon + Boundary polyline).
-
-**Key Steps in `worker(region_gdb)`:**
-
-1. **Extract region metadata** — Queries `Datasets` table to fetch region info:
-   - Fields: TableName, GeographicArea, DatasetCode, Region, Season, DistributionProjectCode
-   - Example result: `['AI_IDW', 'AI_IDW_Region', 'AI', 'Aleutian Islands', None, 'IDW']`
-
-2. **Set spatial reference** — Loads `.prj` file from `Dataset_Shapefiles\{table_name}\{geographic_area}.prj`:
-   - Adjusts cell size and XY tolerance based on linear unit (Kilometer → 1 cell size; Meter → 1000 cell size)
-
-3. **Create region feature class** — Creates POLYGON feature class:
-   - Uses `DisMAP_Regions` template as schema source
-   - Applies region-specific spatial reference
-
-4. **Append shapefile data** — Imports geometry and attributes from source shapefile:
-   - `arcpy.management.Append()` copies features from `{geographic_area}.shp` into the new feature class
-
-5. **Calculate region fields** — Populates DatasetCode, Region, Season, DistributionProjectCode fields with values from Datasets table
-
-6. **Create boundary feature class** — Uses `FeatureToLine()` to extract boundary polylines from the region polygon; deletes auto-generated FID field
-
-7. **Alter field metadata** — Calls `dismap_tools.alter_fields()` to set field aliases and properties for both Region and Boundary feature classes
-
-8. **Synchronize metadata** — Copies metadata from source region feature class to boundary feature class via `arcpy.metadata.Metadata`
-
-9. **Cleanup** — Deletes template tables (`DisMAP_Regions`, `Datasets`), compacts region GDB
-
-### **Key Architectural Patterns**
-
-- **Scalable parallelism**: Director spawns region workers in parallel pool; each worker processes independently with isolated GDB workspaces
-- **Metadata cascade**: Copies metadata templates between feature classes to maintain consistency
-- **Region isolation**: Each worker uses separate `.gdb` to avoid locking; director merges results post-processing
-- **Workspace cleanup**: Removes intermediate templates and compacts GDBs to minimize database size
-
-### **Integration Points**
-
-- Depends on `Dataset_Shapefiles\{region}\{geographic_area}.shp/.prj` files
-- Reads region metadata from `Datasets` table (populated by `import_datasets_species_filter_csv_data.py`)
-- Outputs region boundaries appended to master `DisMAP_Regions` feature class
-- Boundary feature classes available for fishnet creation and region extent workflows downstream
-
-## Summary: create_region_fishnets_director.py and create_region_fishnets_worker.py
-
-This director/worker pair generates fishnet grids, extent points, and latitude/longitude rasters for each survey region.
-
-### **Director (create_region_fishnets_director.py)**
-
-**Purpose**: Orchestrates fishnet generation for all IDW regions, supporting parallel processing with batch grouping for CPU efficiency.
-
-**Key Functions:**
-
-1. **`director(project_gdb, Sequential, table_names)`** — Main orchestration function:
-   - **Pre-processing** (sequential):
-     - Validates that `Datasets` and `*_Region` feature classes exist and contain records
-     - Creates region-specific GDB and scratch workspaces (`{scratch_folder}\{table_name}.gdb`)
-     - Copies `Datasets` table and `{table_name}_Region` feature class to each region GDB
-   
-   - **Sequential or parallel processing**:
-     - **Sequential mode**: Calls `worker()` sequentially for each region
-     - **Parallel mode**: Uses `multiprocessing.Pool` (processes = CPU count - 2, maxtasksperchild=1); monitors job completion with status polling every ~7.5×processes seconds
-   
-   - **Post-processing** (sequential):
-     - Walks scratch folder collecting all generated datasets (rasters, feature classes)
-     - Copies each result to project GDB
-     - Deletes source intermediate files from scratch workspace
-     - Compacts each region GDB and the project GDB
-
-2. **`script_tool(project_gdb)`** — Entry point with hardcoded batch grouping:
-   - Supports test/dev toggles with region subsets
-   - **Production batches** (parallel): Processes regions in two parallel director calls:
-     - Batch 1: `WC_TRI_IDW, GMEX_IDW, AI_IDW, GOA_IDW, WC_ANN_IDW`
-     - Batch 2: `NEUS_SPR_IDW, EBS_IDW, NEUS_FAL_IDW, SEUS_SUM_IDW`
-   - Logs timing and environment info
-
-### **Worker (create_region_fishnets_worker.py)**
-
-**Purpose**: For a single region, creates fishnet grid cells, extent points, and geographic coordinate rasters.
-
-**Key Outputs Generated:**
-
-1. **Raster Mask** (`{table_name}_Raster_Mask`):
-   - Converts region boundary polygon to raster using cell size from Datasets table
-   - Serves as template for coordinate rasters
-
-2. **Extent Points** (`{table_name}_Extent_Points`):
-   - Creates 3 corner points (lower-left, upper-left, upper-right) of region boundary
-   - Calculates both projected (Easting/Northing) and geographic (Longitude/Latitude) coordinates using `AddXY()` and field aliasing
-
-3. **Fishnet** (`{table_name}_Fishnet`):
-   - Creates regular grid of POLYGON cells (cell size from Datasets table)
-   - Overlays fishnet on region boundary and removes cells outside region using `SelectLayerByLocation()` with 2×cell_size buffer
-   - Result: Only cells intersecting the region are retained
-
-4. **Lat-Long Centroids** (`{table_name}_Lat_Long`):
-   - Extracts fishnet cell centroids as point feature class
-   - Calculates both projected (Easting/Northing) and geographic (Longitude/Latitude) coordinates
-
-5. **Latitude Raster** (`{table_name}_Latitude`):
-   - Converts Lat-Long point centroids to raster using "Latitude" field
-   - Extracts values within raster mask using `ExtractByMask()`
-
-6. **Longitude Raster** (`{table_name}_Longitude`):
-   - Converts Lat-Long point centroids to raster using "Longitude" field
-   - Extracts values within raster mask using `ExtractByMask()`
-
-**Technical Details:**
-
-- **Coordinate system handling**: 
-  - Uses `EnvManager` context managers to temporarily override output coordinate system
-  - Converts from region's projected system (via `.prj` file) to WGS84 (EPSG:4326) for geographic coordinates
-  - Uses `dismap_tools.check_transformation()` to get geographic transformation parameters
-
-- **Field renaming pattern**:
-  - `POINT_X` → `Easting` (projected) or `Longitude` (geographic)
-  - `POINT_Y` → `Northing` (projected) or `Latitude` (geographic)
-
-- **Metadata & cleanup**:
-  - Calls `dismap_tools.alter_fields()` for field aliases
-  - Calls `dismap_tools.import_metadata()` to attach standardized metadata
-   - Synchronizes metadata via `arcpy.metadata.Metadata`
-  - Deletes intermediate `Datasets` and `{table_name}_Region` templates
-  - Compacts region GDB
-
-### **Key Architectural Patterns**
-
-- **Batch parallelism**: Director runs multiple fishnet directors in sequence but each director spawns workers in parallel pool
-- **Coordinate duality**: Each feature class maintains both projected (Easting/Northing) and geographic (Longitude/Latitude) coordinates
-- **Region masking**: Fishnet cells are intelligently filtered to align with region boundary
-- **Raster template**: Raster mask constrains all downstream latitude/longitude raster generation
-
-### **Integration Points**
-
-- Reads region geometry from `{table_name}_Region` feature class (from `create_regions_from_shapefiles_worker`)
-- Reads cell size and dataset metadata from `Datasets` table
-- Outputs fishnet cells, extent points, and coordinate rasters available for downstream IDW interpolation
-- Longitude/Latitude rasters used for geographic coordinate layers in map displays
-
-## Summary: create_region_bathymetry_director.py and create_region_bathymetry_worker.py
-
-This director/worker pair generates region-specific bathymetry rasters using zonal statistics over fishnet grids.
-
-### **Director (create_region_bathymetry_director.py)**
-
-**Purpose**: Orchestrates bathymetry processing for all IDW regions, handling data staging and parallel worker coordination.
-
-**Key Functions:**
-
-1. **`director(project_gdb, Sequential, table_names)`** — Main orchestration function:
-   - **Pre-processing**:
-     - Calls `preprocessing()` to stage fishnet, raster mask, and bathymetry data for each region into separate GDBs
-     - Creates region-specific workspaces under Scratch folder
-   
-   - **Sequential or parallel processing**:
-     - **Sequential mode**: Calls `worker()` sequentially for each region (currently commented/disabled)
-     - **Parallel mode**: Uses `multiprocessing.Pool` (processes = CPU count - 2, maxtasksperchild=1) to execute workers in parallel; monitors job completion with status polling every ~7.5×processes seconds
-   
-   - **Post-processing** (sequential):
-     - Walks scratch folder collecting all generated raster datasets
-     - Copies each bathymetry raster to project GDB
-     - Calls `dismap_tools.alter_fields()` for feature classes/tables/mosaics
-     - Compacts project GDB
-
-2. **`script_tool(project_gdb)`** — Entry point with hardcoded batch grouping:
-   - **Production batches** (parallel): Processes regions in three parallel director calls:
-     - Batch 1: `NBS_IDW, ENBS_IDW, HI_IDW, SEUS_FAL_IDW, SEUS_SPR_IDW, SEUS_SUM_IDW`
-     - Batch 2: `WC_TRI_IDW, GMEX_IDW, AI_IDW, GOA_IDW, WC_ANN_IDW, NEUS_FAL_IDW`
-     - Batch 3: `NEUS_SPR_IDW, EBS_IDW`
-   - Logs timing and environment info
-
-### **Worker (create_region_bathymetry_worker.py)**
-
-This file contains three functions:
-
-#### **1. `preprocessing(project_gdb, table_names, clear_folder)`**
-Stages data for all regions into scratch workspace:
-- Clears scratch folder if `clear_folder=True`
-- For each region (e.g., `AI_IDW`), creates:
-  - Region-specific GDB: `{scratch_folder}\{table_name}.gdb`
-  - Region scratch workspace: `{scratch_folder}\{table_name}\scratch.gdb`
-  - Copies `Datasets` table from project GDB
-  - Copies `{table_name}_Fishnet` feature class from project GDB
-  - Copies `{table_name}_Raster_Mask` raster from project GDB
-  - Copies `{table_name}_Bathymetry` from `Bathymetry\Bathymetry.gdb` and renames to `{table_name}_Fishnet_Bathymetry`
-
-#### **2. `worker(region_gdb)`**
-Performs zonal statistics computation for a single region:
-
-**Inputs:**
-- `{table_name}_Fishnet` — Polygon feature class with fishnet grid cells (OID field)
-- `{table_name}_Raster_Mask` — Template raster defining cell size, extent, and spatial reference
-- `{table_name}_Fishnet_Bathymetry` — Bathymetry raster with depth values
-
-**Processing:**
-- Extracts cell size from raster mask metadata
-- Sets environment: cell size, extent, mask, snapRaster from raster template
-- Executes `arcpy.sa.ZonalStatistics()`:
-  - **Zone data**: Fishnet grid (one value per cell)
-  - **Zone field**: OID (unique cell identifier)
-  - **Value raster**: Bathymetry (depth values)
-  - **Statistics**: MEDIAN (median depth per cell)
-  - **Ignore NoData**: DATA (include NoData pixels in calculation)
-  - **Percentile**: 90th percentile (optional, for reference)
-
-**Output:**
-- `{table_name}_Bathymetry` — Raster with median depth value for each fishnet cell
-
-**Cleanup:**
-- Calls `dismap_tools.import_metadata()` to attach metadata
-- Deletes intermediate files: `Datasets`, `Raster_Mask`, `Fishnet`, `Fishnet_Bathymetry`
-- Compacts region GDB
-
-#### **3. `script_tool(project_gdb)`**
-Development entry point (currently runs single region test):
-- Calls `preprocessing()` to stage data
-- Calls `worker()` for test region (`HI_IDW`)
-- Used for single-region testing/debugging
-
-### **Key Architectural Patterns**
-
-- **Two-stage processing**: Preprocessing stages all data in parallel-safe workspaces, then workers compute independently
-- **Raster template pattern**: Raster mask provides all spatial environment parameters (cell size, extent, SR) for consistency
-- **Zonal statistics optimization**: Uses median depth to provide representative bathymetry per fishnet cell
-- **Batch grouping**: Director distributes 15 regions across 3 parallel batches to balance load across CPU cores
-
-### **Integration Points**
-
-- **Inputs**:
-  - Fishnet grid from `create_region_fishnets_worker` outputs
-  - Raster mask from `create_region_fishnets_worker` outputs
-  - Bathymetry raster from `create_base_bathymetry.py` or bathymetry GDB
-  
-- **Outputs**:
-  - `{table_name}_Bathymetry` rasters available for downstream analysis and visualization
-  - Rasters propagated to project GDB for inclusion in maps and services
-
-- **Data flow**:
-  ```
-  Bathymetry GDB → preprocessing() → region GDB → worker() → ZonalStatistics
-  Fishnet ─────────────────────────→ region GDB → worker() → (zone field)
-  Raster Mask ───────────────────────→ region GDB → worker() → (environment template)
-  ```
-
-### **Technical Details**
-
-- **Zonal Statistics parameters**:
-  - Ignores NoData in value raster (DATA mode) so pixels with No Data still participate in zone calculations
-  - Uses MEDIAN to handle outliers better than MEAN for depth measurements
-  - Produces one output value per zone (fishnet cell) linked by OID
-
-- **Environment management**:
-  - Uses `EnvManager` context manager for scratch workspace isolation
-  - Cell size derived from raster metadata: `arcpy.Describe(raster/Band_1).meanCellWidth`
-  - Linear unit handling: Kilometer → cell size 1 km; Meter → cell size 1000 m
-
-## Summary: create_region_sample_locations_director.py and create_region_sample_locations_worker.py
-
-This director/worker pair creates sample location point feature classes from survey data CSVs, converting raw data into spatial datasets with standardized fields and metadata.
-
-### **Director (create_region_sample_locations_director.py)**
-
-**Purpose**: Orchestrates sample location processing for all IDW regions, handling data staging and parallel worker coordination.
-
-**Key Functions:**
-
-1. **`director(project_gdb, Sequential, table_names)`** — Main orchestration function:
-   - **Pre-processing** (sequential):
-     - Clears scratch folder
-     - Creates region-specific GDBs under Scratch folder
-     - Copies `Datasets` table and `{table_name}_Region` feature class to each region GDB
-   
-   - **Sequential or parallel processing**:
-     - **Sequential mode**: Calls `worker()` sequentially for each region
-     - **Parallel mode**: Uses `multiprocessing.Pool` (processes = CPU count - 2, maxtasksperchild=1); monitors job completion with status polling every ~7.5×processes seconds
-   
-   - **Post-processing** (sequential):
-     - Walks scratch folder collecting all generated tables and feature classes
-     - Copies each result to project GDB
-     - Compacts project GDB
-
-2. **`script_tool(project_gdb)`** — Entry point with test mode:
-   - Default test mode: Single region (`GMEX_IDW`)
-   - Can run all 15 IDW regions in non-sequential mode
-   - Logs timing and environment info
-
-### **Worker (create_region_sample_locations_worker.py)**
-
-**Purpose**: For a single region, imports survey CSV data, transforms and enriches fields, converts to GDB table, then exports as point feature class with spatial reference.
-
-**Processing Pipeline (3 Major Phases):**
-
-#### **Phase 1: CSV Loading & Field Extraction**
-
-- Detects CSV encoding using `dismap_tools.get_encoding_index_col()` (chardet-based)
-- Loads CSV with pandas using schema-based data types from `dismap_tools.dTypesCSV()`
-- Queries `Datasets` table to extract region metadata:
-  - TableName, GeographicArea, DatasetCode, Region, Season, DistributionProjectCode
-  
-- **Column renaming** (22 aliases handled):
-  - `spp` / `spp_sci` → `Species`
-  - `common` / `spp_common` → `CommonName`
-  - `lon` / `Longitude`; `lat` / `Latitude`
-  - `lon_UTM` / `Easting`; `lat_UTM` / `Northing`
-  - `haulid` / `sampleid` → `SampleID`
-  - `wtcpue` → `WTCPUE`
-  - `median_est` / `mean_est` → `MedianEstimate` / `MeanEstimate`
-  - `est5` / `est95` → `Estimate5` / `Estimate95`
-  - `year` → `Year`; `depth_m` → `Depth`
-  - `stratum` → `Stratum`; `transformed` → `MapValue`
-
-#### **Phase 2: DataFrame Transformation & Enrichment**
-
-**Insert new columns with derived/default values:**
-
-- `DatasetCode`: From Datasets table
-- `Region`: From Datasets table (or default if None)
-- `Season`: From Datasets table (or empty string if None)
-- `StdTime`: Calculated from Year (pd.to_datetime with GMT+12 timezone)
-- `MapValue`: Cube root transformation of WTCPUE (`WTCPUE ^ (1/3)`)
-- `SpeciesCommonName`: Format `"Species (CommonName)"` where CommonName exists
-- `CommonNameSpecies`: Format `"CommonName (Species)"` where CommonName exists
-- `SummaryProduct`: Set to "Yes"
-- `TransformUnit`: Set to "cuberoot" (documents MapValue transformation)
-- `CoreSpecies`: Set to "No" (default; could be calculated later)
-
-**Handle null/missing values:**
-
-- Replace `NaN` with empty string for string fields (CommonName, DistributionProjectName)
-- Replace `Inf` and `-Inf` with `NaN` in numeric fields (WTCPUE, coordinates, depth)
-- Fill numeric nulls appropriately for Latitude, Longitude, Depth, WTCPUE
-
-**Reorder columns** using `dismap_tools.table_definitions()` to match schema order
-
-#### **Phase 3: GDB Table Creation & Feature Conversion**
-
-- Convert enriched DataFrame to NumPy structured array using GDB field types (`dismap_tools.dTypesGDB()`)
-- Create temporary GDB table via `arcpy.da.NumPyArrayToTable()`
-- Copy rows to output table: `{table_name}` (permanent table in region GDB)
-- Delete temporary table
-
-**Convert Table to Feature Class:**
-
-- Create XY Event Layer from output table using:
-  - X field: `Longitude` (geographic coordinates, WGS84)
-  - Y field: `Latitude` (geographic coordinates, WGS84)
-  - Spatial reference: WGS84 (EPSG:4326)
-  - Geographic transformation: Auto-determined via `dismap_tools.get_transformation()`
-  
-- Export XY Event Layer to feature class: `{table_name}_Sample_Locations`
-- Add attribute index on: Species, CommonName, SpeciesCommonName, Year
-- Delete temporary XY Event Layer
-
-**Metadata & Field Aliasing:**
-
-- Copy metadata from CSV to output table via `arcpy.metadata.Metadata`
-- Call `dismap_tools.alter_fields()` to set field aliases and properties for both table and feature class
-- Synchronize metadata for both
-
-**Cleanup:**
-
-- Delete intermediate datasets: `{table_name}_Boundary`, `{table_name}_Region`, `Datasets`
-- Compact region GDB
-
-### **Key Data Transformations**
-
-1. **MapValue (WTCPUE Cube Root)**: Normalizes highly skewed WTCPUE distribution for visualization
-2. **SpeciesCommonName/CommonNameSpecies**: Dual naming conventions for UI display flexibility
-3. **StdTime**: Creates ISO 8601 timestamp for temporal queries
-4. **Field Reordering**: Enforces consistent column order matching GDB schema
-
-### **Integration Points**
-
-- **Inputs**:
-  - Survey CSV files from `{project_folder}\CSV_Data\{table_name}.csv`
-  - Region geometry from `{table_name}_Region` (from `create_regions_from_shapefiles_worker`)
-  - Schema definitions from `field_definitions.json` and `table_definitions.json`
-  - Datasets metadata table (populated by `import_datasets_species_filter_csv_data.py`)
-
-- **Outputs**:
-  - `{table_name}` — GDB table with all survey records and enriched fields
-  - `{table_name}_Sample_Locations` — Point feature class in WGS84 (for web/portal publishing)
-  - Spatial index on (Species, CommonName, Year) for fast queries
-
-- **Data flow**:
-  ```
-  CSV File → pandas DataFrame (with encoding detection)
-           → Column rename & enrichment (22+ derived fields)
-           → NumPy array conversion (type casting)
-           → GDB table creation
-           → XY Event Layer (geographic coordinates)
-           → Point Feature Class (WGS84)
-  ```
-
-### **Technical Details**
-
-- **Encoding detection**: chardet-based; handles non-ASCII characters in CommonName fields
-- **Data type schema**: Schema-driven via JSON; ensures type safety across CSV→DataFrame→NumPy→GDB pipeline
-- **Coordinate systems**:
-  - CSV source: Latitude/Longitude (WGS84) and Easting/Northing (projected, region-specific)
-  - Output table: Both coordinate systems preserved
-  - Output feature class: WGS84 only (for portal interoperability)
-- **Transformation chain**: WTCPUE → MapValue (cube root) documented via TransformUnit field for traceability
-- **Pandas optimizations**: Set display options for logging; use `inplace=False` operations for clarity; delete DataFrame after NumPy conversion to free memory
-
-## Summary: create_rasters_director.py and create_rasters_worker.py
-
-This director/worker pair creates interpolated rasters from sample location data using Inverse Distance Weighting (IDW) geostatistical analysis.
-
-### **Director (create_rasters_director.py)**
-
-**Purpose**: Orchestrates raster creation for all IDW regions, generating spatially-interpolated surfaces from survey data with parallel processing support.
-
-**Key Functions:**
-
-1. **`director(project_gdb, Sequential, table_names)`** — Main orchestration function:
-   - **Pre-processing** (sequential):
-     - Calls `preprocessing()` to stage sample location data for each region into separate GDBs
-     - Creates region-specific workspaces under Scratch folder
-   
-   - **Sequential or parallel processing**:
-     - **Sequential mode**: Calls `worker()` sequentially for each region
-     - **Parallel mode**: Uses `multiprocessing.Pool` (processes = CPU count - 2, maxtasksperchild=1); monitors job completion with status polling every ~7.5×processes seconds
-   
-   - **Post-processing** (sequential):
-     - Compacts project GDB only (no explicit raster copying—results already in region GDBs)
-
-2. **`script_tool(project_gdb)`** — Entry point with hardcoded batch grouping:
-   - **Production batches** (parallel):
-     - Batch 1: `AI_IDW` (single region, default test)
-     - Batch 2: `EBS_IDW, ENBS_IDW, GMEX_IDW, GOA_IDW, NBS_IDW` (5 regions)
-     - Batch 3: `HI_IDW` (single region)
-     - Batch 4: `WC_ANN_IDW, WC_TRI_IDW` (2 regions)
-     - Batch 5: `SEUS_FAL_IDW, SEUS_SPR_IDW, SEUS_SUM_IDW` (3 regions)
-     - Batch 6: `NEUS_FAL_IDW, NEUS_SPR_IDW` (2 regions, currently active in code)
-   - Logs timing and environment info
-
-### **Worker (create_rasters_worker.py)**
-
-**Purpose**: For a single region, generates IDW interpolated rasters for each species/year combination using survey sample locations.
-
-**Processing Pipeline:**
-
-#### **Phase 1: Data Staging (`preprocessing()` function)**
-
-Pre-processes data for all regions into isolated region GDBs:
-
-- Clears scratch folder if `clear_folder=True`
-- For each region (e.g., `AI_IDW`), creates:
-  - Region-specific GDB: `{scratch_folder}\{table_name}.gdb`
-  - Region scratch workspace: `{scratch_folder}\{table_name}\scratch.gdb`
-  
-- Copies data to region GDB:
-  - `Datasets` table (metadata for region parameters: cell size, geographic area)
-  - `{table_name}_LayerSpeciesYearImageName` table (catalog of rasters to generate)
-  - `{table_name}_Sample_Locations` feature class (survey data points filtered for IDW species distribution)
-  - `{table_name}_Raster_Mask` raster (spatial template: extent, cell size, coordinate system)
-
-- Extracts FilterRegion and FilterSubRegion values for later reference
-
-#### **Phase 2: Raster Generation (`worker()` function)**
-
-For each species/year combination, executes multi-step IDW interpolation:
-
-**1. Prepare Output Raster Catalog:**
-- Queries `{table_name}_LayerSpeciesYearImageName` table for all rasters to generate
-- Extracts 4 fields: ImageName, Variable, Species, Year
-- Filters to exclude "Species Richness" rasters (handled by separate workflow)
-- Builds output_rasters dict: `{image_name: [image_name, variable, species, year, output_raster_path]}`
-- Creates folder structure: `{project_folder}\Images\{table_name}\{variable}\{image_name}.tif`
-
-**2. Prepare Sample Location Feature Layer:**
-- Creates feature layer from `{table_name}_Sample_Locations` for attribute selection
-- Filters for `DistributionProjectName = 'NMFS/Rutgers IDW Interpolation'` (IDW-compatible data)
-- If `SummaryProduct == "Yes"`: Adds `YearWeights` field (short integer, alias "Year Weights")
-
-**3. For Each Raster to Generate:**
-
-   **a) Select Species and Year Data:**
-   - Clears previous selection
-   - Selects sample points where `Species = '{species}' AND Year = {year}`
-   - Logs count of selected records
-
-   **b) Set IDW Search Neighborhood:**
-   - Extracts cell size from region metadata
-   - Calculates search ellipse:
-     - Major axis: `cell_size × 1000` (converts kilometers to meters)
-     - Minor axis: `cell_size × 1000`
-     - Angle: 0 (no rotation)
-     - Max neighbors: 15
-     - Min neighbors: 10
-     - Sector type: ONE_SECTOR
-   - Uses `arcpy.SearchNeighborhoodStandard()` for neighbor selection
-
-   **c) Weight Years for Temporal Smoothing:**
-   - Selects weighted years: `Year >= (year-2) AND Year <= (year+2)` (±2 years from target year)
-   - Calculates YearWeights using: `YearWeights = 3 - abs(year_target - year_sample)`
-     - Target year: weight = 3
-     - ±1 year: weight = 2
-     - ±2 years: weight = 1
-   - Logs count of weighted records
-
-   **d) Execute IDW Interpolation:**
-   - Checks out GeoStats extension: `arcpy.CheckOutExtension("GeoStats")`
-   - Sets environment parameters:
-     - Extent, mask, snapRaster from `region_raster_mask` (spatial alignment)
-     - Cell size from region metadata
-     - Output coordinate system from raster mask
-   - Calls `arcpy.ga.IDW()` with parameters:
-     - Input features: `sample_locations_path_layer` (selected points)
-     - Z field: `MapValue` (cube-root transformed WTCPUE from sample locations)
-     - Output raster: `memory\{output_raster}` (temporary in-memory raster)
-     - Cell size: region-specific
-     - Power: 2 (standard IDW power for distance weighting)
-     - Search neighborhood: calculated ellipse with temporal weights
-     - Weight field: `YearWeights` (applies temporal smoothing)
-
-   **e) Reverse MapValue Transformation:**
-   - Executes `arcpy.sa.Power(tmp_raster, 3)` to cube the interpolated values
-   - Reverses the cube-root transformation: `MapValue^3 = WTCPUE`
-   - Saves power-transformed raster to output TIF file path
-
-   **f) Build Pyramids:**
-   - Constructs pyramid levels (-1 = all levels)
-   - Resampling: BILINEAR
-   - Compression: DEFAULT with 75% quality
-   - Skip existing: OVERWRITE
-
-**4. Metadata & Cleanup:**
-- Sets raster metadata title: image_name with underscores replaced by spaces
-- Synchronizes metadata: `tif_md.synchronize("ALWAYS")`
-- Deletes intermediate in-memory raster
-- Resets YearWeights field to None
-- Clears feature layer selection
-
-**5. Final Cleanup:**
-- Deletes sample location feature layer
-- Deletes intermediate datasets: `Datasets`, `Raster_Mask`, `LayerSpeciesYearImageName`
-- Compacts region GDB
-
-### **Key Data Transformations**
-
-1. **MapValue → WTCPUE (Cube Root Reversal):**
-   - Input rasters: Cube-root transformed WTCPUE (MapValue) from sample locations
-   - IDW interpolates across landscape: `MapValue = WTCPUE^(1/3)`
-   - Output: `interpolated_MapValue^3 = WTCPUE` (restores original units)
-   - Justification: Cube root normalizes highly skewed WTCPUE distribution for interpolation
-
-2. **Temporal Weighting:**
-   - For target year Y: selects sample data from years Y-2 to Y+2
-   - Weight formula: `3 - |Y_target - Y_sample|`
-   - Effect: Center year has 3× influence; ±2 years have 1× influence
-   - Reduces temporal noise while maintaining year-specific estimates
-
-3. **Search Neighborhood:**
-   - Ellipse major/minor axes = `cell_size × 1000` meters
-   - Ensures interpolation uses local sample points (not global)
-   - Min/Max neighbors: 10–15 points per cell (balance: detail vs. stability)
-
-### **Integration Points**
-
-- **Inputs**:
-  - `{table_name}_Sample_Locations` feature class (from `create_region_sample_locations_worker`)
-  - `{table_name}_Raster_Mask` raster (from `create_region_fishnets_worker`)
-  - `{table_name}_LayerSpeciesYearImageName` table (mapping of species/year to raster outputs)
-  - `Datasets` table (region cell size, metadata)
-  - MapValue field (cube-root WTCPUE from sample enrichment)
-
-- **Outputs**:
-  - Raster TIFs saved to: `{project_folder}\Images\{table_name}\{variable}\{image_name}.tif`
-  - One interpolated surface per species/year/region combination
-  - Rasters include pyramids and spatial reference from region mask
-
-- **Data flow**:
-  ```
-  Sample Locations (points with MapValue)
-           → Feature selection by species/year
-           → IDW interpolation (with YearWeights neighbor weighting)
-           → Power transform (cube back to WTCPUE)
-           → TIF output with pyramids
-  ```
-
-### **Technical Details**
-
-- **Geostatistical Analyst Requirements**: Raster creation depends on ArcGIS GeoStats extension checkout/check-in
-- **Memory Management**: Uses in-memory raster (`memory\{name}`) for temporary IDW output before power transform and final TIF save
-- **Raster Masking**: Extent, mask, and snapRaster from `region_raster_mask` ensure outputs conform to fishnet grid alignment
-- **Year Weights Implementation**: CalculateField expressions: `3 - (abs({year} - !Year!))` dynamically applied to selected records
-- **Coordinate System**: Output rasters inherit spatial reference from `region_raster_mask` (region-specific projection)
-- **Parallel Batching**: Director splits 15 IDW regions into 6 sequential batches (sizes 1–5 regions) to manage CPU load across multiple `director()` calls
-
-## Summary: create_species_richness_rasters_director.py and create_species_richness_rasters_worker.py
+      - Deletes intermediate `Datasets` and `{table_name}_Region` templates
+      - Compacts region GDB
+
+    ##### **Key Architectural Patterns**
+
+    - **Batch parallelism**: Director runs multiple fishnet directors in sequence but each director spawns workers in parallel pool
+    - **Coordinate duality**: Each feature class maintains both projected (Easting/Northing) and geographic (Longitude/Latitude) coordinates
+    - **Region masking**: Fishnet cells are intelligently filtered to align with region boundary
+    - **Raster template**: Raster mask constrains all downstream latitude/longitude raster generation
+
+    ##### **Integration Points**
+
+    - Reads region geometry from `{table_name}_Region` feature class (from `create_regions_from_shapefiles_worker`)
+    - Reads cell size and dataset metadata from `Datasets` table
+    - Outputs fishnet cells, extent points, and coordinate rasters available for downstream IDW interpolation
+    - Longitude/Latitude rasters used for geographic coordinate layers in map displays
+
+- ### Create Region Bathymetry Director and Worker
+  - This director/worker pair generates region-specific bathymetry rasters using zonal statistics over fishnet grids.
+
+  - #### **Director (create_region_bathymetry_director.py)**
+    
+    - **Purpose**: Orchestrates bathymetry processing for all IDW regions, handling data staging and parallel worker coordination.
+
+    - **Key Functions:**
+
+      1. **`director(project_gdb, Sequential, table_names)`** — Main orchestration function:
+        - **Pre-processing**:
+          - Calls `preprocessing()` to stage fishnet, raster mask, and bathymetry data for each region into separate GDBs
+          - Creates region-specific workspaces under Scratch folder
+        
+        - **Sequential or parallel processing**:
+          - **Sequential mode**: Calls `worker()` sequentially for each region (currently commented/disabled)
+          - **Parallel mode**: Uses `multiprocessing.Pool` (processes = CPU count - 2, maxtasksperchild=1) to execute workers in parallel; monitors job completion with status polling every ~7.5×processes seconds
+        
+        - **Post-processing** (sequential):
+          - Walks scratch folder collecting all generated raster datasets
+          - Copies each bathymetry raster to project GDB
+          - Calls `dismap_tools.alter_fields()` for feature classes/tables/mosaics
+          - Compacts project GDB
+
+      2. **`script_tool(project_gdb)`** — Entry point with hardcoded batch grouping:
+        - **Production batches** (parallel): Processes regions in three parallel director calls:
+          - Batch 1: `NBS_IDW, ENBS_IDW, HI_IDW, SEUS_FAL_IDW, SEUS_SPR_IDW, SEUS_SUM_IDW`
+          - Batch 2: `WC_TRI_IDW, GMEX_IDW, AI_IDW, GOA_IDW, WC_ANN_IDW, NEUS_FAL_IDW`
+          - Batch 3: `NEUS_SPR_IDW, EBS_IDW`
+        - Logs timing and environment info
+
+  -  #### **Worker (create_region_bathymetry_worker.py)**
+
+      This file contains three functions:
+
+      #### **1. `preprocessing(project_gdb, table_names, clear_folder)`**
+      Stages data for all regions into scratch workspace:
+      - Clears scratch folder if `clear_folder=True`
+      - For each region (e.g., `AI_IDW`), creates:
+        - Region-specific GDB: `{scratch_folder}\{table_name}.gdb`
+        - Region scratch workspace: `{scratch_folder}\{table_name}\scratch.gdb`
+        - Copies `Datasets` table from project GDB
+        - Copies `{table_name}_Fishnet` feature class from project GDB
+        - Copies `{table_name}_Raster_Mask` raster from project GDB
+        - Copies `{table_name}_Bathymetry` from `Bathymetry\Bathymetry.gdb` and renames to `{table_name}_Fishnet_Bathymetry`
+
+      #### **2. `worker(region_gdb)`**
+      Performs zonal statistics computation for a single region:
+
+      **Inputs:**
+      - `{table_name}_Fishnet` — Polygon feature class with fishnet grid cells (OID field)
+      - `{table_name}_Raster_Mask` — Template raster defining cell size, extent, and spatial reference
+      - `{table_name}_Fishnet_Bathymetry` — Bathymetry raster with depth values
+
+      **Processing:**
+      - Extracts cell size from raster mask metadata
+      - Sets environment: cell size, extent, mask, snapRaster from raster template
+      - Executes `arcpy.sa.ZonalStatistics()`:
+        - **Zone data**: Fishnet grid (one value per cell)
+        - **Zone field**: OID (unique cell identifier)
+        - **Value raster**: Bathymetry (depth values)
+        - **Statistics**: MEDIAN (median depth per cell)
+        - **Ignore NoData**: DATA (include NoData pixels in calculation)
+        - **Percentile**: 90th percentile (optional, for reference)
+
+      **Output:**
+      - `{table_name}_Bathymetry` — Raster with median depth value for each fishnet cell
+
+      **Cleanup:**
+      - Calls `dismap_tools.import_metadata()` to attach metadata
+      - Deletes intermediate files: `Datasets`, `Raster_Mask`, `Fishnet`, `Fishnet_Bathymetry`
+      - Compacts region GDB
+
+      #### **3. `script_tool(project_gdb)`**
+      Development entry point (currently runs single region test):
+      - Calls `preprocessing()` to stage data
+      - Calls `worker()` for test region (`HI_IDW`)
+      - Used for single-region testing/debugging
+
+      #### **Key Architectural Patterns**
+
+      - **Two-stage processing**: Preprocessing stages all data in parallel-safe workspaces, then workers compute independently
+      - **Raster template pattern**: Raster mask provides all spatial environment parameters (cell size, extent, SR) for consistency
+      - **Zonal statistics optimization**: Uses median depth to provide representative bathymetry per fishnet cell
+      - **Batch grouping**: Director distributes 15 regions across 3 parallel batches to balance load across CPU cores
+
+      #### **Integration Points**
+
+      - **Inputs**:
+        - Fishnet grid from `create_region_fishnets_worker` outputs
+        - Raster mask from `create_region_fishnets_worker` outputs
+        - Bathymetry raster from `create_base_bathymetry.py` or bathymetry GDB
+        
+      - **Outputs**:
+        - `{table_name}_Bathymetry` rasters available for downstream analysis and visualization
+        - Rasters propagated to project GDB for inclusion in maps and services
+
+      - **Data flow**:
+        ```
+        Bathymetry GDB → preprocessing() → region GDB → worker() → ZonalStatistics
+        Fishnet ─────────────────────────→ region GDB → worker() → (zone field)
+        Raster Mask ───────────────────────→ region GDB → worker() → (environment template)
+        ```
+
+      #### **Technical Details**
+
+      - **Zonal Statistics parameters**:
+        - Ignores NoData in value raster (DATA mode) so pixels with No Data still participate in zone calculations
+        - Uses MEDIAN to handle outliers better than MEAN for depth measurements
+        - Produces one output value per zone (fishnet cell) linked by OID
+
+      - **Environment management**:
+        - Uses `EnvManager` context manager for scratch workspace isolation
+        - Cell size derived from raster metadata: `arcpy.Describe(raster/Band_1).meanCellWidth`
+        - Linear unit handling: Kilometer → cell size 1 km; Meter → cell size 1000 m
+
+- ### Create Region Sample Locations Director and Worker
+  - This director/worker pair creates sample location point feature classes from survey data CSVs, converting raw data into spatial datasets with standardized fields and metadata.
+
+  - ### **Director (create_region_sample_locations_director.py)**
+
+    - **Purpose**: Orchestrates sample location processing for all IDW regions, handling data staging and parallel worker coordination.
+
+    - **Key Functions:**
+
+      1. **`director(project_gdb, Sequential, table_names)`** — Main orchestration function:
+         - **Pre-processing** (sequential):
+           - Clears scratch folder
+           - Creates region-specific GDBs under Scratch folder
+           - Copies `Datasets` table and `{table_name}_Region` feature class to each region GDB
+         
+         - **Sequential or parallel processing**:
+           - **Sequential mode**: Calls `worker()` sequentially for each region
+           - **Parallel mode**: Uses `multiprocessing.Pool` (processes = CPU count - 2, maxtasksperchild=1); monitors job completion with status polling every ~7.5×processes seconds
+         
+         - **Post-processing** (sequential):
+           - Walks scratch folder collecting all generated tables and feature classes
+           - Copies each result to project GDB
+           - Compacts project GDB
+
+      2. **`script_tool(project_gdb)`** — Entry point with test mode:
+         - Default test mode: Single region (`GMEX_IDW`)
+         - Can run all 15 IDW regions in non-sequential mode
+         - Logs timing and environment info
+
+   - ### **Worker (create_region_sample_locations_worker.py)**
+
+      - **Purpose**: For a single region, imports survey CSV data, transforms and enriches fields, converts to GDB table, then exports as point feature class with spatial reference.
+
+      - **Processing Pipeline (3 Major Phases):**
+
+        #### **Phase 1: CSV Loading & Field Extraction**
+
+        - Detects CSV encoding using `dismap_tools.get_encoding_index_col()` (chardet-based)
+        - Loads CSV with pandas using schema-based data types from `dismap_tools.dTypesCSV()`
+        - Queries `Datasets` table to extract region metadata:
+          - TableName, GeographicArea, DatasetCode, Region, Season, DistributionProjectCode
+          
+        - **Column renaming** (22 aliases handled):
+          - `spp` / `spp_sci` → `Species`
+          - `common` / `spp_common` → `CommonName`
+          - `lon` / `Longitude`; `lat` / `Latitude`
+          - `lon_UTM` / `Easting`; `lat_UTM` / `Northing`
+          - `haulid` / `sampleid` → `SampleID`
+          - `wtcpue` → `WTCPUE`
+          - `median_est` / `mean_est` → `MedianEstimate` / `MeanEstimate`
+          - `est5` / `est95` → `Estimate5` / `Estimate95`
+          - `year` → `Year`; `depth_m` → `Depth`
+          - `stratum` → `Stratum`; `transformed` → `MapValue`
+
+        #### **Phase 2: DataFrame Transformation & Enrichment**
+
+           **Insert new columns with derived/default values:**
+
+          - `DatasetCode`: From Datasets table
+          - `Region`: From Datasets table (or default if None)
+          - `Season`: From Datasets table (or empty string if None)
+          - `StdTime`: Calculated from Year (pd.to_datetime with GMT+12 timezone)
+          - `MapValue`: Cube root transformation of WTCPUE (`WTCPUE ^ (1/3)`)
+          - `SpeciesCommonName`: Format `"Species (CommonName)"` where CommonName exists
+          - `CommonNameSpecies`: Format `"CommonName (Species)"` where CommonName exists
+          - `SummaryProduct`: Set to "Yes"
+          - `TransformUnit`: Set to "cuberoot" (documents MapValue transformation)
+          - `CoreSpecies`: Set to "No" (default; could be calculated later)
+
+           **Handle null/missing values:**
+
+          - Replace `NaN` with empty string for string fields (CommonName, DistributionProjectName)
+          - Replace `Inf` and `-Inf` with `NaN` in numeric fields (WTCPUE, coordinates, depth)
+          - Fill numeric nulls appropriately for Latitude, Longitude, Depth, WTCPUE
+
+        - **Reorder columns** using `dismap_tools.table_definitions()` to match schema order
+
+        #### **Phase 3: GDB Table Creation & Feature Conversion**
+          - Convert enriched DataFrame to NumPy structured array using GDB field types (`dismap_tools.dTypesGDB()`)
+          - Create temporary GDB table via `arcpy.da.NumPyArrayToTable()`
+          - Copy rows to output table: `{table_name}` (permanent table in region GDB)
+          - Delete temporary table
+
+          **Convert Table to Feature Class:**
+
+          - Create XY Event Layer from output table using:
+            - X field: `Longitude` (geographic coordinates, WGS84)
+            - Y field: `Latitude` (geographic coordinates, WGS84)
+            - Spatial reference: WGS84 (EPSG:4326)
+            - Geographic transformation: Auto-determined via `dismap_tools.get_transformation()`
+            
+          - Export XY Event Layer to feature class: `{table_name}_Sample_Locations`
+          - Add attribute index on: Species, CommonName, SpeciesCommonName, Year
+          - Delete temporary XY Event Layer
+
+          **Metadata & Field Aliasing:**
+
+          - Copy metadata from CSV to output table via `arcpy.metadata.Metadata`
+          - Call `dismap_tools.alter_fields()` to set field aliases and properties for both table and feature class
+          - Synchronize metadata for both
+
+          **Cleanup:**
+
+          - Delete intermediate datasets: `{table_name}_Boundary`, `{table_name}_Region`, `Datasets`
+          - Compact region GDB
+
+    - #### **Key Data Transformations**
+         1. **MapValue (WTCPUE Cube Root)**: Normalizes highly skewed WTCPUE distribution for visualization
+         2. **SpeciesCommonName/CommonNameSpecies**: Dual naming conventions for UI display flexibility
+         3. **StdTime**: Creates ISO 8601 timestamp for temporal queries
+         4. **Field Reordering**: Enforces consistent column order matching GDB schema
+
+    - #### **Integration Points**
+
+      - **Inputs**:
+        - Survey CSV files from `{project_folder}\CSV_Data\{table_name}.csv`
+        - Region geometry from `{table_name}_Region` (from `create_regions_from_shapefiles_worker`)
+        - Schema definitions from `field_definitions.json` and `table_definitions.json`
+        - Datasets metadata table (populated by `import_datasets_species_filter_csv_data.py`)
+
+      - **Outputs**:
+        - `{table_name}` — GDB table with all survey records and enriched fields
+        - `{table_name}_Sample_Locations` — Point feature class in WGS84 (for web/portal publishing)
+        - Spatial index on (Species, CommonName, Year) for fast queries
+
+      - **Data flow**:
+        ```
+        CSV File → pandas DataFrame (with encoding detection)
+                → Column rename & enrichment (22+ derived fields)
+                → NumPy array conversion (type casting)
+                → GDB table creation
+                → XY Event Layer (geographic coordinates)
+                → Point Feature Class (WGS84)
+        ```
+
+    -  #### **Technical Details**
+
+      - **Encoding detection**: chardet-based; handles non-ASCII characters in CommonName fields
+      - **Data type schema**: Schema-driven via JSON; ensures type safety across CSV→DataFrame→NumPy→GDB pipeline
+      - **Coordinate systems**:
+        - CSV source: Latitude/Longitude (WGS84) and Easting/Northing (projected, region-specific)
+        - Output table: Both coordinate systems preserved
+        - Output feature class: WGS84 only (for portal interoperability)
+      - **Transformation chain**: WTCPUE → MapValue (cube root) documented via TransformUnit field for traceability
+      - **Pandas optimizations**: Set display options for logging; use `inplace=False` operations for clarity; delete DataFrame after NumPy conversion to free memory
+
+- ### Create Species Year Image Name Table Director and Worker
+  - This director/worker pair generates a catalog table mapping species/year combinations to image names, which coordinates what rasters should be created during downstream workflows (IDW, richness, mosaics).
+
+  - #### **Director (create_species_year_image_name_table_director.py)**
+
+    - **Purpose**: Orchestrates the creation of `LayerSpeciesYearImageName` metadata tables for all IDW regions, which serve as operational catalogs for subsequent raster generation workflows.
+
+    **Key Functions:**
+
+    1. **`director(project_gdb, Sequential, table_names)`** — Main orchestration function:
+      - **Pre-processing** (sequential):
+        - Calls `preprocessing()` to stage sample location data and species filter tables for each region
+        - Creates region-specific GDBs under Scratch folder
+      
+      - **Sequential or parallel processing**:
+        - **Sequential mode**: Calls `worker()` sequentially for each region
+        - **Parallel mode**: Uses `multiprocessing.Pool` (processes = CPU count - 2, maxtasksperchild=1); monitors job completion with status polling every ~7.5×processes seconds
+      
+      - **Post-processing** (sequential):
+        - Walks scratch folder collecting all generated `*_LayerSpeciesYearImageName` tables
+        - Copies each table to project GDB
+        - Replaces None values with empty strings in string fields
+        - Compacts project GDB
+
+    2. **`script_tool(project_gdb)`** — Entry point with hardcoded batch grouping:
+      - **Production batches** (parallel):
+        - Batch 1: `GMEX_IDW, HI_IDW, WC_ANN_IDW, WC_TRI_IDW` (4 regions, test mode)
+        - Batch 2: `AI_IDW, EBS_IDW, ENBS_IDW, GOA_IDW, NBS_IDW` (5 regions, commented)
+        - Batch 3: `HI_IDW, WC_ANN_IDW, WC_TRI_IDW` (3 regions, commented)
+        - Batch 4: `GMEX_IDW, NEUS_FAL_IDW, NEUS_SPR_IDW` (3 regions, commented)
+        - Batch 5: `NEUS_FAL_IDW, NEUS_SPR_IDW, SEUS_FAL_IDW, SEUS_SPR_IDW, SEUS_SUM_IDW` (5 regions, active)
+      - Logs timing and environment info
+
+  - #### **Worker (create_species_year_image_name_table_worker.py)**
+    - **Purpose**: For a single region, generates a `LayerSpeciesYearImageName` table that catalogs all species/year combinations and assigns standardized image names for raster outputs.
+
+    - **Processing Pipeline (Multi-Stage):**
+
+    #### **Phase 1: Create Base LayerSpeciesYearImageName Table**
+
+    - Creates new empty table: `{table_name}_LayerSpeciesYearImageName`
+    - Calls `dismap_tools.add_fields()` to populate schema (200+ fields from `field_definitions.json`)
+    - Calls `dismap_tools.import_metadata()` to attach metadata templates
+
+    #### **Phase 2: Load Reference Data**
+
+    **a) Datasets Table:**
+    - Queries `Datasets` table for region metadata
+    - Extracts: FilterRegion, FilterSubRegion
+    - Example: `['Aleutian Islands', 'Alaska']`
+
+    **b) Region IDW Table:**
+    - The main sample location table: `{table_name}` (e.g., `AI_IDW`)
+    - Contains all survey records with Species, Year, CommonName, etc.
+    - Logs unique species count
+
+    **c) Species Filter Table:**
+    - Filters to: `FilterSubRegion = '{filter_subregion}' AND DistributionProjectName = 'NMFS/Rutgers IDW Interpolation'`
+    - Builds species_filter dict: `{species: [CommonName, TaxonomicGroup, FilterRegion, FilterSubRegion, ManagementBody, ManagementPlan, DistributionProjectName]}`
+    - Example entry: `'Anoplopoma fimbria': ['Sablefish', 'Perciformes/Cottoidei (sculpins)', 'Alaska', 'Aleutian Islands', 'NPFMC', '...', 'NMFS/Rutgers IDW Interpolation']`
+
+    #### **Phase 3: Generate Base Species/Year Records**
+
+    **Statistical Aggregation:**
+    - Uses `arcpy.analysis.Statistics()` to get unique species/year combinations from sample locations
+    - Case fields: Filters to fields that appear in both LayerSpeciesYearImageName schema and region IDW table
+    - Removes COUNT/FREQUENCY fields to create unique species/year records
+    - Result: `{table_name}_tmp` temporary table with one row per species/year combination
+
+    **Field Addition:**
+    - Adds 5 new fields to `{table_name}_tmp`:
+      - FilterRegion, FilterSubRegion, TaxonomicGroup, ManagementBody, ManagementPlan, DistributionProjectName
+      - Variable, Value, Dimensions, ImageName
+
+    **Row Population with Update Cursor:**
+
+    For each species/year combination:
+    - **Variable**: Species name (parentheses/periods removed) → e.g., `"Anoplopoma fimbria"` becomes `"Anoplopoma_fimbria"`
+    - **Value**: Set to `"Species"` (literal)
+    - **Dimensions**: Set to `"StdTime"` (standard time dimension)
+    - **ImageName**: Formatted as `{table_name}_{variable}_{year}` → e.g., `AI_IDW_Anoplopoma_fimbria_2020`
+    - **FilterRegion/FilterSubRegion**: Looked up from species_filter dict if species found, else empty string
+    - **TaxonomicGroup/ManagementBody/ManagementPlan/DistributionProjectName**: Looked up from species_filter dict
+
+    **Append to Output Table:**
+    - Appends populated records to `layer_species_year_image_name` table
+
+    #### **Phase 4: Generate Species Richness Records (Core)**
+
+    **Statistical Aggregation for Core Species:**
+    - Applies second `arcpy.analysis.Statistics()` to group by non-species fields
+    - Creates `{table_name}_tmp_stats` with unique region/season/dataset records
+    - Adds Variable, Value, Dimensions, ImageName fields
+
+    **Row Population - Core Species Richness:**
+
+    For each region/season combination (only where core species exist):
+    - **Variable**: `"Core Species Richness"`
+    - **Value**: `"Core Species Richness"`
+    - **Dimensions**: `"StdTime"`
+    - **ImageName**: `{table_name}_Core_Species_Richness_{year}`
+    - **CoreSpecies**: Set to `"Yes"` (signals core richness raster)
+    - **FilterRegion/FilterSubRegion**: From region metadata
+
+    **Append Core Records to Output Table**
+
+    #### **Phase 5: Generate Species Richness Records (Total)**
+
+    **Row Population - Total Species Richness:**
+
+    For each region/season combination (all species):
+    - **Variable**: `"Species Richness"` (differs from core)
+    - **Value**: `"Species Richness"`
+    - **Dimensions**: `"StdTime"`
+    - **ImageName**: `{table_name}_Species_Richness_{year}`
+    - **CoreSpecies**: Set to `"No"` (signals all-species richness raster)
+
+    **Append Total Records to Output Table**
+
+    #### **Phase 6: Finalization**
+
+    - Calls `dismap_tools.alter_fields()` to set field aliases and properties
+    - Sets metadata on `layer_species_year_image_name`: synchronizes ArcGIS metadata
+    - Deletes intermediate tables: `{table_name}_tmp`, `{table_name}_tmp_stats`, and optionally temporary dataset tables
+    - Compacts region GDB
+
+    ### **Output Table Structure**
+
+    `{table_name}_LayerSpeciesYearImageName` contains records with fields:
+
+    | Field Name | Purpose | Example |
+    |---|---|---|
+    | DatasetCode | Region code | `AI` |
+    | Region | Region name | `Aleutian Islands` |
+    | Species | Scientific species name | `Anoplopoma fimbria` |
+    | CommonName | Common species name | `Sablefish` |
+    | SpeciesCommonName | Formatted combo | `Anoplopoma fimbria (Sablefish)` |
+    | Year | Survey year | `2020` |
+    | StdTime | Standard time (derived) | (calculated) |
+    | Variable | Raster type | `Anoplopoma_fimbria` or `Species Richness` |
+    | Value | Raster value description | `Species` or `Species Richness` |
+    | Dimensions | Analysis dimension | `StdTime` |
+    | ImageName | Output raster name | `AI_IDW_Anoplopoma_fimbria_2020` or `AI_IDW_Species_Richness_2020` |
+    | CoreSpecies | Flag for richness rasters | `Yes` (core) / `No` (total) / blank (species) |
+    | FilterRegion/FilterSubRegion | Geographic filters | From species_filter lookup |
+    | TaxonomicGroup | Taxonomic class | From species_filter lookup |
+    | ManagementBody | Fishery management org | From species_filter lookup |
+    | ManagementPlan | Management plan reference | From species_filter lookup |
+    | DistributionProjectName | Distribution project | `NMFS/Rutgers IDW Interpolation` |
+
+    #### **Key Data Operations**
+
+    1. **Statistical Deduplication:**
+      - Uses `arcpy.analysis.Statistics()` twice:
+        - First: Identify unique species/year combinations from sample locations
+        - Second: Identify unique region/season combinations for richness catalogs
+
+    2. **Multi-Stage Table Generation:**
+      - Three types of rows generated in sequence:
+        1. Species-specific rasters (one per species/year)
+        2. Core species richness rasters (aggregate)
+        3. Total species richness rasters (aggregate)
+
+    3. **Dictionary Lookup for Metadata:**
+      - Species filter dict enables efficient lookups during cursor operations
+      - Prevents repeated database queries (performance optimization)
+
+    4. **Name Standardization:**
+      - Removes special characters (parentheses, periods) from species names for file naming
+      - Creates consistent `ImageName` format: `{region}_{variable}_{year}`
+
+    #### **Integration Points**
+
+    - **Inputs**:
+      - `{table_name}` (sample locations table from `create_region_sample_locations_worker`)
+      - `Species_Filter` table (metadata table with species/management mappings)
+      - `Datasets` table (region metadata: FilterRegion, FilterSubRegion)
+
+    - **Outputs**:
+      - `{table_name}_LayerSpeciesYearImageName` table — Catalog of all rasters to generate
+      - Contains 3 record types: species-specific (many), core richness (few), total richness (few)
+
+    - **Data flow**:
+      ```
+      Sample Locations (Species/Year data)
+              → Statistics → unique combinations
+              ↓
+      Species Filter (Taxonomy/Management)
+              ↓
+      Update Cursor (populate Variable/ImageName/Metadata)
+              ↓
+      LayerSpeciesYearImageName Table (operational catalog)
+      
+      Used downstream by:
+      - create_rasters_worker.py (species rasters per ImageName)
+      - create_species_richness_rasters_worker.py (richness rasters per ImageName)
+      - create_mosaics_worker.py (mosaic generation)
+      ```
+
+    #### **Technical Architecture**
+
+    - **Deduplication Strategy**: Uses ArcGIS `Statistics` tool rather than manual cursor loops for efficient unique-value extraction
+    - **Temporary Tables**: Uses `_tmp` suffix for intermediate working tables; cleaned up post-processing
+    - **Cursor Operations**: Three separate update cursor passes to populate different record types (species, core richness, total richness)
+    - **Metadata Lookup**: Builds in-memory dict from Species_Filter to avoid repeated database queries
+    - **Name Formatting**: Removes special characters from species names to ensure valid raster filenames
+    - **Batch Parallelism**: Director processes multiple regions in parallel batches; each worker independently generates catalog
+
+- ### Create Rasters Director and Worker
+  - This director/worker pair creates interpolated rasters from sample location data using Inverse Distance Weighting (IDW) geostatistical analysis.
+
+  - #### **Director (create_rasters_director.py)**
+
+    - **Purpose**: Orchestrates raster creation for all IDW regions, generating spatially-interpolated surfaces from survey data with parallel processing support.
+
+    - **Key Functions:**
+
+      1. **`director(project_gdb, Sequential, table_names)`** — Main orchestration function:
+           - **Pre-processing** (sequential):
+             - Calls `preprocessing()` to stage sample location data for each region into separate GDBs
+             - Creates region-specific workspaces under Scratch folder
+           
+           - **Sequential or parallel processing**:
+             - **Sequential mode**: Calls `worker()` sequentially for each region
+             - **Parallel mode**: Uses `multiprocessing.Pool` (processes = CPU count - 2, maxtasksperchild=1); monitors job completion with status polling every ~7.5×processes seconds
+           
+           - **Post-processing** (sequential):
+             - Compacts project GDB only (no explicit raster copying—results already in region GDBs)
+
+      2. **`script_tool(project_gdb)`** — Entry point with hardcoded batch grouping:
+           - **Production batches** (parallel):
+             - Batch 1: `AI_IDW` (single region, default test)
+             - Batch 2: `EBS_IDW, ENBS_IDW, GMEX_IDW, GOA_IDW, NBS_IDW` (5 regions)
+             - Batch 3: `HI_IDW` (single region)
+             - Batch 4: `WC_ANN_IDW, WC_TRI_IDW` (2 regions)
+             - Batch 5: `SEUS_FAL_IDW, SEUS_SPR_IDW, SEUS_SUM_IDW` (3 regions)
+             - Batch 6: `NEUS_FAL_IDW, NEUS_SPR_IDW` (2 regions, currently active in code)
+           - Logs timing and environment info
+
+  - #### **Worker (create_rasters_worker.py)**
+    - **Purpose**: For a single region, generates IDW interpolated rasters for each species/year combination using survey sample locations.
+
+    - **Processing Pipeline:**
+
+      - #### **Phase 1: Data Staging (`preprocessing()` function)**
+
+        Pre-processes data for all regions into isolated region GDBs:
+
+        - Clears scratch folder if `clear_folder=True`
+        - For each region (e.g., `AI_IDW`), creates:
+          - Region-specific GDB: `{scratch_folder}\{table_name}.gdb`
+          - Region scratch workspace: `{scratch_folder}\{table_name}\scratch.gdb`
+          
+        - Copies data to region GDB:
+          - `Datasets` table (metadata for region parameters: cell size, geographic area)
+          - `{table_name}_LayerSpeciesYearImageName` table (catalog of rasters to generate)
+          - `{table_name}_Sample_Locations` feature class (survey data points filtered for IDW species distribution)
+          - `{table_name}_Raster_Mask` raster (spatial template: extent, cell size, coordinate system)
+
+        - Extracts FilterRegion and FilterSubRegion values for later reference
+
+      - #### **Phase 2: Raster Generation (`worker()` function)**
+
+        For each species/year combination, executes multi-step IDW interpolation:
+
+        **1. Prepare Output Raster Catalog:**
+        - Queries `{table_name}_LayerSpeciesYearImageName` table for all rasters to generate
+        - Extracts 4 fields: ImageName, Variable, Species, Year
+        - Filters to exclude "Species Richness" rasters (handled by separate workflow)
+        - Builds output_rasters dict: `{image_name: [image_name, variable, species, year, output_raster_path]}`
+        - Creates folder structure: `{project_folder}\Images\{table_name}\{variable}\{image_name}.tif`
+
+        **2. Prepare Sample Location Feature Layer:**
+        - Creates feature layer from `{table_name}_Sample_Locations` for attribute selection
+        - Filters for `DistributionProjectName = 'NMFS/Rutgers IDW Interpolation'` (IDW-compatible data)
+        - If `SummaryProduct == "Yes"`: Adds `YearWeights` field (short integer, alias "Year Weights")
+
+        **3. For Each Raster to Generate:**
+
+          **a) Select Species and Year Data:**
+            - Clears previous selection
+            - Selects sample points where `Species = '{species}' AND Year = {year}`
+            - Logs count of selected records
+
+          **b) Set IDW Search Neighborhood:**
+          - Extracts cell size from region metadata
+          - Calculates search ellipse:
+            - Major axis: `cell_size × 1000` (converts kilometers to meters)
+            - Minor axis: `cell_size × 1000`
+            - Angle: 0 (no rotation)
+            - Max neighbors: 15
+            - Min neighbors: 10
+            - Sector type: ONE_SECTOR
+          - Uses `arcpy.SearchNeighborhoodStandard()` for neighbor selection
+
+          **c) Weight Years for Temporal Smoothing:**
+          - Selects weighted years: `Year >= (year-2) AND Year <= (year+2)` (±2 years from target year)
+          - Calculates YearWeights using: `YearWeights = 3 - abs(year_target - year_sample)`
+            - Target year: weight = 3
+            - ±1 year: weight = 2
+            - ±2 years: weight = 1
+          - Logs count of weighted records
+
+          **d) Execute IDW Interpolation:**
+          - Checks out GeoStats extension: `arcpy.CheckOutExtension("GeoStats")`
+          - Sets environment parameters:
+            - Extent, mask, snapRaster from `region_raster_mask` (spatial alignment)
+            - Cell size from region metadata
+            - Output coordinate system from raster mask
+          - Calls `arcpy.ga.IDW()` with parameters:
+            - Input features: `sample_locations_path_layer` (selected points)
+            - Z field: `MapValue` (cube-root transformed WTCPUE from sample locations)
+            - Output raster: `memory\{output_raster}` (temporary in-memory raster)
+            - Cell size: region-specific
+            - Power: 2 (standard IDW power for distance weighting)
+            - Search neighborhood: calculated ellipse with temporal weights
+            - Weight field: `YearWeights` (applies temporal smoothing)
+
+          **e) Reverse MapValue Transformation:**
+          - Executes `arcpy.sa.Power(tmp_raster, 3)` to cube the interpolated values
+          - Reverses the cube-root transformation: `MapValue^3 = WTCPUE`
+          - Saves power-transformed raster to output TIF file path
+
+          **f) Build Pyramids:**
+          - Constructs pyramid levels (-1 = all levels)
+          - Resampling: BILINEAR
+          - Compression: DEFAULT with 75% quality
+          - Skip existing: OVERWRITE
+
+        **4. Metadata & Cleanup:**
+        - Sets raster metadata title: image_name with underscores replaced by spaces
+        - Synchronizes metadata: `tif_md.synchronize("ALWAYS")`
+        - Deletes intermediate in-memory raster
+        - Resets YearWeights field to None
+        - Clears feature layer selection
+
+        **5. Final Cleanup:**
+        - Deletes sample location feature layer
+        - Deletes intermediate datasets: `Datasets`, `Raster_Mask`, `LayerSpeciesYearImageName`
+        - Compacts region GDB
+
+     - #### **Key Data Transformations**
+
+      1. **MapValue → WTCPUE (Cube Root Reversal):**
+        - Input rasters: Cube-root transformed WTCPUE (MapValue) from sample locations
+        - IDW interpolates across landscape: `MapValue = WTCPUE^(1/3)`
+        - Output: `interpolated_MapValue^3 = WTCPUE` (restores original units)
+        - Justification: Cube root normalizes highly skewed WTCPUE distribution for interpolation
+
+      2. **Temporal Weighting:**
+        - For target year Y: selects sample data from years Y-2 to Y+2
+        - Weight formula: `3 - |Y_target - Y_sample|`
+        - Effect: Center year has 3× influence; ±2 years have 1× influence
+        - Reduces temporal noise while maintaining year-specific estimates
+
+      3. **Search Neighborhood:**
+        - Ellipse major/minor axes = `cell_size × 1000` meters
+        - Ensures interpolation uses local sample points (not global)
+        - Min/Max neighbors: 10–15 points per cell (balance: detail vs. stability)
+
+     - #### **Integration Points**
+
+      - **Inputs**:
+        - `{table_name}_Sample_Locations` feature class (from `create_region_sample_locations_worker`)
+        - `{table_name}_Raster_Mask` raster (from `create_region_fishnets_worker`)
+        - `{table_name}_LayerSpeciesYearImageName` table (mapping of species/year to raster outputs)
+        - `Datasets` table (region cell size, metadata)
+        - MapValue field (cube-root WTCPUE from sample enrichment)
+
+      - **Outputs**:
+        - Raster TIFs saved to: `{project_folder}\Images\{table_name}\{variable}\{image_name}.tif`
+        - One interpolated surface per species/year/region combination
+        - Rasters include pyramids and spatial reference from region mask
+
+      - **Data flow**:
+        ```
+        Sample Locations (points with MapValue)
+                → Feature selection by species/year
+                → IDW interpolation (with YearWeights neighbor weighting)
+                → Power transform (cube back to WTCPUE)
+                → TIF output with pyramids
+        ```
+
+     - #### **Technical Details**
+
+        - **Geostatistical Analyst Requirements**: Raster creation depends on ArcGIS GeoStats extension checkout/check-in
+        - **Memory Management**: Uses in-memory raster (`memory\{name}`) for temporary IDW output before power transform and final TIF save
+        - **Raster Masking**: Extent, mask, and snapRaster from `region_raster_mask` ensure outputs conform to fishnet grid alignment
+        - **Year Weights Implementation**: CalculateField expressions: `3 - (abs({year} - !Year!))` dynamically applied to selected records
+        - **Coordinate System**: Output rasters inherit spatial reference from `region_raster_mask` (region-specific projection)
+        - **Parallel Batching**: Director splits 15 IDW regions into 6 sequential batches (sizes 1–5 regions) to manage CPU load across multiple `director()` calls
+
+- ### Create Species Richness Rasters Director and Worker
 
 This director/worker pair generates species richness rasters by counting the presence/absence of species across interpolated surfaces for each year and region.
 
@@ -1115,234 +1313,9 @@ For each region and year:
 - **Batch parallelism**: Director splits 15 IDW regions into 5 sequential batches (3 regions each) to manage CPU load across multiple `director()` calls
 - **Dual richness generation**: Single worker pass generates both total and core richness by filtering CoreSpecies flag during accumulation
 
-***create_species_year_image_name_table_director.py and create_species_year_image_name_table_worker.py summary:***
-I'll locate and summarize these two files. 
 
-Searched for files matching `**/create_species_year_image_name_table_director.py`, 1 match
-
-Searched for files matching `**/create_species_year_image_name_table_worker.py`, 1 match
-
-Now I'll read both files: 
-
-Read [](file:///c%3A/Users/john.f.kennedy/Documents/ArcGIS/Projects/DisMAP/ArcGIS-Analysis-Python/src/dismap_tools/create_species_year_image_name_table_director.py#1-1), lines 1 to 400
-
-Read [](file:///c%3A/Users/john.f.kennedy/Documents/ArcGIS/Projects/DisMAP/ArcGIS-Analysis-Python/src/dismap_tools/create_species_year_image_name_table_worker.py)
-
-Perfect. I now have both complete files. Here's the comprehensive summary:
-
-## Summary: create_species_year_image_name_table_director.py and create_species_year_image_name_table_worker.py
-
-This director/worker pair generates a catalog table mapping species/year combinations to image names, which coordinates what rasters should be created during downstream workflows (IDW, richness, mosaics).
-
-### **Director (create_species_year_image_name_table_director.py)**
-
-**Purpose**: Orchestrates the creation of `LayerSpeciesYearImageName` metadata tables for all IDW regions, which serve as operational catalogs for subsequent raster generation workflows.
-
-**Key Functions:**
-
-1. **`director(project_gdb, Sequential, table_names)`** — Main orchestration function:
-   - **Pre-processing** (sequential):
-     - Calls `preprocessing()` to stage sample location data and species filter tables for each region
-     - Creates region-specific GDBs under Scratch folder
-   
-   - **Sequential or parallel processing**:
-     - **Sequential mode**: Calls `worker()` sequentially for each region
-     - **Parallel mode**: Uses `multiprocessing.Pool` (processes = CPU count - 2, maxtasksperchild=1); monitors job completion with status polling every ~7.5×processes seconds
-   
-   - **Post-processing** (sequential):
-     - Walks scratch folder collecting all generated `*_LayerSpeciesYearImageName` tables
-     - Copies each table to project GDB
-     - Replaces None values with empty strings in string fields
-     - Compacts project GDB
-
-2. **`script_tool(project_gdb)`** — Entry point with hardcoded batch grouping:
-   - **Production batches** (parallel):
-     - Batch 1: `GMEX_IDW, HI_IDW, WC_ANN_IDW, WC_TRI_IDW` (4 regions, test mode)
-     - Batch 2: `AI_IDW, EBS_IDW, ENBS_IDW, GOA_IDW, NBS_IDW` (5 regions, commented)
-     - Batch 3: `HI_IDW, WC_ANN_IDW, WC_TRI_IDW` (3 regions, commented)
-     - Batch 4: `GMEX_IDW, NEUS_FAL_IDW, NEUS_SPR_IDW` (3 regions, commented)
-     - Batch 5: `NEUS_FAL_IDW, NEUS_SPR_IDW, SEUS_FAL_IDW, SEUS_SPR_IDW, SEUS_SUM_IDW` (5 regions, active)
-   - Logs timing and environment info
-
-### **Worker (create_species_year_image_name_table_worker.py)**
-
-**Purpose**: For a single region, generates a `LayerSpeciesYearImageName` table that catalogs all species/year combinations and assigns standardized image names for raster outputs.
-
-**Processing Pipeline (Multi-Stage):**
-
-#### **Phase 1: Create Base LayerSpeciesYearImageName Table**
-
-- Creates new empty table: `{table_name}_LayerSpeciesYearImageName`
-- Calls `dismap_tools.add_fields()` to populate schema (200+ fields from `field_definitions.json`)
-- Calls `dismap_tools.import_metadata()` to attach metadata templates
-
-#### **Phase 2: Load Reference Data**
-
-**a) Datasets Table:**
-- Queries `Datasets` table for region metadata
-- Extracts: FilterRegion, FilterSubRegion
-- Example: `['Aleutian Islands', 'Alaska']`
-
-**b) Region IDW Table:**
-- The main sample location table: `{table_name}` (e.g., `AI_IDW`)
-- Contains all survey records with Species, Year, CommonName, etc.
-- Logs unique species count
-
-**c) Species Filter Table:**
-- Filters to: `FilterSubRegion = '{filter_subregion}' AND DistributionProjectName = 'NMFS/Rutgers IDW Interpolation'`
-- Builds species_filter dict: `{species: [CommonName, TaxonomicGroup, FilterRegion, FilterSubRegion, ManagementBody, ManagementPlan, DistributionProjectName]}`
-- Example entry: `'Anoplopoma fimbria': ['Sablefish', 'Perciformes/Cottoidei (sculpins)', 'Alaska', 'Aleutian Islands', 'NPFMC', '...', 'NMFS/Rutgers IDW Interpolation']`
-
-#### **Phase 3: Generate Base Species/Year Records**
-
-**Statistical Aggregation:**
-- Uses `arcpy.analysis.Statistics()` to get unique species/year combinations from sample locations
-- Case fields: Filters to fields that appear in both LayerSpeciesYearImageName schema and region IDW table
-- Removes COUNT/FREQUENCY fields to create unique species/year records
-- Result: `{table_name}_tmp` temporary table with one row per species/year combination
-
-**Field Addition:**
-- Adds 5 new fields to `{table_name}_tmp`:
-  - FilterRegion, FilterSubRegion, TaxonomicGroup, ManagementBody, ManagementPlan, DistributionProjectName
-  - Variable, Value, Dimensions, ImageName
-
-**Row Population with Update Cursor:**
-
-For each species/year combination:
-- **Variable**: Species name (parentheses/periods removed) → e.g., `"Anoplopoma fimbria"` becomes `"Anoplopoma_fimbria"`
-- **Value**: Set to `"Species"` (literal)
-- **Dimensions**: Set to `"StdTime"` (standard time dimension)
-- **ImageName**: Formatted as `{table_name}_{variable}_{year}` → e.g., `AI_IDW_Anoplopoma_fimbria_2020`
-- **FilterRegion/FilterSubRegion**: Looked up from species_filter dict if species found, else empty string
-- **TaxonomicGroup/ManagementBody/ManagementPlan/DistributionProjectName**: Looked up from species_filter dict
-
-**Append to Output Table:**
-- Appends populated records to `layer_species_year_image_name` table
-
-#### **Phase 4: Generate Species Richness Records (Core)**
-
-**Statistical Aggregation for Core Species:**
-- Applies second `arcpy.analysis.Statistics()` to group by non-species fields
-- Creates `{table_name}_tmp_stats` with unique region/season/dataset records
-- Adds Variable, Value, Dimensions, ImageName fields
-
-**Row Population - Core Species Richness:**
-
-For each region/season combination (only where core species exist):
-- **Variable**: `"Core Species Richness"`
-- **Value**: `"Core Species Richness"`
-- **Dimensions**: `"StdTime"`
-- **ImageName**: `{table_name}_Core_Species_Richness_{year}`
-- **CoreSpecies**: Set to `"Yes"` (signals core richness raster)
-- **FilterRegion/FilterSubRegion**: From region metadata
-
-**Append Core Records to Output Table**
-
-#### **Phase 5: Generate Species Richness Records (Total)**
-
-**Row Population - Total Species Richness:**
-
-For each region/season combination (all species):
-- **Variable**: `"Species Richness"` (differs from core)
-- **Value**: `"Species Richness"`
-- **Dimensions**: `"StdTime"`
-- **ImageName**: `{table_name}_Species_Richness_{year}`
-- **CoreSpecies**: Set to `"No"` (signals all-species richness raster)
-
-**Append Total Records to Output Table**
-
-#### **Phase 6: Finalization**
-
-- Calls `dismap_tools.alter_fields()` to set field aliases and properties
-- Sets metadata on `layer_species_year_image_name`: synchronizes ArcGIS metadata
-- Deletes intermediate tables: `{table_name}_tmp`, `{table_name}_tmp_stats`, and optionally temporary dataset tables
-- Compacts region GDB
-
-### **Output Table Structure**
-
-`{table_name}_LayerSpeciesYearImageName` contains records with fields:
-
-| Field Name | Purpose | Example |
-|---|---|---|
-| DatasetCode | Region code | `AI` |
-| Region | Region name | `Aleutian Islands` |
-| Species | Scientific species name | `Anoplopoma fimbria` |
-| CommonName | Common species name | `Sablefish` |
-| SpeciesCommonName | Formatted combo | `Anoplopoma fimbria (Sablefish)` |
-| Year | Survey year | `2020` |
-| StdTime | Standard time (derived) | (calculated) |
-| Variable | Raster type | `Anoplopoma_fimbria` or `Species Richness` |
-| Value | Raster value description | `Species` or `Species Richness` |
-| Dimensions | Analysis dimension | `StdTime` |
-| ImageName | Output raster name | `AI_IDW_Anoplopoma_fimbria_2020` or `AI_IDW_Species_Richness_2020` |
-| CoreSpecies | Flag for richness rasters | `Yes` (core) / `No` (total) / blank (species) |
-| FilterRegion/FilterSubRegion | Geographic filters | From species_filter lookup |
-| TaxonomicGroup | Taxonomic class | From species_filter lookup |
-| ManagementBody | Fishery management org | From species_filter lookup |
-| ManagementPlan | Management plan reference | From species_filter lookup |
-| DistributionProjectName | Distribution project | `NMFS/Rutgers IDW Interpolation` |
-
-### **Key Data Operations**
-
-1. **Statistical Deduplication:**
-   - Uses `arcpy.analysis.Statistics()` twice:
-     - First: Identify unique species/year combinations from sample locations
-     - Second: Identify unique region/season combinations for richness catalogs
-
-2. **Multi-Stage Table Generation:**
-   - Three types of rows generated in sequence:
-     1. Species-specific rasters (one per species/year)
-     2. Core species richness rasters (aggregate)
-     3. Total species richness rasters (aggregate)
-
-3. **Dictionary Lookup for Metadata:**
-   - Species filter dict enables efficient lookups during cursor operations
-   - Prevents repeated database queries (performance optimization)
-
-4. **Name Standardization:**
-   - Removes special characters (parentheses, periods) from species names for file naming
-   - Creates consistent `ImageName` format: `{region}_{variable}_{year}`
-
-### **Integration Points**
-
-- **Inputs**:
-  - `{table_name}` (sample locations table from `create_region_sample_locations_worker`)
-  - `Species_Filter` table (metadata table with species/management mappings)
-  - `Datasets` table (region metadata: FilterRegion, FilterSubRegion)
-
-- **Outputs**:
-  - `{table_name}_LayerSpeciesYearImageName` table — Catalog of all rasters to generate
-  - Contains 3 record types: species-specific (many), core richness (few), total richness (few)
-
-- **Data flow**:
-  ```
-  Sample Locations (Species/Year data)
-           → Statistics → unique combinations
-           ↓
-  Species Filter (Taxonomy/Management)
-           ↓
-  Update Cursor (populate Variable/ImageName/Metadata)
-           ↓
-  LayerSpeciesYearImageName Table (operational catalog)
-  
-  Used downstream by:
-  - create_rasters_worker.py (species rasters per ImageName)
-  - create_species_richness_rasters_worker.py (richness rasters per ImageName)
-  - create_mosaics_worker.py (mosaic generation)
-  ```
-
-### **Technical Architecture**
-
-- **Deduplication Strategy**: Uses ArcGIS `Statistics` tool rather than manual cursor loops for efficient unique-value extraction
-- **Temporary Tables**: Uses `_tmp` suffix for intermediate working tables; cleaned up post-processing
-- **Cursor Operations**: Three separate update cursor passes to populate different record types (species, core richness, total richness)
-- **Metadata Lookup**: Builds in-memory dict from Species_Filter to avoid repeated database queries
-- **Name Formatting**: Removes special characters from species names to ensure valid raster filenames
-- **Batch Parallelism**: Director processes multiple regions in parallel batches; each worker independently generates catalog
-
-## Summary: create_mosaics_director.py and create_mosaics_worker.py
-
-This director/worker pair creates mosaic datasets and Cloud Raster Format (CRF) files from interpolated species rasters, enabling efficient multi-band image services for portal publishing.
+- ### Create Region Mosaics Director and Worker
+  - This director/worker pair creates mosaic datasets and Cloud Raster Format (CRF) files from interpolated species rasters, enabling efficient multi-band image services for portal publishing.
 
 ### **Director (create_mosaics_director.py)**
 
@@ -1785,6 +1758,11 @@ For species/years with biomass = 0:
 | **Percentile Bounds** | MinimumLatitude, MaximumLatitude, MinimumLongitude, MaximumLongitude, MinimumDepth, MaximumDepth | 5th/95th percentile of coordinate distribution |
 | **Migration** | OffsetLatitude, OffsetLongitude, OffsetDepth | CoG(year) - CoG(first_year) |
 | **Uncertainty** | CenterOfGravityLatitudeSE, CenterOfGravityLongitudeSE, CenterOfGravityDepthSE | √(variance / count) of weighted coordinates |
+
+
+**Specialized Processing:**
+
+- **publish_to_portal_director.py** — Publishes processed datasets to ArcGIS Portal with credentials
 
 ## **publish_to_portal_director.py: ArcGIS Portal Publishing Orchestration**
 
