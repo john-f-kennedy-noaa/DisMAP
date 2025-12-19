@@ -4,11 +4,16 @@
 ### Table of contents ###
 
 > - [*Purpose*](#purpose)
-> - [*DisMAP ArcGIS Python Processing*](#dismap-arcigs-python-processing)
+> - [*DisMAP ArcGIS Python Processing Setup*](#dismap-arcigs-python-processing-setup)
+>   - [Zip and Unzip CSV Data](#zip-and-unzip-csv-data)
+>   - [Zip and Unzip Shapefile Data](#zip-and-unzip-shapefile-data)
+>   - [DisMAP Tools](#dismap-tools)
 >   - [DisMAP Project Setup](#dismap-project-setup)
 >   - [Create Base Bathymetry](#create-base-bathymetry)
+>   - [Create Data Dictionary JSON Files](#create-data-dictionary-json-files)
+>   - [Create Metadata JSON Files](#create-metadata-json-files)
 >   - [Import Datasets Species Filter CSV Data](#import-datasets-species-filter-csv-data)
-> - [*Example 3*](#example-3)
+> - [*DisMAP ArcGIS Python Processing*](#dismap-arcigs-python-processing)
 > - [*Example 4*](#example-4)
 > - [*Additional Resources*](#additional-resources)
 > - [*Suggestions and Comments*](#suggestions-and-comments)
@@ -19,45 +24,249 @@
 ### *Purpose*
 These Python scripts were developed for the DisMAP ArcGIS Python Processing phase of the project. In general the scripts listed below are ran in the order they are presented in a Python IDE such as [*Pyscripter*](https://sourceforge.net/projects/pyscripter/).
 
-### *DisMAP ArcGIS Python Processing*
+### *DisMAP ArcGIS Python Processing Project Setup*
+- #### Zip and Unzip CSV Data
+  - The [zip_and_unzip_csv_data.py](zip_and_unzip_csv_data.py) file archives/extracts sample location and biomass measurements in a CSV data file
+  - The script takes the target location of were the file will be extracted and the source Zip file path
+  - Extracts CSV survey data from a ZIP archive, renames files, and attaches metadata:
+    1. **Extract ZIP** — Unzips files from source ZIP (e.g., `CSV Data 2025 08 01.zip`) into the project's `CSV_Data` folder
+    2. **Rename CSV files** — Copies extracted `*_survey.csv` files and renames them to `*_IDW.csv` (e.g., `AI_IDW_survey.csv` → `AI_IDW.csv`)
+    3. **Clean up** — Removes the temporary `python/` extraction subdirectory
+    4. **Attach metadata** — For each `*_IDW.csv` file:
+       - Synchronizes ArcGIS metadata
+       - Imports contact/organizational metadata from `DisMAP Contacts 2025 08 01.xml`
+       - Parses XML with lxml, sorts elements by a predefined `root_dict` order
+       - Writes updated metadata back to file
+    5. **Return path** — Returns the `CSV_Data` output directory path
+
+  - Uses ArcGIS tool parameters and defaults to `~\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025`.
+ 
+- #### Zip and Unzip Shapefile Data
+  - The [zip_and_unzip_shapefile_data.py](zip_and_unzip_shapefile_data.py) file contains functions to archive/extract the shapefiles that represent each region
+  - The script takes the target location of were the file will be extracted and the source Zip file path
+  - No metadata processing or file renaming; straightforward extraction of shapefiles (e.g., `AI_IDW_Region.shp`, `EBS_IDW_Region.shp`, etc.) into their target directory
+  - Extracts shapefile data from a ZIP archive:
+    1. **Extract ZIP** — Unzips files from source ZIP into the project's `Dataset_Shapefiles` folder (changes working directory with `os.chdir()`)
+    2. **Return path** — Returns the `Dataset_Shapefiles` output directory path
+  - Uses ArcGIS tool parameters and defaults to `~\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025`.
+  - Follows ArcGIS tool conventions (parameter access via `arcpy.GetParameterAsText()`, messaging via `arcpy.AddMessage()`, error handling with `arcpy.ExecuteError`)
+
+- #### DisMAP Tools
+  - The [dismap_tools.py](dismap_tools.py) file is a utility library with XML/metadata parsing, field transformation, and spatial analysis helpers using lxml & ArcPy that is imported into many of the project scripts
+  
+    **XML & Metadata Functions:**
+    - **`parse_xml_file_format_and_save(csv_data_folder, xml_file, sort)`** — Parses and reformats XML metadata using lxml; optionally sorts elements by predefined priority order from `root_dict.json`; writes back to file
+    - **`print_xml_file(xml_file, sort)`** — Displays formatted XML metadata to ArcGIS messages
+    - **`compare_metadata_xml(file1, file2)`** — Compares two metadata XML files
+    - **`export_metadata(csv_data_folder, in_table)`** — Exports ArcGIS metadata from a dataset
+    - **`import_metadata(csv_data_folder, dataset)`** — Imports standardized metadata from JSON definitions into GDB dataset
+
+    **Field & Table Management:**
+    - **`add_fields(csv_data_folder, in_table)`** — Adds fields to a GDB table based on schema from `table_definitions.json` + `field_definitions.json`
+    - **`alter_fields(csv_data_folder, in_table)`** — Updates field aliases and properties on existing fields
+    - **`field_definitions(csv_data_folder, field)`** — Loads field schema dictionary from `field_definitions.json`
+    - **`dTypesCSV(csv_data_folder, table)`** — Returns pandas data types for CSV columns based on table schema
+    - **`dTypesGDB(csv_data_folder, table)`** — Returns NumPy data types for GDB fields based on table schema
+
+    **Data Inspection & Utilities:**
+    - **`check_datasets(datasets)`** — Logs detailed metadata (extent, cell size, date created, spatial reference, sample rows) for feature classes, rasters, and tables
+    - **`check_transformation(ds, cs)`** — Validates spatial reference transformation compatibility
+    - **`get_transformation(gsr_wkt, psr_wkt)`** — Gets geographic transformation between two coordinate systems
+    - **`clear_folder(folder)`** — Removes all files from a folder
+    - **`backup_gdb(project_gdb)`** — Creates a backup copy of geodatabase and compacts both
+
+    **Data Lookup & Conversion:**
+    - **`date_code(version)`** — Generates/extracts DateCode from project version name (e.g., `"August 1 2025"` → `"20250801"`)
+    - **`convertSeconds(seconds)`** — Converts seconds to HH:MM:SS format
+    - **`get_encoding_index_col(csv_file)`** — Detects CSV file encoding using `chardet`
+    - **`dataset_title_dict(project_gdb)`** — Builds lookup dictionary mapping region/dataset codes to display titles
+    - **`metadata_dictionary_json(csv_data_folder, dataset_name)`** — Loads metadata templates from JSON
+    - **`table_definitions(csv_data_folder, field)`** — Loads table-to-fields schema mapping from JSON
+
+    **Pattern**: Serves as central helper library for other DisMAP tools; heavily uses JSON schema files (`field_definitions.json`, `table_definitions.json`) as single source of truth for GDB structure; consistent exception handling with ArcPy logging; all functions clean up local variables at completion.
+
 - #### DisMAP Project Setup
-  - Creates ArcGIS Pro project folder structure: GDB, scratch workspace, subfolders, and configures toolboxes/databases in `.aprx`
+  - The [dismap_project_setup.py](dismap_project_setup.py) ArcGIS/ArcPy/Python script creates ArcGIS Pro project folder structure: GDB, scratch workspace, subfolders, and configures toolboxes/databases in `.aprx`
+  - The input for the script is the Project Folder path (i.e. "Documents/ArcGIS/Projects/DisMAP/ArcGIS-Analysis-Python/December 1 2025")
+
+    **Main function: `script_tool(new_project_folder, project_folders)`**
+
+      1. **Get home folder**
+         - Accesses current ArcGIS Pro project's home folder via `arcpy.mp.ArcGISProject("CURRENT")`
+
+      2. **Create project folder structure**:
+         - Creates main project folder (e.g., `"September 1 2025"`)
+         - Creates project GDB: `{new_project_folder}\{new_project_folder}.gdb`
+         - Creates Scratch folder: `{new_project_folder}\Scratch`
+         - Creates scratch GDB: `Scratch\scratch.gdb`
+         - Creates subfolders from comma-separated list (e.g., `CRFs;CSV_Data;Dataset_Shapefiles;Images;Layers;Metadata_Export;Publish`)
+
+      3. **Configure `.aprx` file**:
+         - Saves a copy of the current project as `{new_project_folder}.aprx`
+         - Opens the new APRX file
+         - Removes all existing maps
+         - Updates project databases: sets the new project GDB as default database
+         - Updates project toolboxes: registers `DisMAP.atbx` as default toolbox
+         - Saves the configured APRX
+
+      4. **Parameters**:
+         - `new_project_folder` — Name of new project folder (defaults to `"September 1 2025"`)
+         - `project_folders` — Semicolon-separated subfolder names (defaults to `"CRFs;CSV_Data;Dataset_Shapefiles;Images;Layers;Metadata_Export;Publish"`)
+
+    **Pattern**: Designed to be called from ArcGIS Pro as a script tool; uses standard toolbox parameter conventions (`arcpy.GetParameterAsText()`, `arcpy.SetParameterAsText()`) and follows DisMAP folder/naming conventions (date-based project folders, standard GDB/subfolder structure).
 
 - #### Create Base Bathymetry
-  Converts Alaska/Hawaii bathymetry grids to rasters (ASCII GRID converted GDB rasters)
+  - The [create_base_bathymetry.py](create_base_bathymetry.py) ArcGIS/ArcPy/Python script processes bathymetry data for use in later scripts
+  - The input for the script is the Project Folder path (i.e. "Documents/ArcGIS/Projects/DisMAP/ArcGIS-Analysis-Python/December 1 2025")
+  - All functions follow ArcGIS Pro logging/error handling patterns, manage ArcPy environments (workspace, cellsize, resampling), and clean up local variables at the end. 
+  - The script contains four main functions:
+
+    1. **`raster_properties_report()`** — Utility that logs raster metadata (spatial reference, extent, cell size, statistics, pixel type) using `arcpy.AddMessage()`.
+
+    2. **`create_alasaka_bathymetry(project_folder)`** — Processes Alaska bathymetry:
+       - Copies ASCII GRID files (AI, EBS, GOA) into a geodatabase
+       - Converts positive depth values to negative
+       - Appends/clips rasters to ensure full coverage
+       - Reprojects each region's bathymetry to its regional spatial reference (AI_IDW, EBS_IDW, etc.)
+       - Copies final rasters to the project bathymetry GDB and compacts the database
+
+    3. **`create_hawaii_bathymetry(project_folder)`** — Processes Hawaii bathymetry:
+       - Converts a polygon shapefile grid (BFISH_PSU.shp) to a raster using depth field
+       - Negates values and saves to GDB
+       - Copies final rasters to the project bathymetry GDB and compacts the database
+
+    4. **`gebco_bathymetry(project_folder)`** — Processes GEBCO data for all other regions:
+       - Converts GEBCO ASCII rasters to GDM rasters for each region
+       - Copies final rasters to the project bathymetry GDB and compacts the database
+
+- #### Create Data Dictionary JSON Files
+  - The [create_data_dictionary_json_files.py](create_data_dictionary_json_files.py) ArcGIS/ArcPy/Python script that generates JSON metadata definitions for all GDB tables and fields in the DisMAP project:
+
+    ***Main function: `script_tool(project_folder)`***
+
+    1. **Field Definitions Dictionary** (massive hardcoded dict covering ~200+ fields):
+         - Defines every GDB field used in DisMAP with metadata:
+           - `field_aliasName`, `field_name`, `field_type`, `field_length`, `field_precision`, `field_scale`
+           - `field_editable`, `field_isNullable`, `field_required`
+           - `field_attrdef`, `field_attrdefs`, `field_attrdomv` (ArcGIS ISO metadata attributes)
+           - `field_domain` (for referential integrity links)
+         - Examples: `CSVFile`, `Category`, `CellSize`, `CenterOfGravityDepth`, `CommonName`, `DateCode`, `Depth`, `Dimensions`, etc.
+
+    2. **Table Field Mappings** (hardcoded list patterns):
+         - Defines which fields belong to each table type:
+           - `_Datasets` — dataset catalog fields (DatasetCode, CSVFile, TableName, Region, Season, DateCode, etc.)
+           - `_Indicators` — distribution indicator fields (CenterOfGravity*, MinimumLatitude, MaximumDepth, etc.)
+           - `_IDW` — Inverse Distance Weighting survey data (Species, WTCPUE, MapValue, Coordinates, Depth)
+           - `_Sample_Locations` — sample point data (SampleID, Year, Species, WTCPUE, Stratum, Coordinates)
+           - `_Species_Filter` — species metadata (Species, CommonName, TaxonomicGroup, FilterRegion, ManagementBody)
+           - `_DisMAP_Survey_Info` — survey metadata (SurveyName, Region, Season, GearType, Years, DataSource)
+           - `_SpeciesPersistenceIndicatorTrend`, `_SpeciesPersistenceIndicatorPercentileBin` — persistence indicators
+           - Region-specific: `_Boundary`, `_Extent_Points`, `_Fishnet`, `_Lat_Long`, `_Mosaic`, `_Raster_Mask`
+
+    3. **Dynamic Table-to-Fields Mapping**:
+         - Iterates over hardcoded table names (15 IDW regions + 6 metadata tables)
+         - For each `*_IDW` region: assigns fields + auto-generates derived table variants (Sample_Locations, Indicators, Bathymetry, Boundary, Extent_Points, Fishnet, LayerSpeciesYearImageName, Lat_Long, Latitude, Longitude, Mosaic, Raster_Mask, Region)
+         - Special handling for metadata tables (Datasets, DisMAP_Regions, Indicators, Species_Filter, DisMAP_Survey_Info, SpeciesPersistenceIndicatorTrend, SpeciesPersistenceIndicatorPercentileBin)
+
+    4. **JSON Output**:
+         - Exports `field_definitions.json` → all field metadata (keyed by field name)
+         - Exports `table_definitions.json` → all table field lists (keyed by table name, values are lists of field names)
+         - Both written to `{project_folder}\CSV_Data\`
+
+    5. **Cleanup & Validation**:
+         - Logs all table/field mappings
+         - Cross-checks that all mapped fields exist in `field_definitions`
+         - Compacts GDB
+
+    **Key Pattern**: Serves as schema/metadata registry for the entire DisMAP project; JSON files are consumed by downstream tools (e.g., import_datasets_species_filter_csv_data.py loads field schemas) to enforce consistent data types and field properties across all CSV imports and GDB operations.
+
+- #### Create Metadata JSON Files
+  - The [create_metadata_json_files.py](create_metadata_json_files.py) ArcGIS/ArcPy/Python script that generates standardized XML metadata ordering dictionaries and contact information JSON files for ArcGIS Pro metadata templates:
+
+    **Main function: `script_tool(project_gdb)`**
+    Creates and exports multiple JSON lookup/mapping files to `{project_folder}\CSV_Data\`:
+
+    1. **`root_dict.json`**
+        - XML element priority ordering for top-level ISO 19139 metadata sections:
+        - Maps 21 root elements to sort order (e.g., `Esri: 0`, `dataIdInfo: 1`, `dqInfo: 2`, `distInfo: 3`)
+        - Used to normalize/sort XML metadata trees consistently
+
+    2. **`esri_dict.json`** — ArcGIS Esri-specific metadata element ordering:
+        - Nested structure for `DataProperties` (lineage, itemProps, nativeExtBox, itemLocation, coordRef)
+        - Maps ~15 Esri metadata subelements to sort priorities
+
+    3. **`dataIdInfo_dict.json`** — ISO 19139 Data Identification nested element hierarchy:
+        - Complex nested mapping for keyword sections (discKeys, themeKeys, placeKeys, tempKeys, otherKeys)
+        - Maps spatial representation, data extent, temporal elements, and citation structures
+
+    4. **`idCitation_dict.json`** — Resource citation element ordering:
+        - Maps citation subelements (resTitle, date, presForm, citRespParty) to priorities
+
+    5. **`contact_element_order_dict.json`** — Contact/responsible party element ordering:
+        - Defines sort order for ~35 contact metadata fields (name, organization, email, phone, role, citation info)
+
+    6. **`distInfo_dict.json`** — Distribution information element ordering:
+        - Maps distribution channel metadata (distorFormat, distorCont, distTranOps)
+
+    7. **`RoleCd_dict.json`** — Role code lookup table:
+        - Maps codes (`"001"` → `"Resource Provider"`, `"007"` → `"Point of Contact"`, etc.) for 15 ISO roles
+
+    8. **`tpCat_dict.json`** — ISO Topic Category XML snippets:
+      3- Maps topic codes to pre-formatted XML strings (e.g., `"002"` → `<tpCat>...<TopicCatCd value="002">...`)
+
+    9.  **`contact_dict.json`** — DisMAP team hardcoded contact information:
+        - Defines role-based contacts: Custodian, Point of Contact, Distributor, Author, Principal Investigator, Processors
+        - Names: Timothy J Haverland, Melissa Ann Karp, John F Kennedy (with @noaa.gov emails)
+        - Used to populate metadata for all DisMAP datasets
+
+      **Pattern**: All dicts are created, serialized to JSON, then immediately re-read to verify round-trip integrity. These JSON files are consumed by other tools (e.g., import_datasets_species_filter_csv_data.py, dismap_metadata_processing.py) to ensure consistent metadata formatting and sort order across all GDB objects and portal publications.
+
 - #### Import Datasets Species Filter CSV Data
-  Loads CSV survey metadata into project GDB
-- #### Zip and Unzip CSV Data
-  Archives/extracts CSV inputs (regions, species filter, survey data)
-- #### Zip and Unzip Shapefile Data
-  zip_and_unzip_shapefile_data.py Archives/extracts shapefiles
-- #### DisMAP Tools
-  - **dismap_tools.py** — Utility library with XML/metadata parsing, field transformation, and spatial analysis helpers using lxml & ArcPy.
+  - The [import_datasets_species_filter_csv_data.py](import_datasets_species_filter_csv_data.py) ArcGIS/ArcPy/Python script creates ArcGIS Pro project folder structure: GDB, scratch workspace, subfolders, and configures toolboxes/databases in `.aprx`
+  - The input for the script is the Project Folder path (i.e. "Documents/ArcGIS/Projects/DisMAP/ArcGIS-Analysis-Python/December 1 2025") and CSV files for:
+    1. Datasets
+    2. Species_Filter
+    3. DisMAP_Survey_Info
+    4. SpeciesPersistenceIndicatorTrend
+    5. SpeciesPersistenceIndicatorPercentileBin
+  - Multi-function script that imports survey metadata CSVs into an ArcGIS Pro GDB and manages related utilities:
 
-***create_base_bathymetry.py summary:***
+    1. **`get_encoding_index_col(csv_file)`** — Detects CSV encoding using `chardet` and identifies index column:
+         - Reads raw file bytes and auto-detects character encoding
+         - Uses pandas to load CSV and check if first column is `"Unnamed: 0"` (pandas-generated index)
+         - Returns encoding and index column position
 
-This is an ArcGIS/ArcPy script that processes bathymetry data for Alaska,Hawaii, and all other regions. All functions follow ArcGIS Pro logging/error handling patterns, manage ArcPy environments (workspace, cellsize, resampling), and clean up local variables at the end. It contains four main functions:
+    2. **`worker(project_gdb, csv_file)`** — Main worker function; converts CSV to GDB table:
+         - Validates GDB and CSV exist; sets ArcGIS logging/environment
+         - Uses `dismap_tools` helper functions to load CSV dtypes and GDB field schema
+         - Loads CSV with pandas, handling encoding/index column detection
+         - Replaces NaN with empty strings; strips whitespace
+         - Converts pandas DataFrame to NumPy structured array matching GDB field types
+         - Writes array to temporary in-memory table, then copies to GDB using `arcpy.da.NumPyArrayToTable()`
+         - Cleans up string fields (replaces None with empty strings)
+         - Calls `dismap_tools.alter_fields()` to adjust field properties
+         - Calls `dismap_tools.import_metadata()` to attach metadata from JSON definitions
+         - Compacts the GDB
 
-1. **`raster_properties_report()`** — Utility that logs raster metadata (spatial reference, extent, cell size, statistics, pixel type) using `arcpy.AddMessage()`.
+    3. **`update_datecode(csv_file, project_name)`** — Updates DateCode values in CSV:
+         - Loads CSV with pandas
+         - Extracts old DateCode from first row
+         - Replaces all DateCode occurrences with new code based on project_name (using `dismap_tools.date_code()`)
+         - Writes updated CSV back to disk
 
-2. **`create_alasaka_bathymetry(project_folder)`** — Processes Alaska bathymetry:
-   - Copies ASCII GRID files (AI, EBS, GOA) into a geodatabase
-   - Converts positive depth values to negative
-   - Appends/clips rasters to ensure full coverage
-   - Reprojects each region's bathymetry to its regional spatial reference (AI_IDW, EBS_IDW, etc.)
-   - Copies final rasters to the project bathymetry GDB and compacts the database
+    4. **`script_tool(project_folder)`** — Orchestrates full import workflow:
+         - Copies dated CSV files from `home_folder\Datasets\` to project's `CSV_Data\` folder (e.g., `Datasets_20250801.csv` → `Datasets.csv`)
+         - Loads metadata template mapping from `root_dict.json`
+         - Imports contact metadata from `DisMAP Contacts 2025 08 01.xml` into each CSV file
+         - Parses XML with lxml, sorts elements by priority order from `root_dict`
+         - Calls `update_datecode()` to update date codes in Datasets.csv
+         - Calls `worker()` for each of five tables: Datasets, Species_Filter, DisMAP_Survey_Info, SpeciesPersistenceIndicatorTrend, SpeciesPersistenceIndicatorPercentileBin
+         - Logs elapsed time
 
-3. **`create_hawaii_bathymetry(project_folder)`** — Processes Hawaii bathymetry:
-   - Converts a polygon shapefile grid (BFISH_PSU.shp) to a raster using depth field
-   - Negates values and saves to GDB
-   - Copies final rasters to the project bathymetry GDB and compacts the database
+  - Key pattern: Heavy use of pandas for CSV parsing + NumPy array conversion to ensure type safety between CSV and GDB; metadata synchronization with lxml XML manipulation
+ 
 
-4. **`gebco_bathymetry(project_folder)`** — Processes GEBCO data for all other regions:
-   - Converts GEBCO ASCII rasters to GDM rasters for each region
-   - Copies final rasters to the project bathymetry GDB and compacts the database
-
-
-
+### *DisMAP ArcGIS Python Processing*
 
 **Director/Worker Pattern (parallel-capable processing):**
 The codebase follows a **director** → **worker** architecture for scalability:
@@ -83,259 +292,8 @@ The codebase follows a **director** → **worker** architecture for scalability:
 - ArcGIS Pro logging is configured (history, metadata, message levels)
 
 
-
-***zip_and_unzip_csv_data.py and zip_and_unzip_shapefile_data.py summary:***
-
-**import_datasets_species_filter_csv_data.py summary:**
-
-Multi-function script that imports survey metadata CSVs into an ArcGIS Pro GDB and manages related utilities:
-
-1. **`get_encoding_index_col(csv_file)`** — Detects CSV encoding using `chardet` and identifies index column:
-   - Reads raw file bytes and auto-detects character encoding
-   - Uses pandas to load CSV and check if first column is `"Unnamed: 0"` (pandas-generated index)
-   - Returns encoding and index column position
-
-2. **`worker(project_gdb, csv_file)`** — Main worker function; converts CSV to GDB table:
-   - Validates GDB and CSV exist; sets ArcGIS logging/environment
-   - Uses `dismap_tools` helper functions to load CSV dtypes and GDB field schema
-   - Loads CSV with pandas, handling encoding/index column detection
-   - Replaces NaN with empty strings; strips whitespace
-   - Converts pandas DataFrame to NumPy structured array matching GDB field types
-   - Writes array to temporary in-memory table, then copies to GDB using `arcpy.da.NumPyArrayToTable()`
-   - Cleans up string fields (replaces None with empty strings)
-   - Calls `dismap_tools.alter_fields()` to adjust field properties
-   - Calls `dismap_tools.import_metadata()` to attach metadata from JSON definitions
-   - Compacts the GDB
-
-3. **`update_datecode(csv_file, project_name)`** — Updates DateCode values in CSV:
-   - Loads CSV with pandas
-   - Extracts old DateCode from first row
-   - Replaces all DateCode occurrences with new code based on project_name (using `dismap_tools.date_code()`)
-   - Writes updated CSV back to disk
-
-4. **`script_tool(project_gdb)`** — Orchestrates full import workflow:
-   - Copies dated CSV files from `home_folder\Datasets\` to project's `CSV_Data\` folder (e.g., `Datasets_20250801.csv` → `Datasets.csv`)
-   - Loads metadata template mapping from `root_dict.json`
-   - Imports contact metadata from `DisMAP Contacts 2025 08 01.xml` into each CSV file
-   - Parses XML with lxml, sorts elements by priority order from `root_dict`
-   - Calls `update_datecode()` to update date codes in Datasets.csv
-   - Calls `worker()` for each of five tables: Datasets, Species_Filter, DisMAP_Survey_Info, SpeciesPersistenceIndicatorTrend, SpeciesPersistenceIndicatorPercentileBin
-   - Logs elapsed time
-
-Key pattern: Heavy use of pandas for CSV parsing + NumPy array conversion to ensure type safety between CSV and GDB; metadata synchronization with lxml XML manipulation.
-
-**zip_and_unzip_csv_data.py summary:**
-
-Extracts CSV survey data from a ZIP archive, renames files, and attaches metadata:
-1. **Extract ZIP** — Unzips files from source ZIP (e.g., `CSV Data 2025 08 01.zip`) into the project's `CSV_Data` folder
-2. **Rename CSV files** — Copies extracted `*_survey.csv` files and renames them to `*_IDW.csv` (e.g., `AI_IDW_survey.csv` → `AI_IDW.csv`)
-3. **Clean up** — Removes the temporary `python/` extraction subdirectory
-4. **Attach metadata** — For each `*_IDW.csv` file:
-   - Synchronizes ArcGIS metadata
-   - Imports contact/organizational metadata from `DisMAP Contacts 2025 08 01.xml`
-   - Parses XML with lxml, sorts elements by a predefined `root_dict` order
-   - Writes updated metadata back to file
-5. **Return path** — Returns the `CSV_Data` output directory path
-
-Uses ArcGIS tool parameters and defaults to `~\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025`.
-
 ---
 
-**zip_and_unzip_shapefile_data.py summary:**
-
-Simpler companion script; extracts shapefile data from a ZIP archive:
-1. **Extract ZIP** — Unzips files from source ZIP into the project's `Dataset_Shapefiles` folder (changes working directory with `os.chdir()`)
-2. **Return path** — Returns the `Dataset_Shapefiles` output directory path
-
-No metadata processing or file renaming; straightforward extraction of shapefiles (e.g., `AI_IDW_Region.shp`, `EBS_IDW_Region.shp`, etc.) into their target directory.
-
-Both scripts follow ArcGIS tool conventions (parameter access via `arcpy.GetParameterAsText()`, messaging via `arcpy.AddMessage()`, error handling with `arcpy.ExecuteError`).
-
-***import_datasets_species_filter_csv_data.py summary:***
-
-Multi-function script that imports survey metadata CSVs into an ArcGIS Pro GDB and manages related utilities:
-
-1. **`get_encoding_index_col(csv_file)`** — Detects CSV encoding using `chardet` and identifies index column:
-   - Reads raw file bytes and auto-detects character encoding
-   - Uses pandas to load CSV and check if first column is `"Unnamed: 0"` (pandas-generated index)
-   - Returns encoding and index column position
-
-2. **`worker(project_gdb, csv_file)`** — Main worker function; converts CSV to GDB table:
-   - Validates GDB and CSV exist; sets ArcGIS logging/environment
-   - Uses `dismap_tools` helper functions to load CSV dtypes and GDB field schema
-   - Loads CSV with pandas, handling encoding/index column detection
-   - Replaces NaN with empty strings; strips whitespace
-   - Converts pandas DataFrame to NumPy structured array matching GDB field types
-   - Writes array to temporary in-memory table, then copies to GDB using `arcpy.da.NumPyArrayToTable()`
-   - Cleans up string fields (replaces None with empty strings)
-   - Calls `dismap_tools.alter_fields()` to adjust field properties
-   - Calls `dismap_tools.import_metadata()` to attach metadata from JSON definitions
-   - Compacts the GDB
-
-3. **`update_datecode(csv_file, project_name)`** — Updates DateCode values in CSV:
-   - Loads CSV with pandas
-   - Extracts old DateCode from first row
-   - Replaces all DateCode occurrences with new code based on project_name (using `dismap_tools.date_code()`)
-   - Writes updated CSV back to disk
-
-4. **`script_tool(project_gdb)`** — Orchestrates full import workflow:
-   - Copies dated CSV files from `home_folder\Datasets\` to project's `CSV_Data\` folder (e.g., `Datasets_20250801.csv` → `Datasets.csv`)
-   - Loads metadata template mapping from `root_dict.json`
-   - Imports contact metadata from `DisMAP Contacts 2025 08 01.xml` into each CSV file
-   - Parses XML with lxml, sorts elements by priority order from `root_dict`
-   - Calls `update_datecode()` to update date codes in Datasets.csv
-   - Calls `worker()` for each of five tables: Datasets, Species_Filter, DisMAP_Survey_Info, SpeciesPersistenceIndicatorTrend, SpeciesPersistenceIndicatorPercentileBin
-   - Logs elapsed time
-
-Key pattern: Heavy use of pandas for CSV parsing + NumPy array conversion to ensure type safety between CSV and GDB; metadata synchronization with lxml XML manipulation.
-
-***create_data_dictionary_json_files.py summary:***
-
-Large (2232-line) script that generates JSON metadata definitions for all GDB tables and fields in the DisMAP project:
-
-**Main function: `script_tool(project_gdb)`**
-
-1. **Field Definitions Dictionary** (massive hardcoded dict covering ~200+ fields):
-   - Defines every GDB field used in DisMAP with metadata:
-     - `field_aliasName`, `field_name`, `field_type`, `field_length`, `field_precision`, `field_scale`
-     - `field_editable`, `field_isNullable`, `field_required`
-     - `field_attrdef`, `field_attrdefs`, `field_attrdomv` (ArcGIS ISO metadata attributes)
-     - `field_domain` (for referential integrity links)
-   - Examples: `CSVFile`, `Category`, `CellSize`, `CenterOfGravityDepth`, `CommonName`, `DateCode`, `Depth`, `Dimensions`, etc.
-
-2. **Table Field Mappings** (hardcoded list patterns):
-   - Defines which fields belong to each table type:
-     - `_Datasets` — dataset catalog fields (DatasetCode, CSVFile, TableName, Region, Season, DateCode, etc.)
-     - `_Indicators` — distribution indicator fields (CenterOfGravity*, MinimumLatitude, MaximumDepth, etc.)
-     - `_IDW` — Inverse Distance Weighting survey data (Species, WTCPUE, MapValue, Coordinates, Depth)
-     - `_Sample_Locations` — sample point data (SampleID, Year, Species, WTCPUE, Stratum, Coordinates)
-     - `_Species_Filter` — species metadata (Species, CommonName, TaxonomicGroup, FilterRegion, ManagementBody)
-     - `_DisMAP_Survey_Info` — survey metadata (SurveyName, Region, Season, GearType, Years, DataSource)
-     - `_SpeciesPersistenceIndicatorTrend`, `_SpeciesPersistenceIndicatorPercentileBin` — persistence indicators
-     - Region-specific: `_Boundary`, `_Extent_Points`, `_Fishnet`, `_Lat_Long`, `_Mosaic`, `_Raster_Mask`
-
-3. **Dynamic Table-to-Fields Mapping**:
-   - Iterates over hardcoded table names (15 IDW regions + 6 metadata tables)
-   - For each `*_IDW` region: assigns fields + auto-generates derived table variants (Sample_Locations, Indicators, Bathymetry, Boundary, Extent_Points, Fishnet, LayerSpeciesYearImageName, Lat_Long, Latitude, Longitude, Mosaic, Raster_Mask, Region)
-   - Special handling for metadata tables (Datasets, DisMAP_Regions, Indicators, Species_Filter, DisMAP_Survey_Info, SpeciesPersistenceIndicatorTrend, SpeciesPersistenceIndicatorPercentileBin)
-
-4. **JSON Output**:
-   - Exports `field_definitions.json` → all field metadata (keyed by field name)
-   - Exports `table_definitions.json` → all table field lists (keyed by table name, values are lists of field names)
-   - Both written to `{project_folder}\CSV_Data\`
-
-5. **Cleanup & Validation**:
-   - Logs all table/field mappings
-   - Cross-checks that all mapped fields exist in `field_definitions`
-   - Compacts GDB
-
-**Key Pattern**: Serves as schema/metadata registry for the entire DisMAP project; JSON files are consumed by downstream tools (e.g., import_datasets_species_filter_csv_data.py loads field schemas) to enforce consistent data types and field properties across all CSV imports and GDB operations.
-
-***create_metadata_json_files.py summary:***
-
-A 612-line utility script that generates standardized XML metadata ordering dictionaries and contact information JSON files for ArcGIS Pro metadata templates:
-
-**Main function: `script_tool(project_gdb)`**
-
-Creates and exports multiple JSON lookup/mapping files to `{project_folder}\CSV_Data\`:
-
-1. **`root_dict.json`** — XML element priority ordering for top-level ISO 19139 metadata sections:
-   - Maps 21 root elements to sort order (e.g., `Esri: 0`, `dataIdInfo: 1`, `dqInfo: 2`, `distInfo: 3`)
-   - Used to normalize/sort XML metadata trees consistently
-
-2. **`esri_dict.json`** — ArcGIS Esri-specific metadata element ordering:
-   - Nested structure for `DataProperties` (lineage, itemProps, nativeExtBox, itemLocation, coordRef)
-   - Maps ~15 Esri metadata subelements to sort priorities
-
-3. **`dataIdInfo_dict.json`** — ISO 19139 Data Identification nested element hierarchy:
-   - Complex nested mapping for keyword sections (discKeys, themeKeys, placeKeys, tempKeys, otherKeys)
-   - Maps spatial representation, data extent, temporal elements, and citation structures
-
-4. **`idCitation_dict.json`** — Resource citation element ordering:
-   - Maps citation subelements (resTitle, date, presForm, citRespParty) to priorities
-
-5. **`contact_element_order_dict.json`** — Contact/responsible party element ordering:
-   - Defines sort order for ~35 contact metadata fields (name, organization, email, phone, role, citation info)
-
-6. **`distInfo_dict.json`** — Distribution information element ordering:
-   - Maps distribution channel metadata (distorFormat, distorCont, distTranOps)
-
-7. **`RoleCd_dict.json`** — Role code lookup table:
-   - Maps codes (`"001"` → `"Resource Provider"`, `"007"` → `"Point of Contact"`, etc.) for 15 ISO roles
-
-8. **`tpCat_dict.json`** — ISO Topic Category XML snippets:
-   - Maps topic codes to pre-formatted XML strings (e.g., `"002"` → `<tpCat>...<TopicCatCd value="002">...`)
-
-9. **`contact_dict.json`** — DisMAP team hardcoded contact information:
-   - Defines role-based contacts: Custodian, Point of Contact, Distributor, Author, Principal Investigator, Processors
-   - Names: Timothy J Haverland, Melissa Ann Karp, John F Kennedy (with @noaa.gov emails)
-   - Used to populate metadata for all DisMAP datasets
-
-**Pattern**: All dicts are created, serialized to JSON, then immediately re-read to verify round-trip integrity. These JSON files are consumed by other tools (e.g., import_datasets_species_filter_csv_data.py, dismap_metadata_processing.py) to ensure consistent metadata formatting and sort order across all GDB objects and portal publications.
-
-***dismap_project_setup.py summary:***
-
-ArcGIS Pro script tool (toolbox-callable) that initializes a new DisMAP project folder structure and configures the `.aprx` file:
-
-**Main function: `script_tool(new_project_folder, project_folders)`**
-
-1. **Get home folder** — Accesses current ArcGIS Pro project's home folder via `arcpy.mp.ArcGISProject("CURRENT")`
-
-2. **Create project folder structure**:
-   - Creates main project folder (e.g., `"September 1 2025"`)
-   - Creates project GDB: `{new_project_folder}\{new_project_folder}.gdb`
-   - Creates Scratch folder: `{new_project_folder}\Scratch`
-   - Creates scratch GDB: `Scratch\scratch.gdb`
-   - Creates subfolders from comma-separated list (e.g., `CRFs;CSV_Data;Dataset_Shapefiles;Images;Layers;Metadata_Export;Publish`)
-
-3. **Configure `.aprx` file**:
-   - Saves a copy of the current project as `{new_project_folder}.aprx`
-   - Opens the new APRX file
-   - Removes all existing maps
-   - Updates project databases: sets the new project GDB as default database
-   - Updates project toolboxes: registers `DisMAP.atbx` as default toolbox
-   - Saves the configured APRX
-
-4. **Parameters**:
-   - `new_project_folder` — Name of new project folder (defaults to `"September 1 2025"`)
-   - `project_folders` — Semicolon-separated subfolder names (defaults to `"CRFs;CSV_Data;Dataset_Shapefiles;Images;Layers;Metadata_Export;Publish"`)
-
-**Pattern**: Designed to be called from ArcGIS Pro as a script tool; uses standard toolbox parameter conventions (`arcpy.GetParameterAsText()`, `arcpy.SetParameterAsText()`) and follows DisMAP folder/naming conventions (date-based project folders, standard GDB/subfolder structure).
-
-***dismap_tools.py summary:***
-
-Large (3354-line) utility library providing common helper functions for DisMAP data processing and ArcGIS Pro operations:
-
-**XML & Metadata Functions:**
-- **`parse_xml_file_format_and_save(csv_data_folder, xml_file, sort)`** — Parses and reformats XML metadata using lxml; optionally sorts elements by predefined priority order from `root_dict.json`; writes back to file
-- **`print_xml_file(xml_file, sort)`** — Displays formatted XML metadata to ArcGIS messages
-- **`compare_metadata_xml(file1, file2)`** — Compares two metadata XML files
-- **`export_metadata(csv_data_folder, in_table)`** — Exports ArcGIS metadata from a dataset
-- **`import_metadata(csv_data_folder, dataset)`** — Imports standardized metadata from JSON definitions into GDB dataset
-
-**Field & Table Management:**
-- **`add_fields(csv_data_folder, in_table)`** — Adds fields to a GDB table based on schema from `table_definitions.json` + `field_definitions.json`
-- **`alter_fields(csv_data_folder, in_table)`** — Updates field aliases and properties on existing fields
-- **`field_definitions(csv_data_folder, field)`** — Loads field schema dictionary from `field_definitions.json`
-- **`dTypesCSV(csv_data_folder, table)`** — Returns pandas data types for CSV columns based on table schema
-- **`dTypesGDB(csv_data_folder, table)`** — Returns NumPy data types for GDB fields based on table schema
-
-**Data Inspection & Utilities:**
-- **`check_datasets(datasets)`** — Logs detailed metadata (extent, cell size, date created, spatial reference, sample rows) for feature classes, rasters, and tables
-- **`check_transformation(ds, cs)`** — Validates spatial reference transformation compatibility
-- **`get_transformation(gsr_wkt, psr_wkt)`** — Gets geographic transformation between two coordinate systems
-- **`clear_folder(folder)`** — Removes all files from a folder
-- **`backup_gdb(project_gdb)`** — Creates a backup copy of geodatabase and compacts both
-
-**Data Lookup & Conversion:**
-- **`date_code(version)`** — Generates/extracts DateCode from project version name (e.g., `"August 1 2025"` → `"20250801"`)
-- **`convertSeconds(seconds)`** — Converts seconds to HH:MM:SS format
-- **`get_encoding_index_col(csv_file)`** — Detects CSV file encoding using `chardet`
-- **`dataset_title_dict(project_gdb)`** — Builds lookup dictionary mapping region/dataset codes to display titles
-- **`metadata_dictionary_json(csv_data_folder, dataset_name)`** — Loads metadata templates from JSON
-- **`table_definitions(csv_data_folder, field)`** — Loads table-to-fields schema mapping from JSON
-
-**Pattern**: Serves as central helper library for other DisMAP tools; heavily uses JSON schema files (`field_definitions.json`, `table_definitions.json`) as single source of truth for GDB structure; consistent exception handling with ArcPy logging; all functions clean up local variables at completion.
 
 ## Summary: create_regions_from_shapefiles_director.py and create_regions_from_shapefiles_worker.py
 
