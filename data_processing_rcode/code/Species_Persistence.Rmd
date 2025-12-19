@@ -1051,9 +1051,11 @@ data_full_trends <- add_trend_category(data) %>%
 data_summary <- add_trend_category(data) %>%
   select(Region, SurveyName, Species, Common, TrendCategory) %>%
   distinct() %>% 
+  mutate(SurveyName = as.character(SurveyName),
+         Species = as.character(Species)) %>%
   left_join(holding_noyear_filt, by = c("SurveyName", "Species")) %>% 
   select(-glmM, -glmP) %>% 
-  left_join(holding_bio_noyear_filt, by = C("SurveyName", "Species")) %>% 
+  left_join(holding_bio_noyear_filt, by = c("SurveyName", "Species")) %>% 
   select(-RegM, -RegR, -RegP)
 ```
 
