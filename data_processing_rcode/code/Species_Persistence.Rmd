@@ -543,6 +543,15 @@ for(v in surveys) {
 }
   
 ```
+```{r filter sig haul trend}
+holding_noyear <- holding_glm %>% select(!Year)
+
+holding_noyear_filt <- holding_glm %>% select(!Year) %>% 
+  filter(glmP <= 0.05)
+
+holding_noyear_filt$Haul_Inc_Dec <- ifelse(holding_noyear_filt$glmM > 0, "Increasing", 
+                                      ifelse(holding_noyear_filt$glmM < 0, "Decreasing", NA))
+```
 
 
 ***Biomass***
@@ -643,6 +652,17 @@ for(v in surveys) {
 
 ```
 
+```{r filter sig biomass trend}
+holding_bio_noyear <- holding_bio %>% select(!Year)
+
+holding_bio_noyear_filt <- holding_bio %>% select(!Year) %>% 
+  filter(RegP <= 0.05)
+
+holding_bio_noyear_filt$Bio_Inc_Dec <- ifelse(holding_bio_noyear_filt$RegM > 0, "Increasing", 
+                                      ifelse(holding_bio_noyear_filt$RegM < 0, "Decreasing", NA))
+```
+
+
 ### Ground-truthing
 
 This section visualizes the trends in *haul frequency* and *biomass* for a set of "focal species". The goal of these visualizations is to help us ground-truth our analyses and determine if the trends of these "focal species" successfully match the trends that we know they should have in each region. The last 10 years are represented by a gray window to highlight that these years are captured by the linear regression model.
@@ -650,7 +670,6 @@ This section visualizes the trends in *haul frequency* and *biomass* for a set o
 We also provide a subset of the visualizations that only include "focal species" with significant trends (p<=0.5).
 
 ```{r haul freq}
-holding_noyear <- holding_glm %>% select(!Year)
 
 focal_spp <- data_inc_haul %>% 
   filter((Region== "Aleutian Islands" & Common == "Walleye pollock")|
@@ -690,8 +709,6 @@ focal_spp <- data_inc_haul %>%
 focal_spp$Year <- as.numeric(focal_spp$Year)
 
 #same as above but filtering for only significant p-values
-holding_noyear_filt <- holding_glm %>% select(!Year) %>% 
-  filter(glmP <= 0.05)
   
 focal_spp_filt <- data_inc_haul %>% 
   filter((Region== "Aleutian Islands" & Common == "Walleye pollock")|
@@ -760,9 +777,6 @@ ggplotly(focal_check_haul_filt)
 
 
 ```{r wtcpue}
-
-holding_bio_noyear <- holding_bio %>% select(!Year)
-  
 focal_spp_bio <- data_inc_wtcpue %>% 
   filter((Region== "Aleutian Islands" & Common == "Walleye pollock")|
         (Region== "Eastern Bering Sea" & Common == "Walleye pollock")|
@@ -801,9 +815,6 @@ focal_spp_bio <- data_inc_wtcpue %>%
 focal_spp_bio$Year <- as.numeric(focal_spp_bio$Year)
 
 #filtering for significant p-values
-holding_bio_noyear_filt <- holding_bio %>% select(!Year) %>% 
-  filter(RegP <= 0.05)
-
 focal_spp_bio_filt <- data_inc_wtcpue %>% 
   filter((Region== "Aleutian Islands" & Common == "Walleye pollock")|
         (Region== "Eastern Bering Sea" & Common == "Walleye pollock")|
@@ -961,53 +972,6 @@ pval_haul <- ggplot(holding, aes(x = RegP)) +
 
 ```
 
-```{r}
-# This code is pretty generic and the cbind() approach can be applied to
-# GAMs, brms, GLMs, sdmTMB, glmmTMB, etc
-set.seed(123)
-d <- data.frame(year = 1:20,
-                n_tows = ceiling(100 * runif(20, 7, 10)),
-                present_tows = ceiling(100 * runif(20, 1, 3)))
-
-# example of linear trend using the cbind() approach, which we'll call the compact model
-fit <- glm(
-  cbind(present_tows, n_tows - present_tows) ~ year,
-  data = d,
-  family = binomial
-)
-summary(fit)
-
-# example of using an indicator testing if last 10 years is different
-d$last10 <- ifelse(d$year > 10, 1, 0)
-fit2 <- glm(
-  cbind(present_tows, n_tows - present_tows) ~ last10,
-  data = d,
-  family = binomial
-)
-
-
-# You could also replicate the rows to be individual observations
-d_long <- do.call(rbind,
-                  lapply(1:nrow(d), function(i) {
-                    data.frame(
-                      year = d$year[i],
-                      tow_present = c(rep(1, d$present_tows[i]),
-                                      rep(0, d$n_tows[i] - d$present_tows[i]))
-                    )
-                  })
-)
-fit_long <- glm(
-  tow_present ~ year,
-  data = d_long,
-  family = binomial
-)
-
-# compare trends -- they're exactly the same
-summary(fit)$coefficients
-
-summary(fit_long)$coefficients
-```
-
 
 **Trend Category Metrics**
 
@@ -1086,10 +1050,16 @@ data_full_trends <- add_trend_category(data) %>%
 
 data_summary <- add_trend_category(data) %>%
   select(Region, SurveyName, Species, Common, TrendCategory) %>%
-  distinct()
+  distinct() %>% 
+  left_join(holding_noyear_filt, by = c("SurveyName", "Species")) %>% 
+  select(-glmM, -glmP) %>% 
+  left_join(holding_bio_noyear_filt, by = C("SurveyName", "Species")) %>% 
+  select(-RegM, -RegR, -RegP)
 ```
 
-```{r species flag function}
+
+The following two code chunks adds a flag for species trends that are under review. Currently, the flagging isn't being used, but the function below easily could be adjusted for future scenarios that require flagging.
+```{r species flag function, eval=FALSE}
 
 data <- data_full_trends
 
@@ -1188,13 +1158,11 @@ flag_spp <- function(data, survey){
     
     print("----- No species flagged for this region")
   }
-  
 }
-
 ```
 
 
-```{r flag compilation}
+```{r flag compilation, eval=FALSE}
 
 survey_list <- unique(data_full_trends$SurveyName)
 
