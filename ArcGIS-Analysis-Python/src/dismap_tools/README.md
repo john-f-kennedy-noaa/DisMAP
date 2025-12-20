@@ -22,7 +22,8 @@
 >   - [Create Region Rasters Director and Worker](#create-region-rasters-director-and-worker)
 >   - [Create Region Species Richness Director and Worker](#create-region-species-richness-director-and-worker)
 >   - [Create Region Mosaics Director and Worker](#create-region-mosaics-director-and-worker)
-> 
+>   - [Create Region Indicators Table Direcor and Worker](#create-region-indicators-table-director-and-worker)
+>   - [Publish to Portal Director](#publish-to-portal-director)
 > - [*Suggestions and Comments*](#suggestions-and-comments)
 > - [*NOAA README*](#noaa-readme)
 > - [*NOAA-NMFS GitHub Enterprise Disclaimer*](#noaa-nmfs-github-enterprise-disclaimer)
@@ -1304,618 +1305,614 @@ For each region and year:
            → Richness TIF output with statistics & metadata
   ```
 
-### **Technical Architecture**
+  - #### **Technical Architecture**
 
-- **Array-based computation**: All raster operations performed via NumPy for efficiency (avoids pixel-by-pixel cursor operations)
-- **Lazy evaluation**: Rasters loaded only when needed (one species/year at a time)
-- **Memory efficiency**: Processes complete regions before cleanup; avoids storing all input rasters simultaneously
-- **Coordinate system consistency**: Output rasters tied to `region_raster_mask` extent/resolution/SR
-- **Batch parallelism**: Director splits 15 IDW regions into 5 sequential batches (3 regions each) to manage CPU load across multiple `director()` calls
-- **Dual richness generation**: Single worker pass generates both total and core richness by filtering CoreSpecies flag during accumulation
+    - **Array-based computation**: All raster operations performed via NumPy for efficiency (avoids pixel-by-pixel cursor operations)
+    - **Lazy evaluation**: Rasters loaded only when needed (one species/year at a time)
+    - **Memory efficiency**: Processes complete regions before cleanup; avoids storing all input rasters simultaneously
+    - **Coordinate system consistency**: Output rasters tied to `region_raster_mask` extent/resolution/SR
+    - **Batch parallelism**: Director splits 15 IDW regions into 5 sequential batches (3 regions each) to manage CPU load across multiple `director()` calls
+    - **Dual richness generation**: Single worker pass generates both total and core richness by filtering CoreSpecies flag during accumulation
 
 
 - ### Create Region Mosaics Director and Worker
   - This director/worker pair creates mosaic datasets and Cloud Raster Format (CRF) files from interpolated species rasters, enabling efficient multi-band image services for portal publishing.
 
-### **Director (create_mosaics_director.py)**
-
-**Purpose**: Orchestrates mosaic dataset creation for all IDW regions, aggregating species rasters into multi-dimensional mosaic structures for web services.
-
-**Key Functions:**
-
-1. **`director(project_gdb, Sequential, table_names)`** — Main orchestration function:
-   - **Pre-processing** (sequential):
-     - Calls `preprocessing()` to stage data for each region into separate GDBs
-     - Creates region-specific workspaces under Scratch folder
-   
-   - **Sequential or parallel processing**:
-     - **Sequential mode**: Calls `worker()` sequentially for each region
-     - **Parallel mode**: Uses `multiprocessing.Pool` (processes = CPU count - 2, maxtasksperchild=1); monitors job completion with status polling every ~7.5×processes seconds
-   
-   - **Post-processing** (sequential):
-     - Walks scratch folder collecting all mosaic datasets and `.crf` files
-     - Copies mosaic datasets to project GDB
-     - Copies `.crf` files to `CRFs` folder
-     - Calls `dismap_tools.import_metadata()` to attach metadata
-     - Deletes source datasets from scratch
-     - Compacts project GDB
-
-2. **`script_tool(project_gdb)`** — Entry point with test mode:
-   - Currently in test mode: `Sequential=True, table_names=["SEUS_FAL_IDW"]`
-   - Alternative production batches commented (non-sequential options available)
-   - Logs timing and environment info
-
-### **Worker (create_mosaics_worker.py)**
-
-**Purpose**: For a single region, creates a mosaic dataset by aggregating all interpolated species rasters, then exports to Cloud Raster Format (CRF) for efficient storage and web service delivery.
-
-**Processing Pipeline:**
-
-#### **Phase 1: Prepare Output Paths & Metadata**
-
-- Queries `Datasets` table for region metadata:
-  - Extracts: TableName, DatasetCode, CellSize, MosaicName, MosaicTitle
-  
-- Sets output coordinate system from `{table_name}_Raster_Mask` spatial reference
-
-#### **Phase 2: Build Input Raster List**
-
-- Queries `{table_name}_LayerSpeciesYearImageName` table for all rasters to include
-- Filters by: `DatasetCode = '{datasetcode}'` (region-specific data)
-- Extracts: Variable, ImageName
-- Constructs input raster paths:
-  - Path format: `{project_folder}\Images\{table_name}\{variable}\{image_name}.tif`
-  - Special handling: Prepends underscore to "Species Richness" variable for folder naming
-  - Validates: Each raster file must exist; logs errors for missing files
-- Result: List of input_raster_paths for mosaic ingestion
-
-#### **Phase 3: Create Mosaic Dataset**
-
-- Calls `arcpy.management.CreateMosaicDataset()`:
-  - Workspace: region GDB
-  - Name: `{mosaic_name}` (e.g., `AI_IDW_Mosaic`)
-  - Coordinate system: From region raster mask (region-specific projection)
-  - Pixel type: 32-bit float (matches interpolated raster values)
-  - One band (single-band species/richness rasters)
-
-#### **Phase 4: Load Rasters into Mosaic**
-
-- Calls `arcpy.management.AddRastersToMosaicDataset()` with parameters:
-  - Raster type: "Raster Dataset" (add pre-existing TIF rasters)
-  - Input path: List of all input_raster_paths from Phase 2
-  - **Cell size handling**:
-    - `update_cellsize_ranges = "UPDATE_CELL_SIZES"` — Automatically determine cell size ranges
-  - **Boundary handling**:
-    - `update_boundary = "UPDATE_BOUNDARY"` — Update mosaic extent from input rasters
-  - **Pyramid/statistics**:
-    - `build_pyramids = "NO_PYRAMIDS"` — Skip pyramid building for now
-    - `calculate_statistics = "NO_STATISTICS"` — Skip statistics calculation during load
-    - `estimate_statistics = "NO_STATISTICS"` — Don't estimate statistics
-  - **Duplicate handling**:
-    - `duplicate_items_action = "EXCLUDE_DUPLICATES"` — Skip duplicate rasters
-  - **Spatial reference**:
-    - `force_spatial_reference = "FORCE_SPATIAL_REFERENCE"` — Force region-specific SR
-  - Minimum dimension: 1500 (cells) — Only include larger rasters
-
-#### **Phase 5: Join Metadata Attributes**
-
-- Calls `arcpy.management.JoinField()`:
-  - Join on: Mosaic catalog Name field ← LayerSpeciesYearImageName ImageName field
-  - Joins fields:
-    - DatasetCode, Region, Season, Species, CommonName, SpeciesCommonName
-    - CoreSpecies, Year, StdTime, Variable, Value, Dimensions
-  - Result: Mosaic catalog rows enriched with species/year/metadata attributes
-
-#### **Phase 6: Create Attribute Indexes**
-
-- Removes existing index if present: `{table_name}_MosaicSpeciesIndex`
-- Creates new non-unique index on: Species, CommonName, SpeciesCommonName, Year
-- Improves query performance for species-based filtering in web services
-
-#### **Phase 7: Calculate Statistics**
-
-- Calls `arcpy.management.CalculateStatistics()` with:
-  - Skip existing: False (recalculate)
-  - x_skip_factor / y_skip_factor: 1 (use all data)
-
-#### **Phase 8: Configure Mosaic Properties**
-
-- Calls `arcpy.management.SetMosaicDatasetProperties()` with detailed configuration:
-  - **Image sizing**:
-    - Maximum image size: 4100×15000 pixels (supports large composite images)
-  - **Compression**:
-    - Allowed: LZ77, None
-    - Default: LZ77
-    - JPEG quality: 75%
-    - LERC tolerance: 0.01
-  - **Resampling/display**:
-    - Resampling: BILINEAR
-    - Clip to footprints: NOT_CLIP
-    - Clip to boundary: CLIP (constrain to mosaic extent)
-    - Blend width: 10 pixels (feather edges)
-    - Viewpoint: 600×300 (north corner bias)
-  - **Mosaic operations**:
-    - Method: FIRST (display first raster when overlapping)
-    - Max items per mosaic: 50 (limit composite slices)
-    - Cell size tolerance: 0.8 (80% match required)
-    - Cell size: `{cell_size} {cell_size}` (from region metadata)
-  - **Metadata**:
-    - Level: FULL (include all metadata)
-    - Transmission fields: All mosaic catalog fields
-  - **Temporal dimension**:
-    - Time enabled: YES
-    - Start/end time field: StdTime (same field for point-in-time data)
-    - Time format: "YYYY" (year-only dimension)
-    - Time interval: 1 year
-    - Time interval units: Years
-  - **Service capabilities**:
-    - Max download items: 20
-    - Max records returned: 1000
-    - Data source type: GENERIC
-    - Minimum pixel contribution: 1 (include all valid pixels)
-
-#### **Phase 9: Analyze Mosaic Dataset**
-
-- Calls `arcpy.management.AnalyzeMosaicDataset()` with checker keywords:
-  - FOOTPRINT, FUNCTION, RASTER, PATHS, SOURCE_VALIDITY, STALE
-  - PYRAMIDS, STATISTICS, PERFORMANCE, INFORMATION
-  - Validates: All rasters are accessible, pyramids/statistics present, performance optimal
-
-#### **Phase 10: Build Multidimensional Information**
-
-- Calls `arcpy.md.BuildMultidimensionalInfo()`:
-  - Variable field: "Variable" (species name or "Species Richness")
-  - Dimension fields: StdTime (Time Step, Year)
-  - Enables time-based slicing: Web services can query by year
-  - Deletes existing multidimensional info before rebuilding
-
-#### **Phase 11: Export to Cloud Raster Format (CRF)**
-
-- Calls `arcpy.management.CopyRaster()`:
-  - Source: Mosaic dataset (in-memory processed)
-  - Output: `{scratch_folder}\{table_name}\{mosaic_name}.crf`
-  - Format: CRF (Cloud Raster Format — compressed, cloud-optimized)
-  - Pixel type: 32-bit float (maintains scientific precision)
-  - NoData value: -3.40282e+38 (minimum float32 sentinel)
-  - Process as multidimensional: ALL_SLICES (export all time steps)
-  - No transpose (keep dimension order)
-
-- Calls `arcpy.management.CalculateStatistics()` on CRF output
-
-#### **Phase 12: Cleanup**
-
-- Deletes intermediate tables: Datasets, LayerSpeciesYearImageName, Raster_Mask
-- Compacts region GDB
-
-### **Key Data Operations**
-
-1. **Multi-Dimensional Raster Assembly:**
-   - Combines many 2D rasters (species/year) into 4D mosaic (X, Y, Species, Time)
-   - Dimension fields enable web service queries: "Get richness for 2020"
-
-2. **Metadata Enrichment via Join:**
-   - Links mosaic catalog (N rows = N input rasters) to species/year metadata
-   - Enables filtering/sorting by taxonomy, management body, temporal attributes
-
-3. **Temporal Dimension:**
-   - StdTime field as single timestamp per year (point-in-time data)
-   - Time format "YYYY" enables time-series visualization in web services
-
-4. **Cloud Raster Format Export:**
-   - CRF enables efficient tiling, caching, and pyramid generation
-   - Supports efficient web delivery without additional processing
-
-### **Integration Points**
-
-- **Inputs**:
-  - Interpolated species rasters from `create_rasters_worker` (TIF files)
-  - Species richness rasters from `create_species_richness_rasters_worker` (TIF files)
-  - `{table_name}_LayerSpeciesYearImageName` table (raster metadata catalog)
-  - `Datasets` table (region metadata: CellSize, MosaicName)
-  - `{table_name}_Raster_Mask` (spatial template: extent, resolution, SR)
-
-- **Outputs**:
-  - `{table_name}_Mosaic` mosaic dataset in project GDB
-  - `{table_name}.crf` cloud raster format file in `CRFs` folder
-  - Mosaic indexed on: Species, CommonName, Year (for web service queries)
-  - Multidimensional structure: Variable (species) × Time (year)
-
-- **Data flow**:
-  ```
-  Interpolated Species/Richness TIFs
-           → AddRastersToMosaicDataset → Build Mosaic Catalog
-           ↓
-  LayerSpeciesYearImageName Table (Metadata)
-           → JoinField → Enrich Catalog
-           ↓
-  SetMosaicDatasetProperties (Configure temporal, compression, bounds)
-           → BuildMultidimensionalInfo (Enable time-series)
-           → CopyRaster to CRF (Cloud-optimized export)
-           ↓
-  CRF File (Portal publishing) + Mosaic Dataset (Project GDB)
-  ```
-
-### **Technical Architecture**
-
-- **Mosaic as aggregation layer**: Combines isolated raster files (TIFs) into unified queryable structure
-- **Temporal indexing**: StdTime field enables time-series web services without refactoring
-- **Cloud Raster Format**: Enables efficient caching and pyramid generation for web services
-- **Multidimensional support**: Allows portal to expose "Variable" (species) and "Year" (time) as separate dimensions
-- **Metadata join pattern**: Links mosaic records to taxonomy/management attributes for UI filtering
-- **Batch parallelism**: Director processes multiple regions in parallel; each worker independently creates mosaic
-
-## Summary: create_indicators_table_director.py and create_indicators_table_worker.py
-
-This director/worker pair generates distribution indicators (center of gravity, min/max coordinates, depth statistics) for each species/year combination using spatial statistics derived from interpolated raster surfaces.
-
-### **Director (create_indicators_table_director.py)**
-
-**Purpose**: Orchestrates distribution indicator calculation for all IDW regions, aggregating species-specific spatial statistics into region-level indicator tables.
-
-**Key Functions:**
-
-1. **`director(project_gdb, Sequential, table_names)`** — Main orchestration function:
-   - **Pre-processing** (sequential):
-     - Calls `preprocessing()` to stage raster and metadata data for each region
-     - Creates region-specific GDBs under Scratch folder
-   
-   - **Sequential or parallel processing**:
-     - **Sequential mode**: Calls `worker()` sequentially for each region
-     - **Parallel mode**: Uses `multiprocessing.Pool` (processes = CPU count - 2, maxtasksperchild=1); monitors job completion with status polling every ~7.5×processes seconds
-   
-   - **Post-processing** (sequential):
-     - Walks scratch folder collecting all generated `*_Indicators` tables and feature classes
-     - Copies each to project GDB
-     - Compacts project GDB
-
-2. **`process_indicator_tables(project_gdb)`** — Consolidation function:
-   - Creates master `Indicators` table in project GDB
-   - Adds standardized fields via `dismap_tools.add_fields()`
-   - Appends all region-specific `*_Indicators` tables into master table
-   - Replaces None values with empty strings in string fields
-   - Updates DateCode field using `dismap_tools.date_code()` for standardization
-   - Synchronizes metadata
-
-3. **`script_tool(project_gdb)`** — Entry point with test mode:
-   - Currently disabled: Test=False (director calls commented out)
-   - Calls `process_indicator_tables()` to combine all indicator tables into master
-   - Logs timing and environment info
-
-### **Worker (create_indicators_table_worker.py)**
-
-**Purpose**: For a single region, calculates distribution indicators (center of gravity, percentile bounds, offsets, standard errors) for each species/year from biomass rasters.
-
-**Processing Pipeline:**
-
-#### **Phase 1: Create Indicators Table & Load Data**
-
-- Creates empty table: `{table_name}_Indicators`
-- Calls `dismap_tools.add_fields()` to populate schema (200+ fields from `field_definitions.json`)
-- Queries `Datasets` table for region metadata:
-  - Extracts: DatasetCode, TableName, CellSize, Region, Season, DateCode, DistributionProjectCode, DistributionProjectName, SummaryProduct
-
-#### **Phase 2: Set Spatial Environment**
-
-- Sets environment parameters:
-  - Cell size: From region metadata
-  - Extent, mask, snapRaster: From `{table_name}_Raster_Mask` (spatial alignment)
-- Prepares raster references:
-  - `{table_name}_Bathymetry` — Depth values per cell (negative values; zero is surface)
-  - `{table_name}_Latitude` — Geographic latitude per cell
-  - `{table_name}_Longitude` — Geographic longitude per cell (0-360 initially, converted to -180 to 180)
-
-#### **Phase 3: Prepare Raster Catalog**
-
-- Queries `{table_name}_LayerSpeciesYearImageName` for all species rasters
-- Filters: `DatasetCode = '{datasetcode}'` AND `NOT Species Richness`
-- Builds input_rasters nested dict structure: `{variable: {year: [metadata + path]}}`
-- Validates: Each raster file exists
-
-#### **Phase 4: Calculate Distribution Indicators (Per Species/Year)**
-
-For each species and year, calculates 5 dimensions of distribution:
-
-##### **A. Biomass Statistics**
-- Loads biomass raster as NumPy array (from species/year interpolated surface)
-- Replaces negative/zero values with NaN
-- Calculates: `sumBiomassArray = np.nansum(biomassArray)`
-- Logs: Maximum biomass value (>0 indicates valid data)
-
-##### **B. Center of Gravity & Percentile Bounds — Latitude**
-
-- Loads latitude raster array; aligns with biomass (NaN where biomass is NaN)
-- **Percentile calculation**:
-  - Sorts latitude values by latitude coordinate
-  - Calculates cumulative biomass sum: `cumSum = np.nancumsum(sorted_biomass)`
-  - Converts to quantile: `quantile = cumSum / total_biomass`
-  - Finds 95th and 5th percentile latitude bounds using closest quantile match
-  - Result: `MaximumLatitude` (95th percentile), `MinimumLatitude` (5th percentile)
-
-- **Center of Gravity**:
-  - Calculates weighted latitude: `weighted = biomass × latitude`
-  - Result: `CenterOfGravityLatitude = Σ(weighted) / Σ(biomass)`
-
-- **Offset**:
-  - On first year of species: `first_year_offset_latitude = CenterOfGravityLatitude`
-  - For subsequent years: `OffsetLatitude = CenterOfGravityLatitude - first_year_offset_latitude`
-  - Semantics: Tracks migration direction relative to baseline year
-
-- **Standard Error**:
-  - `variance = np.nanvar(weighted_array)`
-  - `count = np.count_nonzero(~np.isnan(weighted_array))`
-  - Result: `CenterOfGravityLatitudeSE = √variance / √count`
-
-##### **C. Center of Gravity & Percentile Bounds — Longitude**
-
-- **International Date Line Handling**:
-  - Converts longitude from -180/180 to 0/360 range: `lon_360 = np.mod(longitude, 360)`
-  - Applies same percentile/CoG/offset/SE calculations as latitude
-  - Converts back: `lon_180 = np.mod(lon_360 - 180, 360) - 180`
-  - Result: Handles species crossing Pacific antimeridian without wrapping errors
-
-##### **D. Center of Gravity & Percentile Bounds — Depth (Bathymetry)**
-
-- Loads bathymetry raster array (negative values for depth below surface; zero at surface)
-- Aligns with biomass (NaN where biomass is NaN)
-- Applies same percentile/CoG/offset/SE calculations as lat/lon
-- Result: `CenterOfGravityDepth` (weighted mean depth), `MinimumDepth` (5th percentile shallow), `MaximumDepth` (95th percentile deep)
-
-#### **Phase 5: Row Population**
-
-For each species/year combination with biomass > 0:
-- Creates row with 26 fields:
-  - Standard fields: DatasetCode, Region, Season, DateCode, Species, CommonName, CoreSpecies, Year, DistributionProjectName, DistributionProjectCode, SummaryProduct (11 fields)
-  - Latitude indicators: CenterOfGravityLatitude, MinimumLatitude, MaximumLatitude, OffsetLatitude, CenterOfGravityLatitudeSE (5 fields)
-  - Longitude indicators: CenterOfGravityLongitude, MinimumLongitude, MaximumLongitude, OffsetLongitude, CenterOfGravityLongitudeSE (5 fields)
-  - Depth indicators: CenterOfGravityDepth, MinimumDepth, MaximumDepth, OffsetDepth, CenterOfGravityDepthSE (5 fields)
-
-For species/years with biomass = 0:
-- All indicator fields set to None (null in GDB)
-
-#### **Phase 6: Insert Rows into Table**
-
-- Accumulates all row_values in memory
-- Uses `InsertCursor` to bulk-insert all rows
-- Replaces NaN values (self != self check) with None for proper null handling in GDB
-- Logs final record count: `"{table_name}_Indicators has N records"`
-
-#### **Phase 7: Cleanup**
-
-- Deletes intermediate datasets: Datasets, Bathymetry, Latitude, Longitude, Raster_Mask, LayerSpeciesYearImageName
-- Compacts region GDB
-
-### **Key Data Operations**
-
-1. **Weighted Center of Gravity**:
-   - Formula: `CoG = Σ(biomass × coordinate) / Σ(biomass)`
-   - Effect: Locates mean position weighted by species abundance
-   - Used for: Tracking population distribution shifts over time
-
-2. **Percentile Bounds (5th/95th)**:
-   - Accumulates cumulative biomass sum along sorted coordinate axis
-   - Finds coordinate where 95% of biomass lies beyond (upper bound) and 5% lies beyond (lower bound)
-   - Effect: Robust bounds capturing 90% of population (insensitive to outliers)
-
-3. **Offset Tracking**:
-   - Baseline: First year of each species' data
-   - Subsequent years: Difference from baseline CoG
-   - Semantics: Measures northward/southward/deepward migration relative to initial distribution
-
-4. **Standard Error Calculation**:
-   - Measures variability in weighted coordinate values
-   - Formula: `SE = √(variance) / √(count)`
-   - Effect: Indicates confidence in CoG estimate (lower SE = more concentrated distribution)
-
-### **Integration Points**
-
-- **Inputs**:
-  - Interpolated species rasters from `create_rasters_worker` (TIF files with WTCPUE)
-  - `{table_name}_LayerSpeciesYearImageName` table (species/year catalog)
-  - `{table_name}_Raster_Mask` (spatial template)
-  - `{table_name}_Bathymetry` (depth raster from `create_region_bathymetry_worker`)
-  - `{table_name}_Latitude` and `{table_name}_Longitude` (coordinate rasters from `create_region_fishnets_worker`)
-  - `Datasets` table (region metadata)
-
-- **Outputs**:
-  - `{table_name}_Indicators` table — Distribution statistics per species/year
-  - Master `Indicators` table (consolidated from all regions)
-  - One row per species/year combination with valid biomass
-
-- **Data flow**:
-  ```
-  Interpolated Species Rasters (Biomass)
-           → NumPy array loading
-           ↓
-  Latitude/Longitude/Bathymetry Rasters
-           → Weighted CoG calculation
-           → Percentile bound extraction
-           ↓
-  Offset tracking (baseline year subtraction)
-           → Standard error calculation
-           ↓
-  Indicators Table Row Construction
-           → InsertCursor → Region-specific table
-           ↓
-  Master Indicators Table (all regions appended)
-  ```
-
-### **Computational Architecture**
-
-- **NumPy-based efficiency**: All spatial statistics computed via array operations (no pixel-by-pixel cursors)
-- **Multi-dimensional calculation**: Single pass over rasters generates 5 spatial dimensions (lat, lon, depth × CoG + bounds)
-- **Baseline year tracking**: Per-species first year stored to enable offset calculation
-- **International date line handling**: Special modulo arithmetic prevents wrapping errors at ±180°
-- **Zero-biomass handling**: Skips computation when `maximumBiomass == 0` (avoids NaN propagation)
-- **Batch parallelism**: Director processes multiple regions; each worker independently calculates indicators
-
-### **Field Output Summary**
-
-| Field Group | Fields | Calculation |
-|---|---|---|
-| **Identifiers** | DatasetCode, Region, Season, Year | From Datasets table & raster metadata |
-| **Taxonomy** | Species, CommonName, CoreSpecies | From LayerSpeciesYearImageName |
-| **Spatial Center** | CenterOfGravityLatitude, CenterOfGravityLongitude, CenterOfGravityDepth | Σ(biomass × coordinate) / Σ(biomass) |
-| **Percentile Bounds** | MinimumLatitude, MaximumLatitude, MinimumLongitude, MaximumLongitude, MinimumDepth, MaximumDepth | 5th/95th percentile of coordinate distribution |
-| **Migration** | OffsetLatitude, OffsetLongitude, OffsetDepth | CoG(year) - CoG(first_year) |
-| **Uncertainty** | CenterOfGravityLatitudeSE, CenterOfGravityLongitudeSE, CenterOfGravityDepthSE | √(variance / count) of weighted coordinates |
-
-
-**Specialized Processing:**
-
-- **publish_to_portal_director.py** — Publishes processed datasets to ArcGIS Portal with credentials
-
-## **publish_to_portal_director.py: ArcGIS Portal Publishing Orchestration**
-
-**Purpose & Architecture:**
-This is the final (10th) director-only file in the DisMAP pipeline, responsible for orchestrating ArcGIS Portal publishing workflows. Unlike previous director/worker pairs that execute parallel spatial processing, this director manages sequential feature service creation, service definition draft generation, metadata enrichment, and portal upload operations. It serves as the gateway for publishing all DisMAP-processed datasets (feature classes, tables, indicators, mosaics) as web services to ArcGIS Portal.
-
-**Core Functions:**
-
-1. **`feature_sharing_draft_report(sd_draft="")`** (Lines 17-60)
-   - Parses XML service definition draft files (`.sddraft`)
-   - Extracts all Key-Value property pairs via DOM parsing
-   - Displays configuration details for manual validation before publishing
-   - Used for transparency: shows maxRecordCount, ServiceTitle, and all portal configurations
-   - Error handling: comprehensive exception catching for XML parsing failures
-
-2. **`create_feature_class_layers(project_gdb="")`** (Lines 62-420)
-   - **Pre-processing phase**: Workspace setup, scratch GDB creation, ArcPy environment configuration
-   - **Core logic**: Iterates over all publishable datasets (feature classes + tables):
-     - `*Sample_Locations` feature classes
-     - `DisMAP_Regions` feature class
-     - `Indicators`, `Species_Filter`, `DisMAP_Survey_Info`, species persistence tables
-   - **Layer file creation**: For each dataset:
-     - Creates feature layer (MakeFeatureLayer) or table view (MakeTableView)
-     - Saves as `.lyrx` file to `Layers\` folder with dataset title name
-     - Applies metadata copying (title, tags, summary, description, credits, access constraints)
-     - Exports layer to PNG thumbnail (288×192 px, 96 DPI)
-   - **Time enablement**: Detects `StdTime` field and configures temporal layer properties
-     - Sets UTC timezone, calculates temporal extent (start/end dates)
-     - Outputs time range diagnostic information
-   - **Map & metadata lifecycle**:
-     - Creates/overwrites ArcGIS Pro map per dataset
-     - Adds layer file + "Terrain with Labels" basemap
-     - Saves layer file metadata (title, tags, summary) to XML export
-     - Calls `parse_xml_file_format_and_save()` for formatted metadata export
-   - **Post-processing**: Cleanup—deletes temporary maps, saves project
-   - Integration: Depends on upstream `{table_name}` features created by prior directors
-
-3. **`create_feature_class_services(project_gdb="")`** (Lines 422-900)
-   - **Purpose**: Primary service publishing function—creates feature service definitions, stages, and uploads to Portal
-   - **Pre-processing**: Same workspace setup as `create_feature_class_layers()`
-   - **Service definition draft generation** (Lines 550-630):
-     - Loads layer files from `Layers\` folder
-     - Calls `map.getWebLayerSharingDraft()` for FEATURE service type on HOSTING_SERVER
-     - Configures draft properties:
-       - `allowExporting = False`
-       - `offline = False`
-       - `overwriteExistingService = True`
-       - `portalFolder = "DisMAP {project_name}"`
-       - Metadata: credits, description, summary, tags, useLimitations from layer metadata
-     - Exports draft to `.sddraft` file in `Publish\` folder
-   - **SD Draft XML modification** (Lines 632-680):
-     - Parses `.sddraft` XML with DOM
-     - Updates `maxRecordCount`: 2000 → 10000 (supports larger queries)
-     - Updates `ServiceTitle` to feature service title
-     - Writes modified XML back to `.sddraft`
-     - Calls `feature_sharing_draft_report()` for validation display
-   - **Service staging & upload** (Lines 682-710):
-     - `arcpy.server.StageService()`: Creates `.sd` service definition from `.sddraft`
-     - `arcpy.server.UploadServiceDefinition()`: Publishes to Portal with parameters:
-       - `in_server = "HOSTING_SERVER"` (cloud-based Portal, not federated)
-       - `in_folder_type = "FROM_SERVICE_DEFINITION"` (uses embedded folder path)
-       - `in_startupType = "STARTED"` (service starts immediately after publishing)
-       - `in_override = "OVERRIDE_DEFINITION"` (replaces existing service)
-       - `in_my_contents = "NO_SHARE_ONLINE"` (no automatic sharing)
-       - `in_public = "PRIVATE"` (private by default; organization can publish)
-       - `in_organization = "NO_SHARE_ORGANIZATION"` (no org-wide sharing)
-   - **Post-publishing**: Lists all maps in project, saves APRX, cleanup
-   - **Integration**: Consumes layer files from `create_feature_class_layers()`, outputs web services on Portal
-
-4. **`create_image_services(project_gdb="")`** (Lines 902-1220)
-   - **Status**: Partially implemented/commented out; framework present but not fully active
-   - **Intended purpose**: Image service publishing for mosaic datasets (multidimensional rasters)
-   - **Expected workflow** (from commented code):
-     - Creates mosaic dataset from source rasters
-     - Generates image service definition draft via `CreateImageSDDraft()`
-     - Stages and uploads image service to Portal via ArcGIS Server
-     - Supports multidimensional imagery with time and variable dimensions
-   - **Current state**: Only skeleton implementation; all operational logic in commented sections
-   - **Note**: Mosaic creation itself handled by `create_mosaics_director/worker` (prior stage); this would consume those mosaics
-
-5. **`create_maps(project_gdb="")` & metadata template functions** (Lines 1222-2550+)
-   - **Status**: Mostly commented out (development/archive code)
-   - **Purpose**: Map layout generation, XML metadata template creation/import, thumbnails
-   - **Key archived patterns** (from commented code):
-     - Dataset enumeration via `arcpy.da.Walk()` (GDB traversal)
-     - Metadata template assignment per dataset type (Indicators, Sample_Locations, Mosaic, etc.)
-     - XML metadata export/import: `saveAsXML()`, metadata copying from templates
-     - Year range extraction for temporal datasets: `unique_years()` function
-     - Layout creation and export to JPEG (map thumbnails)
-   - **Note**: These functions likely evolve as Portal metadata publishing strategy matures
-
-6. **`script_tool(project_gdb="")`** (Lines 2563-2700)
-   - **Orchestration driver**: Central control logic for all publishing functions
-   - **Execution flags** (all currently False for development/testing):
-     - `CreateFeatureClassLayers = False`
-     - `CreateFeaturClasseServices = False`
-     - `CreateImagesServices = False`
-     - `CreateMaps = False`
-   - **Timing & diagnostics**:
-     - Captures start time via `time.time()`
-     - Logs: Python version, environment name, execution location
-     - Calculates elapsed time in H:M:S format
-   - **Workspace setup**: Creates scratch GDB if missing; sets ArcPy environment
-   - **Integration point**: Takes `project_gdb` parameter (default: `August 1 2025.gdb`)
-   - **Error handling**: Wraps all function calls in try/except with SystemExit propagation
-
-**Data Pipeline Integration:**
-
-```
-Upstream inputs:
-├── Feature Classes (created by create_region_sample_locations)
-│   └── *Sample_Locations, DisMAP_Regions
-├── Tables (created by create_indicators_table, create_species_year_image_name_table)
-│   └── Indicators, Species_Filter, LayerSpeciesYearImageName, Survey Info
-└── Mosaics & CRFs (created by create_mosaics_director/worker)
-    └── {Region}_Mosaic, {Region}_Mosaic.crf
-
-Publishing outputs:
-├── Feature Services (hosted on Portal)
-│   └── {Dataset Service Title} (with web-accessible points, regions, indicators)
-├── Image Services (intended, currently inactive)
-│   └── Multidimensional mosaic services (species × year)
-├── Layer Files (.lyrx format)
-│   └── Stored locally for reuse, metadata-enriched
-└── Metadata XML exports
-    └── Formatted metadata in Metadata_Export folder
-```
-
-**Technical Patterns & Features:**
-
-- **Metadata-driven architecture**: Uses `dataset_title_dict()` to lookup service titles, descriptions, credits from centralized metadata dictionary—enables dynamic naming without hardcoding
-- **XML DOM manipulation**: Direct parsing/modification of `.sddraft` files to adjust service parameters (maxRecordCount, ServiceTitle) before staging
-- **Layer file hierarchy**: `.lyrx` files serve as reusable layer definitions—contain symbology, field visibility (e.g., specific fields marked VISIBLE NONE for filtering), time configuration
-- **Portal folder organization**: All services grouped under `"DisMAP {project_name}"` folder for organizational clarity
-- **Temporal configuration**: Automatic time enablement for datasets with `StdTime` field; UTC timezone standardization
-- **Metadata synchronization**: `metadata.synchronize("ALWAYS")` ensures dataset metadata propagates to feature layers and maps
-- **Field visibility control**: Table views configured with specific field info string (26+ fields enumerated for Indicators table with VISIBLE/NONE flags)
-
-**Known Limitations & Development Notes:**
-
-- **Image services incomplete**: Framework present but all operational code commented out; mosaic publishing not yet activated
-- **Hardcoded test paths**: Default `project_gdb` points to `"August 1 2025"` directory; production deployment requires parameterization
-- **Portal connection**: Requires authenticated ArcGIS Pro environment; commented code shows Portal URL examples (`https://noaa.maps.arcgis.com/`)
-- **Single-script execution**: No multiprocessing (unlike previous 9 directors); sequential service publishing—upload time depends on dataset complexity
-- **Service definition draft report**: XML parsing via custom function; relies on specific key/value structure (fragile if ArcGIS service format changes)
-
-**Execution Dependencies & Prerequisites:**
-
-- ArcGIS Pro with valid Portal credentials
-- Active workspace: project GDB with all upstream datasets
-- Layer files pre-created (normally output from `create_feature_class_layers()`)
-- Scratch workspace for temporary operations
-- Network access to Portal for upload/publish operations
+  ### **Director (create_mosaics_director.py)**
+
+  **Purpose**: Orchestrates mosaic dataset creation for all IDW regions, aggregating species rasters into multi-dimensional mosaic structures for web services.
+
+  **Key Functions:**
+
+  1. **`director(project_gdb, Sequential, table_names)`** — Main orchestration function:
+    - **Pre-processing** (sequential):
+      - Calls `preprocessing()` to stage data for each region into separate GDBs
+      - Creates region-specific workspaces under Scratch folder
+    
+    - **Sequential or parallel processing**:
+      - **Sequential mode**: Calls `worker()` sequentially for each region
+      - **Parallel mode**: Uses `multiprocessing.Pool` (processes = CPU count - 2, maxtasksperchild=1); monitors job completion with status polling every ~7.5×processes seconds
+    
+    - **Post-processing** (sequential):
+      - Walks scratch folder collecting all mosaic datasets and `.crf` files
+      - Copies mosaic datasets to project GDB
+      - Copies `.crf` files to `CRFs` folder
+      - Calls `dismap_tools.import_metadata()` to attach metadata
+      - Deletes source datasets from scratch
+      - Compacts project GDB
+
+  2. **`script_tool(project_gdb)`** — Entry point with test mode:
+    - Currently in test mode: `Sequential=True, table_names=["SEUS_FAL_IDW"]`
+    - Alternative production batches commented (non-sequential options available)
+    - Logs timing and environment info
+
+  ### **Worker (create_mosaics_worker.py)**
+
+  **Purpose**: For a single region, creates a mosaic dataset by aggregating all interpolated species rasters, then exports to Cloud Raster Format (CRF) for efficient storage and web service delivery.
+
+  **Processing Pipeline:**
+
+  #### **Phase 1: Prepare Output Paths & Metadata**
+
+  - Queries `Datasets` table for region metadata:
+    - Extracts: TableName, DatasetCode, CellSize, MosaicName, MosaicTitle
+    
+  - Sets output coordinate system from `{table_name}_Raster_Mask` spatial reference
+
+  #### **Phase 2: Build Input Raster List**
+
+  - Queries `{table_name}_LayerSpeciesYearImageName` table for all rasters to include
+  - Filters by: `DatasetCode = '{datasetcode}'` (region-specific data)
+  - Extracts: Variable, ImageName
+  - Constructs input raster paths:
+    - Path format: `{project_folder}\Images\{table_name}\{variable}\{image_name}.tif`
+    - Special handling: Prepends underscore to "Species Richness" variable for folder naming
+    - Validates: Each raster file must exist; logs errors for missing files
+  - Result: List of input_raster_paths for mosaic ingestion
+
+  #### **Phase 3: Create Mosaic Dataset**
+
+  - Calls `arcpy.management.CreateMosaicDataset()`:
+    - Workspace: region GDB
+    - Name: `{mosaic_name}` (e.g., `AI_IDW_Mosaic`)
+    - Coordinate system: From region raster mask (region-specific projection)
+    - Pixel type: 32-bit float (matches interpolated raster values)
+    - One band (single-band species/richness rasters)
+
+  #### **Phase 4: Load Rasters into Mosaic**
+
+  - Calls `arcpy.management.AddRastersToMosaicDataset()` with parameters:
+    - Raster type: "Raster Dataset" (add pre-existing TIF rasters)
+    - Input path: List of all input_raster_paths from Phase 2
+    - **Cell size handling**:
+      - `update_cellsize_ranges = "UPDATE_CELL_SIZES"` — Automatically determine cell size ranges
+    - **Boundary handling**:
+      - `update_boundary = "UPDATE_BOUNDARY"` — Update mosaic extent from input rasters
+    - **Pyramid/statistics**:
+      - `build_pyramids = "NO_PYRAMIDS"` — Skip pyramid building for now
+      - `calculate_statistics = "NO_STATISTICS"` — Skip statistics calculation during load
+      - `estimate_statistics = "NO_STATISTICS"` — Don't estimate statistics
+    - **Duplicate handling**:
+      - `duplicate_items_action = "EXCLUDE_DUPLICATES"` — Skip duplicate rasters
+    - **Spatial reference**:
+      - `force_spatial_reference = "FORCE_SPATIAL_REFERENCE"` — Force region-specific SR
+    - Minimum dimension: 1500 (cells) — Only include larger rasters
+
+  #### **Phase 5: Join Metadata Attributes**
+
+  - Calls `arcpy.management.JoinField()`:
+    - Join on: Mosaic catalog Name field ← LayerSpeciesYearImageName ImageName field
+    - Joins fields:
+      - DatasetCode, Region, Season, Species, CommonName, SpeciesCommonName
+      - CoreSpecies, Year, StdTime, Variable, Value, Dimensions
+    - Result: Mosaic catalog rows enriched with species/year/metadata attributes
+
+  #### **Phase 6: Create Attribute Indexes**
+
+  - Removes existing index if present: `{table_name}_MosaicSpeciesIndex`
+  - Creates new non-unique index on: Species, CommonName, SpeciesCommonName, Year
+  - Improves query performance for species-based filtering in web services
+
+  #### **Phase 7: Calculate Statistics**
+
+  - Calls `arcpy.management.CalculateStatistics()` with:
+    - Skip existing: False (recalculate)
+    - x_skip_factor / y_skip_factor: 1 (use all data)
+
+  #### **Phase 8: Configure Mosaic Properties**
+
+  - Calls `arcpy.management.SetMosaicDatasetProperties()` with detailed configuration:
+    - **Image sizing**:
+      - Maximum image size: 4100×15000 pixels (supports large composite images)
+    - **Compression**:
+      - Allowed: LZ77, None
+      - Default: LZ77
+      - JPEG quality: 75%
+      - LERC tolerance: 0.01
+    - **Resampling/display**:
+      - Resampling: BILINEAR
+      - Clip to footprints: NOT_CLIP
+      - Clip to boundary: CLIP (constrain to mosaic extent)
+      - Blend width: 10 pixels (feather edges)
+      - Viewpoint: 600×300 (north corner bias)
+    - **Mosaic operations**:
+      - Method: FIRST (display first raster when overlapping)
+      - Max items per mosaic: 50 (limit composite slices)
+      - Cell size tolerance: 0.8 (80% match required)
+      - Cell size: `{cell_size} {cell_size}` (from region metadata)
+    - **Metadata**:
+      - Level: FULL (include all metadata)
+      - Transmission fields: All mosaic catalog fields
+    - **Temporal dimension**:
+      - Time enabled: YES
+      - Start/end time field: StdTime (same field for point-in-time data)
+      - Time format: "YYYY" (year-only dimension)
+      - Time interval: 1 year
+      - Time interval units: Years
+    - **Service capabilities**:
+      - Max download items: 20
+      - Max records returned: 1000
+      - Data source type: GENERIC
+      - Minimum pixel contribution: 1 (include all valid pixels)
+
+  #### **Phase 9: Analyze Mosaic Dataset**
+
+  - Calls `arcpy.management.AnalyzeMosaicDataset()` with checker keywords:
+    - FOOTPRINT, FUNCTION, RASTER, PATHS, SOURCE_VALIDITY, STALE
+    - PYRAMIDS, STATISTICS, PERFORMANCE, INFORMATION
+    - Validates: All rasters are accessible, pyramids/statistics present, performance optimal
+
+  #### **Phase 10: Build Multidimensional Information**
+
+  - Calls `arcpy.md.BuildMultidimensionalInfo()`:
+    - Variable field: "Variable" (species name or "Species Richness")
+    - Dimension fields: StdTime (Time Step, Year)
+    - Enables time-based slicing: Web services can query by year
+    - Deletes existing multidimensional info before rebuilding
+
+  #### **Phase 11: Export to Cloud Raster Format (CRF)**
+
+  - Calls `arcpy.management.CopyRaster()`:
+    - Source: Mosaic dataset (in-memory processed)
+    - Output: `{scratch_folder}\{table_name}\{mosaic_name}.crf`
+    - Format: CRF (Cloud Raster Format — compressed, cloud-optimized)
+    - Pixel type: 32-bit float (maintains scientific precision)
+    - NoData value: -3.40282e+38 (minimum float32 sentinel)
+    - Process as multidimensional: ALL_SLICES (export all time steps)
+    - No transpose (keep dimension order)
+
+  - Calls `arcpy.management.CalculateStatistics()` on CRF output
+
+  #### **Phase 12: Cleanup**
+
+  - Deletes intermediate tables: Datasets, LayerSpeciesYearImageName, Raster_Mask
+  - Compacts region GDB
+
+  ### **Key Data Operations**
+
+  1. **Multi-Dimensional Raster Assembly:**
+    - Combines many 2D rasters (species/year) into 4D mosaic (X, Y, Species, Time)
+    - Dimension fields enable web service queries: "Get richness for 2020"
+
+  2. **Metadata Enrichment via Join:**
+    - Links mosaic catalog (N rows = N input rasters) to species/year metadata
+    - Enables filtering/sorting by taxonomy, management body, temporal attributes
+
+  3. **Temporal Dimension:**
+    - StdTime field as single timestamp per year (point-in-time data)
+    - Time format "YYYY" enables time-series visualization in web services
+
+  4. **Cloud Raster Format Export:**
+    - CRF enables efficient tiling, caching, and pyramid generation
+    - Supports efficient web delivery without additional processing
+
+  ### **Integration Points**
+
+  - **Inputs**:
+    - Interpolated species rasters from `create_rasters_worker` (TIF files)
+    - Species richness rasters from `create_species_richness_rasters_worker` (TIF files)
+    - `{table_name}_LayerSpeciesYearImageName` table (raster metadata catalog)
+    - `Datasets` table (region metadata: CellSize, MosaicName)
+    - `{table_name}_Raster_Mask` (spatial template: extent, resolution, SR)
+
+  - **Outputs**:
+    - `{table_name}_Mosaic` mosaic dataset in project GDB
+    - `{table_name}.crf` cloud raster format file in `CRFs` folder
+    - Mosaic indexed on: Species, CommonName, Year (for web service queries)
+    - Multidimensional structure: Variable (species) × Time (year)
+
+  - **Data flow**:
+    ```
+    Interpolated Species/Richness TIFs
+            → AddRastersToMosaicDataset → Build Mosaic Catalog
+            ↓
+    LayerSpeciesYearImageName Table (Metadata)
+            → JoinField → Enrich Catalog
+            ↓
+    SetMosaicDatasetProperties (Configure temporal, compression, bounds)
+            → BuildMultidimensionalInfo (Enable time-series)
+            → CopyRaster to CRF (Cloud-optimized export)
+            ↓
+    CRF File (Portal publishing) + Mosaic Dataset (Project GDB)
+    ```
+
+  - #### **Technical Architecture**
+
+    - **Mosaic as aggregation layer**: Combines isolated raster files (TIFs) into unified queryable structure
+    - **Temporal indexing**: StdTime field enables time-series web services without refactoring
+    - **Cloud Raster Format**: Enables efficient caching and pyramid generation for web services
+    - **Multidimensional support**: Allows portal to expose "Variable" (species) and "Year" (time) as separate dimensions
+    - **Metadata join pattern**: Links mosaic records to taxonomy/management attributes for UI filtering
+    - **Batch parallelism**: Director processes multiple regions in parallel; each worker independently creates mosaic
+
+- ### Create Indicators Table Director and Worker
+  - This director/worker pair generates distribution indicators (center of gravity, min/max coordinates, depth statistics) for each species/year combination using spatial statistics derived from interpolated raster surfaces.
+
+  - #### **Director (create_indicators_table_director.py)**
+
+  - **Purpose**: Orchestrates distribution indicator calculation for all IDW regions, aggregating species-specific spatial statistics into region-level indicator tables.
+
+  - **Key Functions:**
+
+    1. **`director(project_gdb, Sequential, table_names)`** — Main orchestration function:
+       - **Pre-processing** (sequential):
+         - Calls `preprocessing()` to stage raster and metadata data for each region
+         - Creates region-specific GDBs under Scratch folder
+       
+       - **Sequential or parallel processing**:
+         - **Sequential mode**: Calls `worker()` sequentially for each region
+         - **Parallel mode**: Uses `multiprocessing.Pool` (processes = CPU count - 2, maxtasksperchild=1); monitors job completion with status polling every ~7.5×processes seconds
+       
+       - **Post-processing** (sequential):
+         - Walks scratch folder collecting all generated `*_Indicators` tables and feature classes
+         - Copies each to project GDB
+         - Compacts project GDB
+
+    2. **`process_indicator_tables(project_gdb)`** — Consolidation function:
+       - Creates master `Indicators` table in project GDB
+       - Adds standardized fields via `dismap_tools.add_fields()`
+       - Appends all region-specific `*_Indicators` tables into master table
+       - Replaces None values with empty strings in string fields
+       - Updates DateCode field using `dismap_tools.date_code()` for standardization
+       - Synchronizes metadata
+
+    3. **`script_tool(project_gdb)`** — Entry point with test mode:
+       - Currently disabled: Test=False (director calls commented out)
+       - Calls `process_indicator_tables()` to combine all indicator tables into master
+       - Logs timing and environment info
+
+    ### **Worker (create_indicators_table_worker.py)**
+
+    **Purpose**: For a single region, calculates distribution indicators (center of gravity, percentile bounds, offsets, standard errors) for each species/year from biomass rasters.
+
+    **Processing Pipeline:**
+
+    #### **Phase 1: Create Indicators Table & Load Data**
+
+    - Creates empty table: `{table_name}_Indicators`
+    - Calls `dismap_tools.add_fields()` to populate schema (200+ fields from `field_definitions.json`)
+    - Queries `Datasets` table for region metadata:
+      - Extracts: DatasetCode, TableName, CellSize, Region, Season, DateCode, DistributionProjectCode, DistributionProjectName, SummaryProduct
+
+    #### **Phase 2: Set Spatial Environment**
+
+    - Sets environment parameters:
+      - Cell size: From region metadata
+      - Extent, mask, snapRaster: From `{table_name}_Raster_Mask` (spatial alignment)
+    - Prepares raster references:
+      - `{table_name}_Bathymetry` — Depth values per cell (negative values; zero is surface)
+      - `{table_name}_Latitude` — Geographic latitude per cell
+      - `{table_name}_Longitude` — Geographic longitude per cell (0-360 initially, converted to -180 to 180)
+
+    #### **Phase 3: Prepare Raster Catalog**
+
+    - Queries `{table_name}_LayerSpeciesYearImageName` for all species rasters
+    - Filters: `DatasetCode = '{datasetcode}'` AND `NOT Species Richness`
+    - Builds input_rasters nested dict structure: `{variable: {year: [metadata + path]}}`
+    - Validates: Each raster file exists
+
+    #### **Phase 4: Calculate Distribution Indicators (Per Species/Year)**
+
+    For each species and year, calculates 5 dimensions of distribution:
+
+    ##### **A. Biomass Statistics**
+    - Loads biomass raster as NumPy array (from species/year interpolated surface)
+    - Replaces negative/zero values with NaN
+    - Calculates: `sumBiomassArray = np.nansum(biomassArray)`
+    - Logs: Maximum biomass value (>0 indicates valid data)
+
+    ##### **B. Center of Gravity & Percentile Bounds — Latitude**
+
+    - Loads latitude raster array; aligns with biomass (NaN where biomass is NaN)
+    - **Percentile calculation**:
+      - Sorts latitude values by latitude coordinate
+      - Calculates cumulative biomass sum: `cumSum = np.nancumsum(sorted_biomass)`
+      - Converts to quantile: `quantile = cumSum / total_biomass`
+      - Finds 95th and 5th percentile latitude bounds using closest quantile match
+      - Result: `MaximumLatitude` (95th percentile), `MinimumLatitude` (5th percentile)
+
+    - **Center of Gravity**:
+      - Calculates weighted latitude: `weighted = biomass × latitude`
+      - Result: `CenterOfGravityLatitude = Σ(weighted) / Σ(biomass)`
+
+    - **Offset**:
+      - On first year of species: `first_year_offset_latitude = CenterOfGravityLatitude`
+      - For subsequent years: `OffsetLatitude = CenterOfGravityLatitude - first_year_offset_latitude`
+      - Semantics: Tracks migration direction relative to baseline year
+
+    - **Standard Error**:
+      - `variance = np.nanvar(weighted_array)`
+      - `count = np.count_nonzero(~np.isnan(weighted_array))`
+      - Result: `CenterOfGravityLatitudeSE = √variance / √count`
+
+    ##### **C. Center of Gravity & Percentile Bounds — Longitude**
+
+    - **International Date Line Handling**:
+      - Converts longitude from -180/180 to 0/360 range: `lon_360 = np.mod(longitude, 360)`
+      - Applies same percentile/CoG/offset/SE calculations as latitude
+      - Converts back: `lon_180 = np.mod(lon_360 - 180, 360) - 180`
+      - Result: Handles species crossing Pacific antimeridian without wrapping errors
+
+    ##### **D. Center of Gravity & Percentile Bounds — Depth (Bathymetry)**
+
+    - Loads bathymetry raster array (negative values for depth below surface; zero at surface)
+    - Aligns with biomass (NaN where biomass is NaN)
+    - Applies same percentile/CoG/offset/SE calculations as lat/lon
+    - Result: `CenterOfGravityDepth` (weighted mean depth), `MinimumDepth` (5th percentile shallow), `MaximumDepth` (95th percentile deep)
+
+    #### **Phase 5: Row Population**
+
+    For each species/year combination with biomass > 0:
+    - Creates row with 26 fields:
+      - Standard fields: DatasetCode, Region, Season, DateCode, Species, CommonName, CoreSpecies, Year, DistributionProjectName, DistributionProjectCode, SummaryProduct (11 fields)
+      - Latitude indicators: CenterOfGravityLatitude, MinimumLatitude, MaximumLatitude, OffsetLatitude, CenterOfGravityLatitudeSE (5 fields)
+      - Longitude indicators: CenterOfGravityLongitude, MinimumLongitude, MaximumLongitude, OffsetLongitude, CenterOfGravityLongitudeSE (5 fields)
+      - Depth indicators: CenterOfGravityDepth, MinimumDepth, MaximumDepth, OffsetDepth, CenterOfGravityDepthSE (5 fields)
+
+    For species/years with biomass = 0:
+    - All indicator fields set to None (null in GDB)
+
+    #### **Phase 6: Insert Rows into Table**
+
+    - Accumulates all row_values in memory
+    - Uses `InsertCursor` to bulk-insert all rows
+    - Replaces NaN values (self != self check) with None for proper null handling in GDB
+    - Logs final record count: `"{table_name}_Indicators has N records"`
+
+    #### **Phase 7: Cleanup**
+
+    - Deletes intermediate datasets: Datasets, Bathymetry, Latitude, Longitude, Raster_Mask, LayerSpeciesYearImageName
+    - Compacts region GDB
+
+    ### **Key Data Operations**
+
+    1. **Weighted Center of Gravity**:
+       - Formula: `CoG = Σ(biomass × coordinate) / Σ(biomass)`
+       - Effect: Locates mean position weighted by species abundance
+       - Used for: Tracking population distribution shifts over time
+
+    2. **Percentile Bounds (5th/95th)**:
+       - Accumulates cumulative biomass sum along sorted coordinate axis
+       - Finds coordinate where 95% of biomass lies beyond (upper bound) and 5% lies beyond (lower bound)
+       - Effect: Robust bounds capturing 90% of population (insensitive to outliers)
+
+    3. **Offset Tracking**:
+       - Baseline: First year of each species' data
+       - Subsequent years: Difference from baseline CoG
+       - Semantics: Measures northward/southward/deepward migration relative to initial distribution
+
+    4. **Standard Error Calculation**:
+       - Measures variability in weighted coordinate values
+       - Formula: `SE = √(variance) / √(count)`
+       - Effect: Indicates confidence in CoG estimate (lower SE = more concentrated distribution)
+
+    ### **Integration Points**
+
+    - **Inputs**:
+      - Interpolated species rasters from `create_rasters_worker` (TIF files with WTCPUE)
+      - `{table_name}_LayerSpeciesYearImageName` table (species/year catalog)
+      - `{table_name}_Raster_Mask` (spatial template)
+      - `{table_name}_Bathymetry` (depth raster from `create_region_bathymetry_worker`)
+      - `{table_name}_Latitude` and `{table_name}_Longitude` (coordinate rasters from `create_region_fishnets_worker`)
+      - `Datasets` table (region metadata)
+
+    - **Outputs**:
+      - `{table_name}_Indicators` table — Distribution statistics per species/year
+      - Master `Indicators` table (consolidated from all regions)
+      - One row per species/year combination with valid biomass
+
+    - **Data flow**:
+      ```
+      Interpolated Species Rasters (Biomass)
+               → NumPy array loading
+               ↓
+      Latitude/Longitude/Bathymetry Rasters
+               → Weighted CoG calculation
+               → Percentile bound extraction
+               ↓
+      Offset tracking (baseline year subtraction)
+               → Standard error calculation
+               ↓
+      Indicators Table Row Construction
+               → InsertCursor → Region-specific table
+               ↓
+      Master Indicators Table (all regions appended)
+      ```
+
+    ### **Computational Architecture**
+
+    - **NumPy-based efficiency**: All spatial statistics computed via array operations (no pixel-by-pixel cursors)
+    - **Multi-dimensional calculation**: Single pass over rasters generates 5 spatial dimensions (lat, lon, depth × CoG + bounds)
+    - **Baseline year tracking**: Per-species first year stored to enable offset calculation
+    - **International date line handling**: Special modulo arithmetic prevents wrapping errors at ±180°
+    - **Zero-biomass handling**: Skips computation when `maximumBiomass == 0` (avoids NaN propagation)
+    - **Batch parallelism**: Director processes multiple regions; each worker independently calculates indicators
+
+    ### **Field Output Summary**
+
+    | Field Group | Fields | Calculation |
+    |---|---|---|
+    | **Identifiers** | DatasetCode, Region, Season, Year | From Datasets table & raster metadata |
+    | **Taxonomy** | Species, CommonName, CoreSpecies | From LayerSpeciesYearImageName |
+    | **Spatial Center** | CenterOfGravityLatitude, CenterOfGravityLongitude, CenterOfGravityDepth | Σ(biomass × coordinate) / Σ(biomass) |
+    | **Percentile Bounds** | MinimumLatitude, MaximumLatitude, MinimumLongitude, MaximumLongitude, MinimumDepth, MaximumDepth | 5th/95th percentile of coordinate distribution |
+    | **Migration** | OffsetLatitude, OffsetLongitude, OffsetDepth | CoG(year) - CoG(first_year) |
+    | **Uncertainty** | CenterOfGravityLatitudeSE, CenterOfGravityLongitudeSE, CenterOfGravityDepthSE | √(variance / count) of weighted coordinates |
+
+- ### Publish to Portal Director
+  - Publishes processed datasets to ArcGIS Portal with credentials
+  - #### **Director(publish_to_portal_director.py)** 
+
+    **Purpose & Architecture:**
+    This is the final (10th) director-only file in the DisMAP pipeline, responsible for orchestrating ArcGIS Portal publishing workflows. Unlike previous director/worker pairs that execute parallel spatial processing, this director manages sequential feature service creation, service definition draft generation, metadata enrichment, and portal upload operations. It serves as the gateway for publishing all DisMAP-processed datasets (feature classes, tables, indicators, mosaics) as web services to ArcGIS Portal.
+
+    **Core Functions:**
+
+    1. **`feature_sharing_draft_report(sd_draft="")`** (Lines 17-60)
+      - Parses XML service definition draft files (`.sddraft`)
+      - Extracts all Key-Value property pairs via DOM parsing
+      - Displays configuration details for manual validation before publishing
+      - Used for transparency: shows maxRecordCount, ServiceTitle, and all portal configurations
+      - Error handling: comprehensive exception catching for XML parsing failures
+
+    2. **`create_feature_class_layers(project_gdb="")`** (Lines 62-420)
+      - **Pre-processing phase**: Workspace setup, scratch GDB creation, ArcPy environment configuration
+      - **Core logic**: Iterates over all publishable datasets (feature classes + tables):
+        - `*Sample_Locations` feature classes
+        - `DisMAP_Regions` feature class
+        - `Indicators`, `Species_Filter`, `DisMAP_Survey_Info`, species persistence tables
+      - **Layer file creation**: For each dataset:
+        - Creates feature layer (MakeFeatureLayer) or table view (MakeTableView)
+        - Saves as `.lyrx` file to `Layers\` folder with dataset title name
+        - Applies metadata copying (title, tags, summary, description, credits, access constraints)
+        - Exports layer to PNG thumbnail (288×192 px, 96 DPI)
+      - **Time enablement**: Detects `StdTime` field and configures temporal layer properties
+        - Sets UTC timezone, calculates temporal extent (start/end dates)
+        - Outputs time range diagnostic information
+      - **Map & metadata lifecycle**:
+        - Creates/overwrites ArcGIS Pro map per dataset
+        - Adds layer file + "Terrain with Labels" basemap
+        - Saves layer file metadata (title, tags, summary) to XML export
+        - Calls `parse_xml_file_format_and_save()` for formatted metadata export
+      - **Post-processing**: Cleanup—deletes temporary maps, saves project
+      - Integration: Depends on upstream `{table_name}` features created by prior directors
+
+    3. **`create_feature_class_services(project_gdb="")`** (Lines 422-900)
+      - **Purpose**: Primary service publishing function—creates feature service definitions, stages, and uploads to Portal
+      - **Pre-processing**: Same workspace setup as `create_feature_class_layers()`
+      - **Service definition draft generation** (Lines 550-630):
+        - Loads layer files from `Layers\` folder
+        - Calls `map.getWebLayerSharingDraft()` for FEATURE service type on HOSTING_SERVER
+        - Configures draft properties:
+          - `allowExporting = False`
+          - `offline = False`
+          - `overwriteExistingService = True`
+          - `portalFolder = "DisMAP {project_name}"`
+          - Metadata: credits, description, summary, tags, useLimitations from layer metadata
+        - Exports draft to `.sddraft` file in `Publish\` folder
+      - **SD Draft XML modification** (Lines 632-680):
+        - Parses `.sddraft` XML with DOM
+        - Updates `maxRecordCount`: 2000 → 10000 (supports larger queries)
+        - Updates `ServiceTitle` to feature service title
+        - Writes modified XML back to `.sddraft`
+        - Calls `feature_sharing_draft_report()` for validation display
+      - **Service staging & upload** (Lines 682-710):
+        - `arcpy.server.StageService()`: Creates `.sd` service definition from `.sddraft`
+        - `arcpy.server.UploadServiceDefinition()`: Publishes to Portal with parameters:
+          - `in_server = "HOSTING_SERVER"` (cloud-based Portal, not federated)
+          - `in_folder_type = "FROM_SERVICE_DEFINITION"` (uses embedded folder path)
+          - `in_startupType = "STARTED"` (service starts immediately after publishing)
+          - `in_override = "OVERRIDE_DEFINITION"` (replaces existing service)
+          - `in_my_contents = "NO_SHARE_ONLINE"` (no automatic sharing)
+          - `in_public = "PRIVATE"` (private by default; organization can publish)
+          - `in_organization = "NO_SHARE_ORGANIZATION"` (no org-wide sharing)
+      - **Post-publishing**: Lists all maps in project, saves APRX, cleanup
+      - **Integration**: Consumes layer files from `create_feature_class_layers()`, outputs web services on Portal
+
+    4. **`create_image_services(project_gdb="")`** (Lines 902-1220)
+      - **Status**: Partially implemented/commented out; framework present but not fully active
+      - **Intended purpose**: Image service publishing for mosaic datasets (multidimensional rasters)
+      - **Expected workflow** (from commented code):
+        - Creates mosaic dataset from source rasters
+        - Generates image service definition draft via `CreateImageSDDraft()`
+        - Stages and uploads image service to Portal via ArcGIS Server
+        - Supports multidimensional imagery with time and variable dimensions
+      - **Current state**: Only skeleton implementation; all operational logic in commented sections
+      - **Note**: Mosaic creation itself handled by `create_mosaics_director/worker` (prior stage); this would consume those mosaics
+
+    5. **`create_maps(project_gdb="")` & metadata template functions** (Lines 1222-2550+)
+      - **Status**: Mostly commented out (development/archive code)
+      - **Purpose**: Map layout generation, XML metadata template creation/import, thumbnails
+      - **Key archived patterns** (from commented code):
+        - Dataset enumeration via `arcpy.da.Walk()` (GDB traversal)
+        - Metadata template assignment per dataset type (Indicators, Sample_Locations, Mosaic, etc.)
+        - XML metadata export/import: `saveAsXML()`, metadata copying from templates
+        - Year range extraction for temporal datasets: `unique_years()` function
+        - Layout creation and export to JPEG (map thumbnails)
+      - **Note**: These functions likely evolve as Portal metadata publishing strategy matures
+
+    6. **`script_tool(project_gdb="")`** (Lines 2563-2700)
+      - **Orchestration driver**: Central control logic for all publishing functions
+      - **Execution flags** (all currently False for development/testing):
+        - `CreateFeatureClassLayers = False`
+        - `CreateFeaturClasseServices = False`
+        - `CreateImagesServices = False`
+        - `CreateMaps = False`
+      - **Timing & diagnostics**:
+        - Captures start time via `time.time()`
+        - Logs: Python version, environment name, execution location
+        - Calculates elapsed time in H:M:S format
+      - **Workspace setup**: Creates scratch GDB if missing; sets ArcPy environment
+      - **Integration point**: Takes `project_gdb` parameter (default: `August 1 2025.gdb`)
+      - **Error handling**: Wraps all function calls in try/except with SystemExit propagation
+
+    **Data Pipeline Integration:**
+
+    ```
+    Upstream inputs:
+    ├── Feature Classes (created by create_region_sample_locations)
+    │   └── *Sample_Locations, DisMAP_Regions
+    ├── Tables (created by create_indicators_table, create_species_year_image_name_table)
+    │   └── Indicators, Species_Filter, LayerSpeciesYearImageName, Survey Info
+    └── Mosaics & CRFs (created by create_mosaics_director/worker)
+        └── {Region}_Mosaic, {Region}_Mosaic.crf
+
+    Publishing outputs:
+    ├── Feature Services (hosted on Portal)
+    │   └── {Dataset Service Title} (with web-accessible points, regions, indicators)
+    ├── Image Services (intended, currently inactive)
+    │   └── Multidimensional mosaic services (species × year)
+    ├── Layer Files (.lyrx format)
+    │   └── Stored locally for reuse, metadata-enriched
+    └── Metadata XML exports
+        └── Formatted metadata in Metadata_Export folder
+    ```
+
+    **Technical Patterns & Features:**
+
+    - **Metadata-driven architecture**: Uses `dataset_title_dict()` to lookup service titles, descriptions, credits from centralized metadata dictionary—enables dynamic naming without hardcoding
+    - **XML DOM manipulation**: Direct parsing/modification of `.sddraft` files to adjust service parameters (maxRecordCount, ServiceTitle) before staging
+    - **Layer file hierarchy**: `.lyrx` files serve as reusable layer definitions—contain symbology, field visibility (e.g., specific fields marked VISIBLE NONE for filtering), time configuration
+    - **Portal folder organization**: All services grouped under `"DisMAP {project_name}"` folder for organizational clarity
+    - **Temporal configuration**: Automatic time enablement for datasets with `StdTime` field; UTC timezone standardization
+    - **Metadata synchronization**: `metadata.synchronize("ALWAYS")` ensures dataset metadata propagates to feature layers and maps
+    - **Field visibility control**: Table views configured with specific field info string (26+ fields enumerated for Indicators table with VISIBLE/NONE flags)
+
+    **Known Limitations & Development Notes:**
+
+    - **Image services incomplete**: Framework present but all operational code commented out; mosaic publishing not yet activated
+    - **Hardcoded test paths**: Default `project_gdb` points to `"August 1 2025"` directory; production deployment requires parameterization
+    - **Portal connection**: Requires authenticated ArcGIS Pro environment; commented code shows Portal URL examples (`https://noaa.maps.arcgis.com/`)
+    - **Single-script execution**: No multiprocessing (unlike previous 9 directors); sequential service publishing—upload time depends on dataset complexity
+    - **Service definition draft report**: XML parsing via custom function; relies on specific key/value structure (fragile if ArcGIS service format changes)
+
+    **Execution Dependencies & Prerequisites:**
+
+    - ArcGIS Pro with valid Portal credentials
+    - Active workspace: project GDB with all upstream datasets
+    - Layer files pre-created (normally output from `create_feature_class_layers()`)
+    - Scratch workspace for temporary operations
+    - Network access to Portal for upload/publish operations
 
 #### Suggestions and Comments
 
