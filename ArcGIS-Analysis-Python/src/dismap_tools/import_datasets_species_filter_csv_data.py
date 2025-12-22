@@ -75,7 +75,7 @@ def worker(project_gdb="", csv_file=""):
         scratch_workspace = rf"{project_folder}\Scratch\scratch.gdb"
         # Set basic workkpace variables
         arcpy.env.workspace                = project_gdb
-        arcpy.env.scratchWorkspace         = rf"Scratch\scratch.gdb"
+        arcpy.env.scratchWorkspace         = r"Scratch\scratch.gdb"
         arcpy.env.overwriteOutput          = True
         arcpy.env.parallelProcessingFactor = "100%"
         #arcpy.AddMessage(table_name)

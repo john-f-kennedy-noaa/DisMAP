@@ -157,6 +157,7 @@ Scratch
 *.docx
 .pyHistory
 *.py
+*.~py
 *.pyt 
 *.xml
 *.xsl
