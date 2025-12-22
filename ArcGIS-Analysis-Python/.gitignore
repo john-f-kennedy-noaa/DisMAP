@@ -149,6 +149,7 @@ Index
 July 1 2024
 Layout
 May 16 2022
+Notebooks
 RasterFunctionsHistory
 RasterFunctionTemplates
 Scratch
@@ -170,11 +171,12 @@ setip.py
 utils.py
 Metadata.md
 src/dismap_tools/esri
-src/dismap_tools_dev
+#src/dismap_tools_dev
 #############
 # Do not ignore these files
 !README.md
 !src/dismap_tools/*.py
+!src/dismap_tools_dev/*.py
 src/dismap_tools/dev_*.py
 src/dismap_tools/__init__.py
 !src/dismap_tools/README.md
