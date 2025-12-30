@@ -28,8 +28,6 @@ library(broom)
 ```
 
 
-*Code chunks can be viewed by pressing the `SHOW` button on the right hand side of the document*
-
 ## Background
 
 This document presents various analyses for evaluating species persistence as a new analysis module on [DisMAP](https://apps-st.fisheries.noaa.gov/dismap/). 
@@ -57,7 +55,8 @@ The goals for this analysis are four-fold:
   + Sporadic - Primarily Present,
   + or Sporadic - Primarily Absent
 
-
+## Using this Code
+*To use this code workflow*, run the following code in its entirety. To export final data sets as csv files, navigate to the two "Data Export" chunks and uncomment-out the `write.csv()` code line and rerun the section. This will export the appropriate final data sets, which also reflect the publicly displayed data on DisMAP.
 
 ```{r wrangling, message = FALSE}
 ### Run `Compile_Dismap_Current.R` first before this analysis ###
@@ -254,7 +253,7 @@ ggplot(data_full, aes(HaulBin)) +
 
 ```
 
-
+### Data Export
 ```{r exporting data_full}
 # writing the csv for DisMAP development team here
 data_export <- data_full %>% 
@@ -318,15 +317,36 @@ htmltools::tagList(setNames(plotlist, NULL))
 
 ## Trend assessment
 
-**Trend Categories**
+This section:
+- 1) evaluates the trend categories based on observation (presence versus absence) in survey catch,
+- 2) measures increasing versus decreasing trends in levels of haul frequency and biomass,
+- 3) conducts a ground-truthing exercise to examine trends of a set of focal species,
+- 4) applies a flagging function to trends that require further review, and
+- 5) compiles all information for data export
 
-- Persistently Present: Consistently observed in surveys across years;
-- Established: Species previously wasn't observed in surveys and now is consistently observed in surveys;
-- Potentially Emerging: Species previously wasn't consistently observed in surveys but is potentially shifting towards being consistently observed;
-- Potentially Disappearing: Species was previously observed in surveys but is potentially shifting towards being consistently not observed;
-- Disappeared: Species was previously observed in surveys but now is consistently not observed in surveys;
-- Sporadic - Primarily Present: Species is observed in over half of surveys but observations are inconsistent; and
-- Sporadic - Primarily Absent: Species is observed in less than half of surveys and observations are inconsistent.
+
+### Trend Category Assignment
+
+**Trend Category Definitions**
+
+- *Persistently Present*: Consistently observed in surveys across years;
+- *Established*: Species previously wasn't observed in surveys and now is consistently observed in surveys;
+- *Potentially Emerging*: Species previously wasn't consistently observed in surveys but is potentially shifting towards being consistently observed;
+- *Potentially Disappearing*: Species was previously observed in surveys but is potentially shifting towards being consistently not observed;
+- *Disappeared*: Species was previously observed in surveys but now is consistently not observed in surveys;
+- *Sporadic - Primarily Present*: Species is observed in over half of surveys but observations are inconsistent; and
+- *Sporadic - Primarily Absent*: Species is observed in less than half of surveys and observations are inconsistent.
+
+
+**Trend Category Metrics**
+
+- *Persistently Present*: Observed in >=85% of survey years and observed in 4 out of the last 5 survey years
+- *Emerged*: Observed in >=50% of years, observed more in the second half of the survey years (compared to the first half of survey years), observed in >= 75% of the second half of survey years, and observed in at least nine (presence >= 9) of the final ten survey years
+- *Potentially Emerging*: Observed in <= 50% of years in the first half of survey years and observed in at least four (presence >= 4) of the final five survey years, or has one switch from not being observed to being observed (referred to as a "colonizing event") and has zero switches from being observed to not being observed (referred to as a leaving event)
+- *Potentially Disappearing*: Observed in >= 50% of years in the first half of survey years and observed in at most one (presence <= 1) of the final five survey years, or has one switch from being observed to not being observed (leaving event) and has zero switches from not being observed to being observed (colonizing event)
+- *Disappeared*: Observed in <=50% of years, observed more in the first half of the survey years (compared to the second half of survey years), observed in <= 25% of the second half of survey years, and observed in at most one (presence <= 1) of the final ten survey years
+- *Sporadic - Primarily Present*: Observed in >=50% of years
+- *Sporadic - Primarily Absent*: Observed in <50% of years
 
 ```{r organization}
 data_cumm <- data_full %>% 
@@ -378,6 +398,7 @@ for(v in surveys) {
 
 ```
 
+
 ```{r adding common names}
 # Creating a species list will allow for joining in the common names at the end of the next chunk
 spp_list <- distinct(data_full %>% 
@@ -385,6 +406,7 @@ spp_list <- distinct(data_full %>%
   select(SurveyName, Species, Common))
 
 ```
+
 
 ```{r}
 # Identifying when species goes from absent to present in survey
@@ -413,12 +435,89 @@ data_ce <- data_ce_stable %>%
   select(-stable) %>% 
   left_join(spp_list, by = c("SurveyName", "Species")) %>% 
   select(SurveyName, Species, Common, col, ext)
-
-# saveRDS(data_ce, file = "data_ce.RData")
 ```
+
+```{r build data df}
+#adding colonization and extinction event columns to data frame to use in trend categorization
+data <- data_full %>% 
+  left_join(data_ce, by = c("SurveyName", "Species", "Common"))
+
+```
+
+```{r function add_trend_category}
+
+add_trend_category <- function(data) {
+  data %>%
+    arrange(Region, SurveyName, Species, Common, Year) %>%
+    group_by(Region, SurveyName, Species, Common) %>%
+    group_modify(~{
+      df <- .x
+      n_years <- nrow(df)
+      abs_vec <- df$Absence_Presence
+      percent_present <- sum(abs_vec == 1, na.rm = TRUE) / n_years
+
+      # Indices for first/last half
+      half_n <- floor(n_years / 2)
+      first_half_idx <- seq_len(half_n)
+      last_half_idx <- seq(n_years - half_n + 1, n_years)
+
+      abs_first_half <- if(length(first_half_idx) > 0) sum(abs_vec[first_half_idx] == 1, na.rm = TRUE) else NA_real_
+      abs_last_half <- if(length(last_half_idx) > 0) sum(abs_vec[last_half_idx] == 1, na.rm = TRUE) else NA_real_
+      percent_first_half <- if(length(first_half_idx) > 0) abs_first_half / length(first_half_idx) else NA_real_
+      percent_last_half <- if(length(last_half_idx) > 0) abs_last_half / length(last_half_idx) else NA_real_
+
+      # Indices for last 5 years
+      last5_n <- min(5, n_years)
+      last5_idx <- seq(n_years - last5_n + 1, n_years)
+      abs_last5 <- if(length(last5_idx) > 0) sum(abs_vec[last5_idx] == 1, na.rm = TRUE) else NA_real_
+      
+      # Indices for last 10 years
+      last10_n <- min(10, n_years)
+      last10_idx <- seq(n_years - last10_n + 1, n_years)
+      abs_last10 <- if(length(last10_idx) > 0) sum(abs_vec[last10_idx] == 1, na.rm = TRUE) else NA_real_
+
+      trend_category <- case_when(
+        percent_present >= 0.85 & abs_last5 >= 4 ~ "Persistently Present",
+        percent_present >= 0.5 & abs_last10 >= 9 &
+          percent_last_half >= 0.75 &
+          abs_first_half <= abs_last_half ~ "Emerged",
+        percent_present <= 0.5 & abs_last10 <= 1 &
+          percent_last_half <= 0.25 &
+          abs_first_half >= abs_last_half ~ "Disappeared",
+        abs_last5 >= 4 & percent_first_half <= 0.50 ~ "Potentially Emerging",
+        any(df$col == 1 & df$ext == 0, na.rm = TRUE) ~ "Potentially Emerging",
+        abs_last5 <= 1 & percent_first_half >= 0.50 ~ "Potentially Disappearing",
+        any(df$col == 0 & df$ext == 1, na.rm = TRUE) ~ "Potentially Disappearing",
+        percent_present >= 0.5 ~ "Sporadic - Primarily Present",
+        percent_present < 0.5 ~ "Sporadic - Primarily Absent",
+        TRUE ~ NA_character_
+      )
+      df$TrendCategory <- trend_category
+      df
+    }) %>%
+    ungroup()
+}
+
+# Usage:
+# This data frame will be used below in the flagging function
+data_full_trends <- add_trend_category(data) %>%
+  mutate(Name = paste(Common, SurveyName, sep = "_"))
+
+# This dataframe will be used for the final data exporting
+data_summary <- add_trend_category(data) %>%
+  select(Region, SurveyName, Species, Common, TrendCategory) %>%
+  distinct() %>% 
+  mutate(SurveyName = as.character(SurveyName),
+         Species = as.character(Species))
+```
+
+
 ### Increasing or Decreasing Trend
 
-This section of code aims to provide a similar analysis of that above, but with additional resolution. As opposed to solely focusing on presence/absence, here we add a second term that takes into account the abundance and/or haul frequency levels of each taxa over time to categorize each present trend as increasing or decreasing.
+This code aims to provide a similar analysis of that above, but with additional resolution. As opposed to solely focusing on presence/absence, here we add a second term that takes into account the abundance and/or haul frequency levels of each taxa over time to categorize each present trend as increasing or decreasing.
+
+After evaluating the increase/decrease, this information is joined into the `data_summary` object, created above.
+
 
 ***Haul frequency***
 
@@ -430,7 +529,7 @@ data_inc_haul <- data_full %>%
 
 To run a glm(), I need to break down the haul frequency term by breaking it back into haul present/total hauls
 ```{r}
-haulsyr_max <- haulsyr_max %>% 
+haulsyr_max <- haulsyr_max %>%
   rename(
     SurveyName = survey,
     Year = year
@@ -543,6 +642,7 @@ for(v in surveys) {
 }
   
 ```
+
 ```{r filter sig haul trend}
 holding_noyear <- holding_glm %>% select(!Year)
 
@@ -660,6 +760,16 @@ holding_bio_noyear_filt <- holding_bio %>% select(!Year) %>%
 
 holding_bio_noyear_filt$Bio_Inc_Dec <- ifelse(holding_bio_noyear_filt$RegM > 0, "Increasing", 
                                       ifelse(holding_bio_noyear_filt$RegM < 0, "Decreasing", NA))
+```
+
+Add these columns into the `data_summary` object above
+```{r compile with data_summary}
+
+data_summary <- data_summary %>% 
+  left_join(holding_noyear_filt, by = c("SurveyName", "Species")) %>% 
+  select(-glmM, -glmP) %>% 
+  left_join(holding_bio_noyear_filt, by = c("SurveyName", "Species")) %>% 
+  select(-RegM, -RegR, -RegP)
 ```
 
 
@@ -964,7 +1074,6 @@ focal_check_bio_removed <- ggplot(focal_spp_bioremoved, aes(x = Year, y = WTCPUE
 ggplotly(focal_check_bio_removed)
 ```
 
-
 ```{r pvalue hist, eval = FALSE}
 pval_haul <- ggplot(holding, aes(x = RegP)) +
   geom_histogram() +
@@ -973,95 +1082,10 @@ pval_haul <- ggplot(holding, aes(x = RegP)) +
 ```
 
 
-**Trend Category Metrics**
-
-- *Persistently Present*: Observed in >=85% of survey years
-- *Emerged*: Observed in >=50% of years, observed more in the second half of the survey years (compared to the first half of survey years), observed in >= 75% of the second half of survey years, and observed in at least nine (presence >= 9) of the final ten survey years
-- *Potentially Emerging*: Observed in <= 50% of years in the first half of survey years and observed in at least four (presence >= 4) of the final five survey years, or has one switch from not being observed to being observed (referred to as a "colonizing event") and has zero switches from being observed to not being observed (referred to as a leaving event)
-- *Potentially Disappearing*: Observed in >= 50% of years in the first half of survey years and observed in at most one (presence <= 1) of the final five survey years, or has one switch from being observed to not being observed (leaving event) and has zero switches from not being observed to being observed (colonizing event)
-- *Disappeared*: Observed in <=50% of years, observed more in the first half of the survey years (compared to the second half of survey years), observed in <= 25% of the second half of survey years, and observed in at most one (presence <= 1) of the final ten survey years
-- *Sporadic - Primarily Present*: Observed in >=50% of years
-- *Sporadic - Primarily Absent*: Observed in <50% of years
-
-```{r build data df}
-#adding colonization and extinction event columns to data frame to use in trend categorization
-data <- data_full %>% 
-  left_join(data_ce, by = c("SurveyName", "Species", "Common"))
-
-```
-
-```{r function add_trend_category}
-
-add_trend_category <- function(data) {
-  data %>%
-    arrange(Region, SurveyName, Species, Common, Year) %>%
-    group_by(Region, SurveyName, Species, Common) %>%
-    group_modify(~{
-      df <- .x
-      n_years <- nrow(df)
-      abs_vec <- df$Absence_Presence
-      percent_present <- sum(abs_vec == 1, na.rm = TRUE) / n_years
-
-      # Indices for first/last half
-      half_n <- floor(n_years / 2)
-      first_half_idx <- seq_len(half_n)
-      last_half_idx <- seq(n_years - half_n + 1, n_years)
-
-      abs_first_half <- if(length(first_half_idx) > 0) sum(abs_vec[first_half_idx] == 1, na.rm = TRUE) else NA_real_
-      abs_last_half <- if(length(last_half_idx) > 0) sum(abs_vec[last_half_idx] == 1, na.rm = TRUE) else NA_real_
-      percent_first_half <- if(length(first_half_idx) > 0) abs_first_half / length(first_half_idx) else NA_real_
-      percent_last_half <- if(length(last_half_idx) > 0) abs_last_half / length(last_half_idx) else NA_real_
-
-      # Indices for last 5 years
-      last5_n <- min(5, n_years)
-      last5_idx <- seq(n_years - last5_n + 1, n_years)
-      abs_last5 <- if(length(last5_idx) > 0) sum(abs_vec[last5_idx] == 1, na.rm = TRUE) else NA_real_
-      
-      # Indices for last 10 years
-      last10_n <- min(10, n_years)
-      last10_idx <- seq(n_years - last10_n + 1, n_years)
-      abs_last10 <- if(length(last10_idx) > 0) sum(abs_vec[last10_idx] == 1, na.rm = TRUE) else NA_real_
-
-      trend_category <- case_when(
-        percent_present >= 0.85 & abs_last5 >= 4 ~ "Persistently Present",
-        percent_present >= 0.5 & abs_last10 >= 9 &
-          percent_last_half >= 0.75 &
-          abs_first_half <= abs_last_half ~ "Emerged",
-        percent_present <= 0.5 & abs_last10 <= 1 &
-          percent_last_half <= 0.25 &
-          abs_first_half >= abs_last_half ~ "Disappeared",
-        abs_last5 >= 4 & percent_first_half <= 0.50 ~ "Potentially Emerging",
-        any(df$col == 1 & df$ext == 0, na.rm = TRUE) ~ "Potentially Emerging",
-        abs_last5 <= 1 & percent_first_half >= 0.50 ~ "Potentially Disappearing",
-        any(df$col == 0 & df$ext == 1, na.rm = TRUE) ~ "Potentially Disappearing",
-        percent_present >= 0.5 ~ "Sporadic - Primarily Present",
-        percent_present < 0.5 ~ "Sporadic - Primarily Absent",
-        TRUE ~ NA_character_
-      )
-      df$TrendCategory <- trend_category
-      df
-    }) %>%
-    ungroup()
-}
-
-# Usage:
-data_full_trends <- add_trend_category(data) %>%
-  mutate(Name = paste(Common, SurveyName, sep = "_"))
-
-data_summary <- add_trend_category(data) %>%
-  select(Region, SurveyName, Species, Common, TrendCategory) %>%
-  distinct() %>% 
-  mutate(SurveyName = as.character(SurveyName),
-         Species = as.character(Species)) %>%
-  left_join(holding_noyear_filt, by = c("SurveyName", "Species")) %>% 
-  select(-glmM, -glmP) %>% 
-  left_join(holding_bio_noyear_filt, by = c("SurveyName", "Species")) %>% 
-  select(-RegM, -RegR, -RegP)
-```
-
+### Flagging function
 
 The following two code chunks adds a flag for species trends that are under review. Currently, the flagging isn't being used, but the function below easily could be adjusted for future scenarios that require flagging.
-```{r species flag function, eval=FALSE}
+```{r species flag function, eval=TRUE}
 
 data <- data_full_trends
 
@@ -1164,7 +1188,7 @@ flag_spp <- function(data, survey){
 ```
 
 
-```{r flag compilation, eval=FALSE}
+```{r flag compilation, eval=TRUE}
 
 survey_list <- unique(data_full_trends$SurveyName)
 
@@ -1203,15 +1227,14 @@ flags_combo$Notes <- c(rep("Preliminary trend - under review", nrow(flags_combo)
 
 ```
 
-
-```{r export data_full_trends}
+### Data Export
+```{r export data_summary}
 
 data_trends_export <- data_summary %>% 
   left_join(flags_combo, by = c("SurveyName", "Species")) %>% 
-  select(Region, SurveyName, Species, Common, TrendCategory, Notes)
+  select(Region, SurveyName, Species, Common, TrendCategory, Notes, Haul_Inc_Dec, Bio_Inc_Dec)
 
 # write.csv(data_trends_export, here::here("data_processing_rcode","output","data_clean","SpeciesPersistenceIndicatorTrend.csv"))
-
 ```
 
 
