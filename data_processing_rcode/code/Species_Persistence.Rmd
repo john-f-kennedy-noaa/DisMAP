@@ -1084,7 +1084,10 @@ pval_haul <- ggplot(holding, aes(x = RegP)) +
 
 ### Flagging function
 
-The following two code chunks adds a flag for species trends that are under review. Currently, the flagging isn't being used, but the function below easily could be adjusted for future scenarios that require flagging.
+The following two code chunks adds a flag for species trends that are under review. Currently, the flagging isn't being used, but the function below easily could be adjusted for future scenarios that require flagging. 
+
+The current flagging function below will *not* capture all trends that require review and might incorrectly flag some trends that do not require review.
+
 ```{r species flag function, eval=TRUE}
 
 data <- data_full_trends
