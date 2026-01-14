@@ -1,7 +1,7 @@
 ---
 title: 'Species Persistence: Data Processing and Visualization'
 author: "NOAA Fisheries' Office of Science and Technology"
-date: "2025-06-25"
+date: "2025-12-30"
 output:
   html_document:
     toc: yes
@@ -259,7 +259,8 @@ ggplot(data_full, aes(HaulBin)) +
 data_export <- data_full %>% 
   select(Region, SurveyName, Year, Species, Common, Bin, WTCPUE, HaulProportion, HaulBin)
 
-# write.csv(data_export, here::here("data_processing_rcode","output","data_clean","SpeciesPersistenceIndicatorPercentileBin.csv"))
+write.csv(data_export, here::here("data_processing_rcode","output","data_clean","SpeciesPersistenceIndicatorPercentileBin.csv"))
+
 ```
 
 
@@ -338,7 +339,7 @@ This section:
 - *Sporadic - Primarily Absent*: Species is observed in less than half of surveys and observations are inconsistent.
 
 
-**Trend Category Metrics**
+**Trend Category Metrics** (that is how the species were determined to be in each category)
 
 - *Persistently Present*: Observed in >=85% of survey years and observed in 4 out of the last 5 survey years
 - *Emerged*: Observed in >=50% of years, observed more in the second half of the survey years (compared to the first half of survey years), observed in >= 75% of the second half of survey years, and observed in at least nine (presence >= 9) of the final ten survey years
@@ -1237,7 +1238,7 @@ data_trends_export <- data_summary %>%
   left_join(flags_combo, by = c("SurveyName", "Species")) %>% 
   select(Region, SurveyName, Species, Common, TrendCategory, Notes, Haul_Inc_Dec, Bio_Inc_Dec)
 
-# write.csv(data_trends_export, here::here("data_processing_rcode","output","data_clean","SpeciesPersistenceIndicatorTrend.csv"))
+write.csv(data_trends_export, here::here("data_processing_rcode","output","data_clean","SpeciesPersistenceIndicatorTrend.csv"))
 ```
 
 

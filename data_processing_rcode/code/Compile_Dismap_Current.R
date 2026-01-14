@@ -2051,18 +2051,19 @@ not_in_tax <- not_in_tax %>% group_by(spp) %>%
 
 # add a case sensitive spp and common name
 dat <- left_join(dat, tax, by = c("spp" = "survey_name")) %>%
-  select(region, haulid, year, lat, lon, stratum, stratumarea, depth, spp, valid_name, common, rank, wtcpue) %>%
-  distinct()
+  select(region, haulid, year, lat, lon, stratum, stratumarea, depth, valid_name, common, wtcpue) %>%
+  distinct() %>%
+  rename(spp = valid_name)
 
 #check for errors in name matching
-if(sum(dat$valid_name == 'NA') > 0 | sum(is.na(dat$valid_name)) > 0){
+if(sum(dat$spp == 'NA') > 0 | sum(is.na(dat$spp)) > 0){
   warning('>>create_master_table(): Did not match on some taxon [Variable: `tax`] names.')
 }
 
 # #if get warning, check for which spp have NA for name and common if check above fails
 spp_na<-dat %>%
-  filter(is.na(dat$valid_name) & is.na(dat$common)) %>%
-  select(c("region", "spp", "valid_name", "common")) %>%
+  filter(is.na(dat$spp) & is.na(dat$common)) %>%
+  select(c("region", "spp", "common")) %>%
   distinct()
 
 # spp_na_list<-unique(c(as.character(spp_na$spp)))
@@ -2073,7 +2074,7 @@ spp_na<-dat %>%
 # #get list of higher order taxon names by region/survey and use to generate the list of higher order names to exclude later on
 #   dat_HO_list<-dat %>%
 #     filter(grepl("HigherOrder", rank)) %>%
-#     select(c("region", "valid_name", "rank")) %>%
+#     select(c("region", "spp", "rank")) %>%
 #     distinct()
 
 if(isTRUE(REMOVE_REGION_DATASETS)) {
@@ -2106,23 +2107,24 @@ dat_fltr <- left_join(dat_fltr, tax, by = c("spp" = "survey_name")) %>%
          !grepl("Phaeophyceae", class),
          !grepl("Florideophyceae", class),
          !grepl("Ulvophyceae", class)) %>%
-  select(region, haulid, year, lat, lon, stratum, stratumarea, depth, spp, valid_name, common, rank, wtcpue) %>%
-  distinct()
+  select(region, haulid, year, lat, lon, stratum, stratumarea, depth, valid_name, common, wtcpue) %>%
+  distinct() %>%
+  rename(spp = valid_name)
 
 #check for errors in name matching
-if(sum(dat_fltr$valid_name == 'NA') > 0 | sum(is.na(dat_fltr$valid_name)) > 0){
+if(sum(dat_fltr$spp == 'NA') > 0 | sum(is.na(dat_fltr$spp)) > 0){
   warning('>>create_master_table(): Did not match on some taxon [Variable: `tax`] names.')
 }
 #if get warning, check for which spp have NA for name and common if check above fails
 spp_na<-dat_fltr %>%
-  filter(is.na(dat_fltr$valid_name) & is.na(dat_fltr$common)) %>%
-  select(c("region", "spp", "valid_name", "common")) %>%
+  filter(is.na(dat_fltr$spp) & is.na(dat_fltr$common)) %>%
+  select(c("region", "spp", "common")) %>%
   distinct()
 # rm(spp_na)
 
 #This code chunk is for Appendix II in the Tech report (the species removed from dataset by taxon check and filtering)
-filtered_spp <- anti_join(dat, dat_fltr, by = c("region", "valid_name")) %>%
-  select(region, valid_name, common) %>%
+filtered_spp <- anti_join(dat, dat_fltr, by = c("region", "spp")) %>%
+  select(region, spp, common) %>%
   distinct()
 # write.csv(filtered_spp, "filter_removed_spp.csv")
 
@@ -2132,16 +2134,16 @@ if(isTRUE(REMOVE_REGION_DATASETS)) {
 
 if(isTRUE(WRITE_MASTER_DAT)){
   if(isTRUE(PREFER_RDATA)){
-    saveRDS(dat_fltr, file = here("data_processing_rcode/output/data_clean", "all-regions-full-fltr_6_7_24.rds"))
+    saveRDS(dat_fltr, file = here("data_processing_rcode/output/data_clean", "all-regions-full-fltr.rds"))
   }else{
-    write_csv(dat_fltr,file=here("data_processing_rcode/output/data_clean", "all-regions-full-fltr_3_17_23.csv"))
+    write_csv(dat_fltr,file=here("data_processing_rcode/output/data_clean", "all-regions-full-fltr.csv"))
   }
 }
 
 
 # Expanded Survey Dataset=================================================
 print ("Expanded dataset")
-presyr <- present_every_year(dat_fltr, region, valid_name, common, year)
+presyr <- present_every_year(dat_fltr, region, spp, common, year)
 
 haulsyr<-num_hauls_year(dat_fltr, region, year)
 
@@ -2150,7 +2152,7 @@ preshaul<-left_join(presyr, haulsyr, by=c("region", "year")) %>%
   filter(proportion>=5)
 
 # years in which spp was present in >= 5% of tows
-presyrsum <- num_year_present(preshaul, region, valid_name, common)
+presyrsum <- num_year_present(preshaul, region, spp, common)
 
 # max num years of survey in each region
 maxyrs <- max_year_surv(presyrsum, region)
@@ -2161,26 +2163,23 @@ presyrsum <- left_join(presyrsum, maxyrs, by = "region")
 # retain all spp present at >5% of tows in at least 2 of the available years in a survey
 spplist <- presyrsum %>%
   filter(presyr >= 2) %>%
-  select(region, valid_name, common)
+  select(region, spp, common)
 
+# these species were removed based on the 3/4 years criteria above but we have decided to add them back in based on commercial/recreational importance
+spp_addin<-read.csv("data_processing_rcode/data/Add_managed_spp.csv",header=T, sep=",")
+spplist<-rbind(spplist, spp_addin) %>%
+  distinct()
 
-# rename()# This creates a df for Appendix I of tech report (list of all species in all the modules)
+##This creates a df for Appendix I of tech report (list of all species in all the modules)
 # spp__techreport <- spplist %>%
 #   group_by(spp, common) %>%
 #   summarise(regions = paste(unique(region), collapse = ", "),
 #             .groups = "drop")
 # write.csv(spp__techreport, "spp_techreport.csv")
 
-# these species were removed based on the 3/4 years criteria above but we have decided to add them back in based on commercial/recreational importance
-spp_addin<-read.csv("data_processing_rcode/data/Add_managed_spp.csv",header=T, sep=",") %>%
-  rename(valid_name = spp)
-spplist<-rbind(spplist, spp_addin) %>%
-  distinct()
-
-
-# Trim dat to these species (for a given region, spp pair in spplist_final, in dat, keep only rows that match that region, spp pairing)
+# Trim dat to these species (for a given region, spp pair in spplist, in dat_fltr, keep only rows that match that region, spp pairing)
 trimmed_dat_fltr_expanded <- dat_fltr %>%
-  filter(paste(region, valid_name) %in% paste(spplist$region, spplist$valid_name))
+  filter(paste(region, spp) %in% paste(spplist$region, spplist$spp))
 
 
 #add an EBS+NBS combined region =========================
@@ -2215,15 +2214,13 @@ print("Trim species")
 
 ## FILTERED DATA
 # Find a standard set of species (present at least 3/4 of the years of the filtered data in a region)
-# this result differs from the original code because it does not include any species that have a pres value of 0.  It does, however, include species for which the common name is NA.
-presyr <- present_every_year(trimmed_dat_fltr_expanded, region, valid_name, common, year)
+presyr <- present_every_year(trimmed_dat_fltr_expanded, region, spp, common, year)
 
 haulsyr<-num_hauls_year(trimmed_dat_fltr_expanded, region, year)
 
 preshaul<-left_join(presyr, haulsyr, by=c("region", "year")) %>%
   mutate(proportion=((pres/hauls)*100)) %>%
-  filter(proportion>=5) %>%
-  rename(spp = valid_name)
+  filter(proportion>=5)
 
 # years in which spp was present in >= 5% of tows
 presyrsum <- num_year_present(preshaul, region, spp, common)
@@ -2242,7 +2239,7 @@ spplist_IDW <- presyrsum %>%
 # these species were removed based on the 3/4 years criteria above but we have decided to add them back in based on commercial/recreational importance
 spp_addin<-read.csv("data_processing_rcode/data/Add_managed_spp.csv",header=T, sep=",")
 
-spplist2<-rbind(spplist_IDW, spp_addin) %>%
+spplist_IDW_2<-rbind(spplist_IDW, spp_addin) %>%
   distinct() %>%
   mutate(DistributionProjectName="NMFS/Rutgers IDW Interpolation")
 ## use this spp list after explode 0 to add a column indicating that these species should be kept for IDW
@@ -2275,7 +2272,7 @@ rm(dat_expl_spl)
 
 ## Add the DistributionProjectName column to dat.exploded
 #use the spplist2 to indicate which species should be kept for IDW as opposed to which are for both IDW and expanded survey module
-dat.exploded<-left_join(dat.exploded, spplist2, by=c("spp","common","region"))
+dat.exploded<-left_join(dat.exploded, spplist_IDW_2, by=c("spp","common","region"))
 
 
 ## CORE Species -- caught every year of survey =======
@@ -2283,16 +2280,14 @@ dat.exploded<-left_join(dat.exploded, spplist2, by=c("spp","common","region"))
 print("Core species")
 
 ## FILTERED DATA
-# Find a standard set of species (present at least 3/4 of the years of the filtered data in a region)
-# this result differs from the original code because it does not include any species that have a pres value of 0.  It does, however, include speices for which the common name is NA.
-presyr <- present_every_year(trimmed_dat_fltr_expanded, region, valid_name, common, year)
+# Find a standard set of species (present ALL of the years of the filtered data in a region)
+presyr <- present_every_year(trimmed_dat_fltr_expanded, region, spp, common, year)
 
 haulsyr<-num_hauls_year(trimmed_dat_fltr_expanded, region, year)
 
 preshaul<-left_join(presyr, haulsyr, by=c("region", "year")) %>%
   mutate(proportion=((pres/hauls)*100))%>%
-  filter(proportion>=5) %>%
-  rename(spp = valid_name)
+  filter(proportion>=5)
 
 # years in which spp was present in >= 5% of tows
 presyrsum <- num_year_present(preshaul, region, spp, common)
@@ -2302,27 +2297,16 @@ maxyrs <- max_year_surv(presyrsum, region)
 
 # merge in max years
 presyrsum <- left_join(presyrsum, maxyrs, by = "region")
-# write.csv(presyrsum, "presyrsum_11_22_22.csv")
 # retain all spp present all years of the available years in a survey
 spplist_core <- presyrsum %>%
   filter(presyr >= maxyrs) %>%
   select(region, spp, common)
-
 
 ## Add column indicating if a species is a core species
 #Go to the next section first to create spplist_core
 spplist_core$CoreSpecies <- rep("Yes", times = nrow(spplist_core))
 dat.exploded <- left_join(dat.exploded, spplist_core, by = c("region", "spp", "common"))
 dat.exploded$CoreSpecies[is.na(dat.exploded$CoreSpecies)] <- "No"
-
-spp_IDW<-dat.exploded %>%
-  filter(DistributionProjectName=="NMFS/Rutgers IDW Interpolation") %>%
-  select(spp, common) %>%
-  distinct()
-
-spp_survey<-dat.exploded %>%
-  select(spp, common, region) %>%
-  distinct()
 
 #stop and....
 ## GO TO create_data_for_map_generation.R now
@@ -2331,22 +2315,25 @@ spp_survey<-dat.exploded %>%
 ###################### CAN STOP HERE ##########################################
 
 # Summary information about # of species in this analysis================
-#number of unique species across all regions
-dfuniq<-unique(spplist[c("spp", "common", "region")]) %>%
-  mutate(
-    region = ifelse(grepl("West Coast", region), "West Coast", region),
-    region = ifelse(grepl("Northeast", region), "Northeast", region),
-    region = ifelse(grepl("Southeast", region), "Southeast", region)) %>%
+
+#Species available in the Persistence Module
+spp_survey<-dat.exploded %>%
+  select(spp, common) %>%
   distinct()
 
-dfuniq_Core<-unique(spplist_core[c("spp", "common")])
-length(dfuniq_Core)
+#Species available in the Single Species Shift Module
+spp_IDW<-dat.exploded %>%
+  filter(DistributionProjectName=="NMFS/Rutgers IDW Interpolation") %>%
+  select(spp, common) %>%
+  distinct()
 
-#[OLD] number of unique species caught in each regional survey (expanded data set)
-# spp_reg_counts<-spplist %>%
-#   group_by(region)%>%
-#   summarise(distinct_spp=n_distinct(spp))
+#Species available in the Regional Summary module
+spp_core<-dat.exploded %>%
+  filter(CoreSpecies =="Yes")%>%
+  select(spp, common) %>%
+  distinct()
 
+#number of unique species across all regions
 # number of unique species in the species persistence module (5% of tows in a year in at <= 2 of  survey years)
 spp_pers <- trimmed_dat_fltr_expanded %>%
   select(region, spp, common) %>%
@@ -2355,7 +2342,7 @@ spp_pers <- trimmed_dat_fltr_expanded %>%
   summarise(spp_pers = n())
 
 #number of unique species within each regional survey (caught 3/4 or years)
-spp_reg_counts_quarters<-spplist2 %>%
+spp_reg_counts_IDW<-spplist_IDW_2 %>%
   group_by(region)%>%
   summarise(spp_3_4years=n_distinct(spp))
 
@@ -2364,7 +2351,7 @@ spp_reg_counts_Core<-spplist_core%>%
   group_by(region)%>%
   summarise(spp_all_yrs=n_distinct(spp))
 
-num_spp_summary<-left_join(spp_pers, spp_reg_counts_quarters, by=c("region"))
+num_spp_summary<-left_join(spp_pers, spp_reg_counts_IDW, by=c("region"))
 num_spp_summary<-left_join(num_spp_summary, spp_reg_counts_Core, by=c("region"))
 # write.csv(num_spp_summary, file=here("data_processing_rcode/output/data_clean", "summary_unique_spp_table_7_10_25.csv"))
 # write.csv(spplist_core, file=here("data_processing_rcode/output/data_clean","core_spp_list_7_10_25.csv"))

@@ -1,5 +1,5 @@
 
-OUTPUT_CSV_DIRECTORY = "~/Rprojects/DisMAP/data_processing_rcode/output/python" #Need to update based on local directory patherway
+OUTPUT_CSV_DIRECTORY <-here::here("data_processing_rcode", "output", "python")
 
 # dat.exploded should have already be created
 
