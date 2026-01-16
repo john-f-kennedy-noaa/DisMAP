@@ -75,7 +75,7 @@ def worker(project_gdb="", csv_file=""):
         scratch_workspace = rf"{project_folder}\Scratch\scratch.gdb"
         # Set basic workkpace variables
         arcpy.env.workspace                = project_gdb
-        arcpy.env.scratchWorkspace         = rf"Scratch\scratch.gdb"
+        arcpy.env.scratchWorkspace         = r"Scratch\scratch.gdb"
         arcpy.env.overwriteOutput          = True
         arcpy.env.parallelProcessingFactor = "100%"
         #arcpy.AddMessage(table_name)
@@ -280,7 +280,7 @@ def update_datecode(csv_file="", project_name=""):
         return True
     finally:
         pass
-def script_tool(project_gdb=""):
+def script_tool(project_folder=""):
     """Script code goes below"""
     try:
         from lxml import etree
@@ -300,8 +300,9 @@ def script_tool(project_gdb=""):
         # Set basic arcpy.env variables
         arcpy.env.overwriteOutput          = True
         arcpy.env.parallelProcessingFactor = "100%"
-        project_folder      = rf"{os.path.dirname(project_gdb)}"
+        #project_folder      = rf"{os.path.dirname(project_gdb)}"
         project_name        = rf"{os.path.basename(project_folder)}"
+        project_gdb         = rf"{project_folder}\{project_name}.gdb"
         home_folder         = rf"{os.path.dirname(project_folder)}"
         csv_data_folder     = rf"{project_folder}\CSV_Data"
         datasets_csv        = rf"{csv_data_folder}\Datasets.csv"
@@ -433,7 +434,7 @@ if __name__ == '__main__':
 
         project_gdb = arcpy.GetParameterAsText(0)
         if not project_gdb:
-            project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025\August 1 2025.gdb"
+            project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025"
         else:
             pass
 
