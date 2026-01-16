@@ -1,4 +1,4 @@
-## ---- DISMAP 2/20/2025
+## ---- DISMAP 1/16/2026
 ## updated script to include "expanded survey data" for the new Survey Data Module
 
 ## updated thru 2023 survey data for all regions except SEUS and Gmex(which is thru 2022)
@@ -2353,68 +2353,6 @@ spp_reg_counts_Core<-spplist_core%>%
 
 num_spp_summary<-left_join(spp_pers, spp_reg_counts_IDW, by=c("region"))
 num_spp_summary<-left_join(num_spp_summary, spp_reg_counts_Core, by=c("region"))
-# write.csv(num_spp_summary, file=here("data_processing_rcode/output/data_clean", "summary_unique_spp_table_7_10_25.csv"))
+write.csv(num_spp_summary, file=here("data_processing_rcode/output/data_clean", "summary_unique_spp_table_1_16_26.csv"))
 # write.csv(spplist_core, file=here("data_processing_rcode/output/data_clean","core_spp_list_7_10_25.csv"))
 
-########### FILTER TABLE ###########
-## compare with the Master Filter Table for the filter functionality on the portal
-filter_table<-read.csv("Species_Filter.csv", header=T, sep=",") %>%
-  select(-DistributionProjectName) %>%
-  left_join(spplist2, by= c("FilterSubRegion"="region","Species"="spp", "CommonName"="common")) %>% # This will update the table with the current spp used of IDW
-  mutate(DistributionProjectName = ifelse(is.na(DistributionProjectName), "Not for IDW", "NMFS/Rutgers IDW Interpolation"))
-
-# write.csv(filter_table, file = here::here("Filter_list_Expanded_Survey.csv"))
-
-spp_to_remove<-anti_join(filter_table, dfuniq, by=c("Species"="spp", "FilterSubRegion"="region"))
-
-# write.csv(spp_to_remove, "spp_removed_filter_6_10_24.csv")
-#  #remove these species from the filter table
-# filter_table_revised<-anti_join(filter_table, spp_to_remove)
-#
-miss_filter<-anti_join(dfuniq, filter_table, by=c("spp"="Species", "region"="FilterSubRegion")) %>%
-  rename(FilterSubRegion=region)
-#
-# Filter_table_updated<-bind_rows(filter_table_revised, miss_filter)
-# #write.csv(Filter_table_updated, file=here("data_processing_rcode/output/data_clean", "Final_Filter_Table.csv"))
-
-## Compare old and new filter table to see which species were removed and which were added!
-### We don't need to rewrite this section - can just use the miss_filter df and add directly to the filter table csv ###
-# old_table<-read.csv("filter_table_final_5_31_23.csv", header=T, sep=",")
-# new_table<- read.csv("output/data_clean/Final_Filter_Table.csv", header=T, sep=",")
-#
-# spp_added<-anti_join(new_table, old_table, by= c("spp", "FilterSubRegion"))
-# write.csv(spp_added, "spp_added_to_filter_6_10_24.csv")
-# spp_removed<-anti_join(old_table, new_table, by= c("spp", "FilterSubRegion"))
-# write.csv(spp_removed, "spp_removed_from_filter_6_10_24.csv")
-
-
-##GET LIST OF SPECIES AND TAXON REMOVED
-# Master "Filtered" dataset
-dat_fltr <- rbind(ai_fltr, ebs_fltr, nbs_fltr, gmex_fltr, goa_fltr, neus_fall_fltr, neus_spring_fltr, seusFALL_fltr, seusSPRING_fltr, seusSUMMER_fltr, wcann_fltr, wctri_fltr) %>%
-  # Remove NA values in wtcpue
-  filter(!is.na(wtcpue)) %>%
-  # remove any extra white space from around spp and common names
-  mutate(spp= str_squish(spp))
-#convert all taxa names to first word capitalized and rest lowercase...
-dat_fltr$spp<-firstup(dat_fltr$spp)
-# add a case sensitive spp and common name and filter out Higher Level taxon names, the turtle, bird, and dolphin species, and plants/seaweed species.
-dat_fltr <- left_join(dat_fltr, tax, by = c("spp" = "survey_name"))
-data_fltr_HOremoved<- dat_fltr %>%
-  filter(!grepl("HigherOrder", rank),
-         !grepl("remove", rank),
-         !grepl("Caretta caretta", valid_name),
-         !grepl("Sagmatias obliquidens", valid_name),
-         !grepl("Puffinus gravis", valid_name),
-         !grepl("Phaeophyceae", class),
-         !grepl("Florideophyceae", class),
-         !grepl("Ulvophyceae", class)) %>%
-  distinct()
-removed<-anti_join(dat_fltr, data_fltr_HOremoved, by=c("valid_name", "region")) %>%
-  select(valid_name, common)%>%
-  distinct()
-write.csv(removed, "removed_HO_taxa.csv")
-
-filterd_spp<-anti_join(data_fltr_HOremoved, dfuniq, by=c("valid_name"="spp")) %>%
-  select(valid_name, common) %>%
-  distinct()
-write.csv(filterd_spp, "filter_removed_spp.csv")
