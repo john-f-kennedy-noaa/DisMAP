@@ -2170,13 +2170,6 @@ spp_addin<-read.csv("data_processing_rcode/data/Add_managed_spp.csv",header=T, s
 spplist<-rbind(spplist, spp_addin) %>%
   distinct()
 
-##This creates a df for Appendix I of tech report (list of all species in all the modules)
-# spp__techreport <- spplist %>%
-#   group_by(spp, common) %>%
-#   summarise(regions = paste(unique(region), collapse = ", "),
-#             .groups = "drop")
-# write.csv(spp__techreport, "spp_techreport.csv")
-
 # Trim dat to these species (for a given region, spp pair in spplist, in dat_fltr, keep only rows that match that region, spp pairing)
 trimmed_dat_fltr_expanded <- dat_fltr %>%
   filter(paste(region, spp) %in% paste(spplist$region, spplist$spp))
@@ -2320,6 +2313,13 @@ dat.exploded$CoreSpecies[is.na(dat.exploded$CoreSpecies)] <- "No"
 spp_survey<-dat.exploded %>%
   select(spp, common) %>%
   distinct()
+
+##This creates a df for Appendix I of tech report (list of all species in all the modules)
+spp__techreport <- dat.exploded %>%
+  group_by(spp, common) %>%
+  summarise(regions = paste(unique(region), collapse = ", "),
+            .groups = "drop")
+write.csv(spp__techreport, "SppList_AppendixI.csv")
 
 #Species available in the Single Species Shift Module
 spp_IDW<-dat.exploded %>%
