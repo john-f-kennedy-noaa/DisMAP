@@ -140,7 +140,7 @@ __pycache__
 April 1 2023
 August 1 2025
 Bathymetry
-Data
+Initial Data
 Dataset Shapefiles
 December 1 2024
 GpMessages
@@ -171,6 +171,8 @@ setip.py
 utils.py
 Metadata.md
 src/dismap_tools/esri
+NCEI Archive
+_Dataset Shapefiles
 #src/dismap_tools_dev
 #############
 # Do not ignore these files
