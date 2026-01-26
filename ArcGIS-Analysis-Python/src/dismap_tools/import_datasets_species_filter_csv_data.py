@@ -5,9 +5,12 @@ Script documentation
 - Update derived parameter values using arcpy.SetParameter() or
                                         arcpy.SetParameterAsText()
 """
-import os, sys # built-ins first
-import traceback, inspect
+import os
+import sys # built-ins first
+import traceback
+import inspect
 import arcpy
+
 def get_encoding_index_col(csv_file):
     try:
         # Imports

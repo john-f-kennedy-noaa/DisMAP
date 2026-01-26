@@ -29,17 +29,17 @@ def script_tool(new_project_folder, project_folders):
         else:
             arcpy.AddMessage(f"Project GDB: {new_project_folder}.gdb exists")
         if not arcpy.Exists(rf"{home_folder}\{new_project_folder}\Scratch"):
-            arcpy.AddMessage(f"Creating the Scratch Folder")
+            arcpy.AddMessage("Creating the Scratch Folder")
             arcpy.management.CreateFolder(rf"{home_folder}\{new_project_folder}", "Scratch")
             arcpy.AddMessage(arcpy.GetMessages())
         else:
             arcpy.AddMessage(f"Scratch Folder: {new_project_folder} exists")
         if not arcpy.Exists(rf"{home_folder}\{new_project_folder}\Scratch\scratch.gdb"):
-            arcpy.AddMessage(f"Creating the Scratch GDB")
-            arcpy.management.CreateFileGDB(rf"{home_folder}\{new_project_folder}\Scratch", f"scratch")
+            arcpy.AddMessage("Creating the Scratch GDB")
+            arcpy.management.CreateFileGDB(rf"{home_folder}\{new_project_folder}\Scratch", "scratch")
             arcpy.AddMessage(arcpy.GetMessages())
         else:
-            arcpy.AddMessage(f"Scratch GDB Exists")
+            arcpy.AddMessage("Scratch GDB Exists")
         for _project_folder in project_folders.split(";"):
             if not arcpy.Exists(rf"{home_folder}\{new_project_folder}\{_project_folder}"):
                 arcpy.AddMessage(f"Creating Folder: {_project_folder}")
@@ -98,7 +98,7 @@ def script_tool(new_project_folder, project_folders):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         #raise SystemExit
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         #raise SystemExit
@@ -113,19 +113,21 @@ if __name__ == "__main__":
         project_folders = arcpy.GetParameterAsText(1)
 
         if not new_project_folder:
-            new_project_folder = "September 1 2025"
+            new_project_folder = "February 1 2026"
         else:
             pass
 
-        if not new_project_folder:
+        if not project_folders:
             project_folders = "CRFs;CSV_Data;Dataset_Shapefiles;Images;Layers;Metadata_Export;Publish"
         else:
             pass
 
         script_tool(new_project_folder, project_folders)
         arcpy.SetParameterAsText(3, "Result")
-        del home_folder, new_project_folder, project_folders
-    except:
+
+        del new_project_folder, project_folders
+
+    except:  # noqa: E722
         arcpy.AddMessage(arcpy.GetMessages(0))
         traceback.print_exc()
     else:
