@@ -77,7 +77,6 @@ $RECYCLE.BIN/
 # Mac crap
 .DS_Store
 
-
 #############
 ## Python
 #############
@@ -134,55 +133,52 @@ ImportLog
 #############
 ## ArcGIS-Analysis-Python ignores
 #############
-.pyHistory
-*.zip
-*.docx
+# Ignore Folders
 .backups
 .ipynb_checkpoints
-Bathymetry
+__pycache__
 April 1 2023
-May 1 2023
-July 1 2024
-December 1 2024
 August 1 2025
-
+Bathymetry
+Initial Data
+Dataset Shapefiles
+December 1 2024
 GpMessages
+ImportLog
 Index
-layout
+July 1 2024
+Layout
+May 16 2022
+Notebooks
 RasterFunctionsHistory
 RasterFunctionTemplates
-
-server on maps.fisheries.noaa.gov.ags
-SharingMainLog.xml
-
-Datasets
-ArcGIS2InPort.xsl
-FieldAliasesTools.BulkAssignAliases.pyt.xml
-FieldAliasesTools.pyt
-FieldAliasesTools.pyt.xml
-
-__init__.py
-NOAA Geoportal Metadata Export
-test
-ThematicMapSeries_Pro25
-
-src/dismap_tools/__pycache__
-src/dismap_tools/__init__.*
-
-!src/dismap_tools/*.py
-
-!src/dismap_tools/*.py
-src/dismap_tools/__pycache__
-src/dismap_tools/__init__.py
-src/dismap_tools_v20230401/*
-src/*.zip
-
-DisMAP.atbx
-utils.py
-setup.py
-main.py
-conftest.py
+Scratch
+# Ignore Files
+*.ags
+*.docx
+.pyHistory
+*.py
+*.~py
+*.pyt 
 *.xml
-*.pyt
-Data/*
-Dataset Shapefiles/*
+*.xsl
+*.zip
+__init__.py
+*.txt
+conftest.py
+main.py
+setip.py
+utils.py
+Metadata.md
+src/dismap_tools/esri
+NCEI Archive
+_Dataset Shapefiles
+#src/dismap_tools_dev
+#############
+# Do not ignore these files
+!README.md
+!src/dismap_tools/*.py
+!src/dismap_tools_dev/*.py
+src/dismap_tools/dev_*.py
+src/dismap_tools/__init__.py
+!src/dismap_tools/README.md
