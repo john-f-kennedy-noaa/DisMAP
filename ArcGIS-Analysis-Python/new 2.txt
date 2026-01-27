@@ -1,0 +1,38 @@
+DisMAP
+Perform a daily (business day) check on the DisMAP application: https://apps-st.fisheries.noaa.gov/dismap/DisMAP.html
+
+Completed the task to ensure the latest DisMAP python code is documented and saved in the github enterprise
+
+Working on the task of creating and following an archiving procedure that will research stable/interoperable data formats for archiving raster and vector data
+
+
+NMFS Geoportal
+
+Perform a daily (business day) check of the logs on /server/manager
+
+GIS Support Kudos
+
+---------- Forwarded message ---------
+From: Stephani Onisko - NOAA Affiliate <stephani.onisko@noaa.gov>
+Date: Thu, Nov 6, 2025 at 2:20 PM
+Subject: Fish Bump - John Kennedy
+To: Tim Haverland - NOAA Federal <tim.haverland@noaa.gov>, Tehseen Khokhar - NOAA Affiliate <tehseen.khokhar@noaa.gov>
+
+
+Tim and Tehseen,
+
+I wanted to express my sincere appreciation for John Kennedy and his help in transferring items from the Geoplatform to the Fisheries Portal this past October. His efforts saved me a significant amount of time that I would have spent recreating those items, and they were very much worth it and appreciated.
+
+Additionally, I wanted to recognize him for his assistance in releasing an updated streaming layer and corresponding geodatabase, making it accessible to the public.
+
+Best regards,
+Stephani Onisko
+
+--
+Stephani Onisko 
+GIS, Contractor with Saltwater Inc in support of
+Sustainable Fisheries Division, West Coast Region
+NOAA Fisheries | U.S. Department of Commerce
+Office: (360) 207-0216
+www.fisheries.noaa.gov
+
