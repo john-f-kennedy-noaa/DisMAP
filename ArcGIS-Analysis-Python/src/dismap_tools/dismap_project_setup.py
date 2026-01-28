@@ -98,7 +98,7 @@ def script_tool(new_project_folder, project_folders):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         #raise SystemExit
-    except:  # noqa: E722
+    except:  # noqa: E722  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         #raise SystemExit
@@ -130,7 +130,14 @@ if __name__ == "__main__":
     except:  # noqa: E722
         arcpy.AddMessage(arcpy.GetMessages(0))
         traceback.print_exc()
+=======
+        del new_project_folder, project_folders
+
+    except:  # noqa: E722
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)
+>>>>>>> Stashed changes
     else:
-        pass
-    finally:
         pass
