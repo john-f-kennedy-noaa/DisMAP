@@ -9,6 +9,15 @@ import os
 import arcpy
 import traceback
 
+def trace():
+    import sys, traceback  # noqa: E401
+    tb = sys.exc_info()[2]
+    tbinfo = traceback.format_tb(tb)[0]
+    line = tbinfo.split(", ")[1]
+    filename = sys.path[0] + os.sep + "test.py"
+    synerror = traceback.format_exc().splitlines()[-1]
+    return line, filename, synerror
+
 def script_tool(new_project_folder, project_folders):
     """Script code goes below"""
     try:
@@ -128,16 +137,7 @@ if __name__ == "__main__":
         del new_project_folder, project_folders
 
     except:  # noqa: E722
-        arcpy.AddMessage(arcpy.GetMessages(0))
-        traceback.print_exc()
-=======
-        del new_project_folder, project_folders
-
-    except:  # noqa: E722
         #Gets non-tool errors
         line, filename, err = trace()
         arcpy.AddError("Python error on " + line + " of " + filename)
         arcpy.AddError(err)
->>>>>>> Stashed changes
-    else:
-        pass
