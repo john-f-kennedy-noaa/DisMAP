@@ -9,7 +9,8 @@
 # Copyright:   (c) john.f.kennedy 2024
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-import os, sys # built-ins first
+import os
+import sys
 import traceback
 import inspect
 
@@ -180,14 +181,16 @@ def worker(region_gdb=""):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -229,7 +232,7 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         del project_folder, scratch_workspace
 
         if not table_names:
-            table_names = [row[0] for row in arcpy.da.SearchCursor(f"{project_gdb}\Datasets",
+            table_names = [row[0] for row in arcpy.da.SearchCursor(rf"{project_gdb}\Datasets",
                                                                    "TableName",
                                                                    where_clause = "TableName LIKE '%_IDW'")]
         else:
@@ -246,7 +249,7 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
                 os.makedirs(rf"{scratch_folder}\{table_name}")
                 if not arcpy.Exists(region_scratch_workspace):
                     arcpy.AddMessage(f"Create File GDB: '{table_name}'")
-                    arcpy.management.CreateFileGDB(rf"{scratch_folder}\{table_name}", f"scratch")
+                    arcpy.management.CreateFileGDB(rf"{scratch_folder}\{table_name}", "scratch")
                     arcpy.AddMessage("\tCreate File GDB: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
             del region_scratch_workspace
             # # # CreateFileGDB
@@ -314,14 +317,16 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -333,7 +338,7 @@ def script_tool(project_gdb=""):
         start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
         arcpy.AddMessage(f"Python Script:  {os.path.basename(__file__)}")
-        arcpy.AddMessage(f"Location:       ..\Documents\ArcGIS\Projects\..\{os.path.basename(os.path.dirname(__file__))}\{os.path.basename(__file__)}")
+        arcpy.AddMessage(f"Location:       ../{'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
         arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
@@ -400,14 +405,16 @@ def script_tool(project_gdb=""):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -422,7 +429,7 @@ if __name__ == '__main__':
         script_tool(project_gdb)
         arcpy.SetParameterAsText(1, "Result")
         del project_gdb
-    except:
+    except:  # noqa: E722
         traceback.print_exc()
     else:
         pass

@@ -9,7 +9,8 @@
 # Copyright:   (c) john.f.kennedy 2024
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-import os, sys # built-ins first
+import os
+import sys # built-ins first
 import traceback
 import inspect
 
@@ -105,7 +106,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
 
         # Sequential Processing
         if Sequential:
-            arcpy.AddMessage(f"Sequential Processing")
+            arcpy.AddMessage("Sequential Processing")
             for i in range(0, len(table_names)):
                 arcpy.AddMessage(f"Processing: {table_names[i]}")
                 table_name = table_names[i]
@@ -113,7 +114,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
                 try:
                     pass
                     #worker(region_gdb=region_gdb)
-                except:
+                except:  # noqa: E722
                     traceback.print_exc()
                 del region_gdb, table_name
                 del i
@@ -124,7 +125,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         if not Sequential:
             import multiprocessing
             from time import time, localtime, strftime, sleep, gmtime
-            arcpy.AddMessage(f"Start multiprocessing using the ArcGIS Pro pythonw.exe.")
+            arcpy.AddMessage("Start multiprocessing using the ArcGIS Pro pythonw.exe.")
             #Set multiprocessing exe in case we're running as an embedded process, i.e ArcGIS
             #get_install_path() uses a registry query to figure out 64bit python exe if available
             multiprocessing.set_executable(os.path.join(sys.exec_prefix, 'pythonw.exe'))
@@ -135,7 +136,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
             #Create a pool of workers, keep one cpu free for surfing the net.
             #Let each worker process only handle 1 task before being restarted (in case of nasty memory leaks)
             with multiprocessing.Pool(processes=_processes, maxtasksperchild=1) as pool:
-                arcpy.AddMessage(f"\tPrepare arguments for processing")
+                arcpy.AddMessage("\tPrepare arguments for processing")
                 # Use apply_async so we can handle exceptions gracefully
                 jobs={}
                 for i in range(0, len(table_names)):
@@ -145,7 +146,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
                         region_gdb = rf"{scratch_folder}\{table_name}.gdb"
                         jobs[table_name] = pool.apply_async(worker, [region_gdb])
                         del table_name, region_gdb
-                    except:
+                    except:  # noqa: E722
                         pool.terminate()
                         arcpy.AddError(arcpy.GetMessages(2))
                         traceback.print_exc()
@@ -161,7 +162,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
                     end_time = time()
                     elapse_time =  end_time - start_time
                     arcpy.AddMessage(f"\nStart Time: {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
-                    arcpy.AddMessage(f"Have the workers finished?")
+                    arcpy.AddMessage("Have the workers finished?")
                     finish_time = strftime('%a %b %d %I:%M %p', localtime())
                     time_elapsed = u"Elapsed Time {0} (H:M:S)".format(strftime("%H:%M:%S", gmtime(elapse_time)))
                     arcpy.AddMessage(f"It's {finish_time}\n{time_elapsed}")
@@ -179,7 +180,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
                                     arcpy.AddError(arcpy.GetMessages(2))
                                     traceback.print_exc()
                                     sys.exit()
-                                except:
+                                except:  # noqa: E722
                                     pool.terminate()
                                     arcpy.AddError(arcpy.GetMessages(2))
                                     traceback.print_exc()
@@ -198,11 +199,11 @@ def director(project_gdb="", Sequential=True, table_names=[]):
                 del result_completed
                 del start_time
                 del all_finished
-                arcpy.AddMessage(f"\tClose the process pool")
+                arcpy.AddMessage("\tClose the process pool")
                 # close the process pool
                 pool.close()
                 # wait for all tasks to complete and processes to close
-                arcpy.AddMessage(f"\tWait for all tasks to complete and processes to close")
+                arcpy.AddMessage("\tWait for all tasks to complete and processes to close")
                 pool.join()
                 # Just in case
                 pool.terminate()
@@ -211,7 +212,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
             del _processes
             del time, multiprocessing, localtime, strftime, sleep, gmtime
 
-            arcpy.AddMessage(f"\tDone with multiprocessing Pool")
+            arcpy.AddMessage("\tDone with multiprocessing Pool")
 
         # Post-Processing
         arcpy.AddMessage("Post-Processing Begins")
@@ -282,14 +283,16 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -302,21 +305,21 @@ def script_tool(project_gdb=""):
         start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
         arcpy.AddMessage(f"Python Script:  {os.path.basename(__file__)}")
-        arcpy.AddMessage(f"Location:       ..\Documents\ArcGIS\Projects\..\{os.path.basename(os.path.dirname(__file__))}\{os.path.basename(__file__)}")
+        arcpy.AddMessage(f"Location:       ../{'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
         arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
         arcpy.AddMessage(f"{'-' * 80}\n")
 
-        # Clear Scratch Folder
-        ClearScratchFolder = False
-        if ClearScratchFolder:
-            import dismap_tools
-            dismap_tools.clear_folder(folder=scratch_folder)
-            del dismap_tools
-        else:
-            pass
-        del ClearScratchFolder
+##        # Clear Scratch Folder
+##        ClearScratchFolder = False
+##        if ClearScratchFolder:
+##            import dismap_tools
+##            dismap_tools.clear_folder(folder=scratch_folder)
+##            del dismap_tools
+##        else:
+##            pass
+##        del ClearScratchFolder
 
         try:
             # "AI_IDW", "EBS_IDW", "ENBS_IDW", "GMEX_IDW", "GOA_IDW", "HI_IDW", "NBS_IDW", "NEUS_FAL_IDW", "NEUS_SPR_IDW",
@@ -331,7 +334,7 @@ def script_tool(project_gdb=""):
                 director(project_gdb=project_gdb, Sequential=False, table_names=["NEUS_SPR_IDW", "EBS_IDW"])
             del Test
 
-        except:
+        except:  # noqa: E722
             arcpy.AddError(arcpy.GetMessages(2))
             traceback.print_exc()
             sys.exit()
@@ -375,29 +378,31 @@ def script_tool(project_gdb=""):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
-        if "Test" in locals().keys(): del Test
+        pass
 
 if __name__ == '__main__':
     try:
         project_gdb = arcpy.GetParameterAsText(0)
         if not project_gdb:
-            project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025\August 1 2025.gdb"
+            project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\February 1 2026\February 1 2026.gdb"
         else:
             pass
         script_tool(project_gdb)
         arcpy.SetParameterAsText(1, "Result")
         del project_gdb
-    except:
+    except:  # noqa: E722
         traceback.print_exc()
     else:
         pass

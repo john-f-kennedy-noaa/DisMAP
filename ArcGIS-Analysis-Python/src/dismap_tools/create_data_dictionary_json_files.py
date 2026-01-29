@@ -6,8 +6,10 @@ Script documentation
 - Update derived parameter values using arcpy.SetParameter() or
                                         arcpy.SetParameterAsText()
 """
-import arcpy, os
+import arcpy
+import os
 import traceback
+import inspect
 
 def script_tool(project_gdb=""):
     """Script code goes below"""
@@ -32,7 +34,25 @@ def script_tool(project_gdb=""):
         arcpy.AddMessage(f"\n{'--Start' * 10}--\n")
         arcpy.AddMessage(f"Creating Table and Field definitions for: {os.path.basename(project_gdb)}")
 
-        field_definitions = {
+        field_definitions = {   "Bio_Inc_Dec": {
+                                    "field_aliasName": "Bio_Inc_Dec",
+                                    "field_baseName": "Bio_Inc_Dec",
+                                    "field_defaultValue": "null",
+                                    "field_domain": "",
+                                    "field_editable": "true",
+                                    "field_isNullable": "true",
+                                    "field_length": 30,
+                                    "field_name": "Bio_Inc_Dec",
+                                    "field_precision": 0,
+                                    "field_required": "true",
+                                    "field_scale": 0,
+                                    "field_type": "String",
+                                    "field_attrdef": "Bio_Inc_Dec",
+                                    "field_attrdefs": "DisMAP Project GDB Data Dictionary",
+                                    "field_attrdomv": {
+                                        "udom": "Bio_Inc_Dec"
+                                    }
+                                },
                                 "CSVFile": {
                                     "field_aliasName": "CSV File",
                                     "field_baseName": "CSVFile",
@@ -698,6 +718,25 @@ def script_tool(project_gdb=""):
                                         "udom": "Haul Bin"
                                     }
                                 },
+                                "Haul_Inc_Dec": {
+                                    "field_aliasName": "Haul_Inc_Dec",
+                                    "field_baseName": "Haul_Inc_Dec",
+                                    "field_defaultValue": "null",
+                                    "field_domain": "",
+                                    "field_editable": "true",
+                                    "field_isNullable": "true",
+                                    "field_length": 30,
+                                    "field_name": "Haul_Inc_Dec",
+                                    "field_precision": 0,
+                                    "field_required": "true",
+                                    "field_scale": 0,
+                                    "field_type": "String",
+                                    "field_attrdef": "Haul_Inc_Dec",
+                                    "field_attrdefs": "DisMAP Project GDB Data Dictionary",
+                                    "field_attrdomv": {
+                                        "udom": "Haul_Inc_Dec"
+                                    }
+                                },
                                 "HaulProportion": {
                                     "field_aliasName": "Haul Proportion",
                                     "field_baseName": "HaulProportion",
@@ -717,6 +756,10 @@ def script_tool(project_gdb=""):
                                         "udom": "Haul Proportion"
                                     }
                                 },
+
+
+
+
                                 "HighPS": {
                                     "field_aliasName": "HighPS",
                                     "field_baseName": "HighPS",
@@ -1960,7 +2003,7 @@ def script_tool(project_gdb=""):
                              "Stratum", "StratumArea", "Latitude", "Longitude",
                              "Depth"]
         _Species_Filter = ["Species", "CommonName", "TaxonomicGroup", "FilterRegion",
-                           "FilterSubRegion", "ManagementBody", "ManagementPlan", "DistributionProjectName"]
+                           "FilterSubRegion", "ManagementBody", "ManagementPlan", "DistributionProjectName", "Haul_Inc_Dec", "Bio_Inc_Dec"]
         _SpeciesPersistenceIndicatorTrend = ["Region", "SurveyName", "Species", "CommonName", "TrendCategory", "Notes"]
         _SpeciesPersistenceIndicatorPercentileBin = ["Region", "SurveyName", "Year", "Species", "CommonName", "PercentileBin", "WTCPUE", "HaulProportion", "HaulBin"]
 
@@ -2171,8 +2214,6 @@ def script_tool(project_gdb=""):
         # Function parameters
         del project_gdb
 
-    except KeyboardInterrupt:
-        sys.exit()
     except arcpy.ExecuteWarning:
         arcpy.AddWarning(f"Caught an arcpy.ExecuteWarning error in the '{inspect.stack()[0][3]}' function.")
         arcpy.AddWarning(arcpy.GetMessages(1))
@@ -2180,22 +2221,21 @@ def script_tool(project_gdb=""):
         arcpy.AddError(f"Caught an arcpy.ExecuteError error in the '{inspect.stack()[0][3]}' function.")
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        sys.exit()
+
     except SystemExit as se:
         arcpy.AddError(f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function.")
-        sys.exit()
     except Exception as e:
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
-        sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
-        sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -2205,7 +2245,7 @@ if __name__ == "__main__":
 
        project_gdb = arcpy.GetParameterAsText(0)
        if not project_gdb:
-           project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025\August 1 2025.gdb"
+           project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\February 1 2026\February 1 2026.gdb"
        else:
            pass
 
@@ -2216,7 +2256,7 @@ if __name__ == "__main__":
 
     except SystemExit:
         pass
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
     else:

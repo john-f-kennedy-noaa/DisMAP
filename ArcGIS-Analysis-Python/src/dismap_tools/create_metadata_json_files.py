@@ -6,7 +6,10 @@ Script documentation
 - Update derived parameter values using arcpy.SetParameter() or
                                         arcpy.SetParameterAsText()
 """
-import os, sys, traceback, inspect
+import os
+import sys
+import traceback
+import inspect
 
 import arcpy
 
@@ -19,7 +22,7 @@ def script_tool(project_gdb=""):
         start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
         arcpy.AddMessage(f"Python Script:  {os.path.basename(__file__)}")
-        arcpy.AddMessage(f"Location:       ..\Documents\ArcGIS\Projects\..\{os.path.basename(os.path.dirname(__file__))}\{os.path.basename(__file__)}")
+        arcpy.AddMessage(f"Location:       ../{'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
         arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
@@ -157,8 +160,8 @@ def script_tool(project_gdb=""):
                             "discKeys"   :  7,
                                 "keyword"   : 0,
                                 "thesaName" : 1,
-                                    "resTitle" : 0,
-                                    "date"     : 1,
+                                    "resTitle" : 0,  # noqa: F601
+                                    "date"     : 1,  # noqa: F601
                                         "createDate" : 0,
                                         "pubDate"    : 1,
                                         "reviseDate" : 2,
@@ -169,70 +172,69 @@ def script_tool(project_gdb=""):
                                     "thesaLang" : 2,
                                         "languageCode" : 0,
                                         "countryCode"  : 1,
-                            "themeKeys"  :  8,
-                                "keyword"   : 0,
-                                "thesaName" : 1,
-                                    "resTitle" : 0,
-                                    "date"     : 1,
-                                        "createDate" : 0,
-                                        "pubDate"    : 1,
-                                        "reviseDate" : 2,
-                                    "citOnlineRes" : 2,
-                                        "linkage" : 0,
-                                        "orFunct" : 1,
-                                            "OnFunctCd" : 0,
-                                    "thesaLang" : 2,
-                                        "languageCode" : 0,
-                                        "countryCode"  : 1,
+                            "themeKeys"  :  8,  # noqa: F601
+                                "keyword"   : 0,  # noqa: F601
+                                "thesaName" : 1,  # noqa: F601
+                                    "resTitle" : 0,  # noqa: F601
+                                    "date"     : 1,  # noqa: F601
+                                        "createDate" : 0,  # noqa: F601
+                                        "pubDate"    : 1,  # noqa: F601
+                                        "reviseDate" : 2,  # noqa: F601
+                                    "citOnlineRes" : 2,  # noqa: F601
+                                        "linkage" : 0,  # noqa: F601
+                                        "orFunct" : 1,  # noqa: F601
+                                            "OnFunctCd" : 0,  # noqa: F601
+                                    "thesaLang" : 2,  # noqa: F601
+                                        "languageCode" : 0,  # noqa: F601
+                                        "countryCode"  : 1,  # noqa: F601
                             "placeKeys"  :  9,
-                                "keyword"   : 0,
-                                "thesaName" : 1,
-                                    "resTitle" : 0,
-                                    "date"     : 1,
-                                        "createDate" : 0,
-                                        "pubDate"    : 1,
-                                        "reviseDate" : 2,
-                                    "citOnlineRes" : 2,
-                                        "linkage" : 0,
-                                        "orFunct" : 1,
-                                            "OnFunctCd" : 0,
-                                    "thesaLang" : 2,
-                                        "languageCode" : 0,
-                                        "countryCode"  : 1,
-                            "tempKeys"   : 10,
-                                "keyword"   : 0,
-                                "thesaName" : 1,
-                                    "resTitle" : 0,
-                                    "date"     : 1,
-                                        "createDate" : 0,
-                                        "pubDate"    : 1,
-                                        "reviseDate" : 2,
-                                    "citOnlineRes" : 2,
-                                        "linkage" : 0,
-                                        "orFunct" : 1,
-                                            "OnFunctCd" : 0,
-                                    "thesaLang" : 2,
-                                        "languageCode" : 0,
-                                        "countryCode"  : 1,
-                            "otherKeys"  : 11,
-                                "keyword"   : 0,
-                                "thesaName" : 1,
-                                    "resTitle" : 0,
-                                    "date"     : 1,
-                                        "createDate" : 0,
-                                        "pubDate"    : 1,
-                                        "reviseDate" : 2,
-                                    "citOnlineRes" : 2,
-                                        "linkage" : 0,
-                                        "orFunct" : 1,
-                                            "OnFunctCd" : 0,
-                                    "thesaLang" : 2,
-                                        "languageCode" : 0,
-                                        "countryCode"  : 1,
-                            "idPoC"      : 11,
-                            "resMaint"   : 12,
-
-                            "tpCat"      : 18,
+                                "keyword"   : 0,  # noqa: F601
+                                "thesaName" : 1,  # noqa: F601
+                                    "resTitle" : 0,  # noqa: F601
+                                    "date"     : 1,  # noqa: F601
+                                        "createDate" : 0,  # noqa: F601
+                                        "pubDate"    : 1,  # noqa: F601
+                                        "reviseDate" : 2,  # noqa: F601
+                                    "citOnlineRes" : 2,  # noqa: F601
+                                        "linkage" : 0,  # noqa: F601
+                                        "orFunct" : 1,  # noqa: F601
+                                            "OnFunctCd" : 0,  # noqa: F601
+                                    "thesaLang" : 2,  # noqa: F601
+                                        "languageCode" : 0,  # noqa: F601
+                                        "countryCode"  : 1,  # noqa: F601
+                            "tempKeys"   : 10,  # noqa: F601
+                                "keyword"   : 0,  # noqa: F601
+                                "thesaName" : 1,  # noqa: F601
+                                    "resTitle" : 0,  # noqa: F601
+                                    "date"     : 1,  # noqa: F601
+                                        "createDate" : 0,  # noqa: F601
+                                        "pubDate"    : 1,  # noqa: F601
+                                        "reviseDate" : 2,  # noqa: F601
+                                    "citOnlineRes" : 2,  # noqa: F601
+                                        "linkage" : 0,  # noqa: F601
+                                        "orFunct" : 1,  # noqa: F601
+                                            "OnFunctCd" : 0,  # noqa: F601
+                                    "thesaLang" : 2,  # noqa: F601
+                                        "languageCode" : 0,  # noqa: F601
+                                        "countryCode"  : 1,  # noqa: F601
+                            "otherKeys"  : 11,  # noqa: F601
+                                "keyword"   : 0,  # noqa: F601
+                                "thesaName" : 1,  # noqa: F601
+                                    "resTitle" : 0,  # noqa: F601
+                                    "date"     : 1,  # noqa: F601
+                                        "createDate" : 0,  # noqa: F601
+                                        "pubDate"    : 1,  # noqa: F601
+                                        "reviseDate" : 2,  # noqa: F601
+                                    "citOnlineRes" : 2,  # noqa: F601
+                                        "linkage" : 0,  # noqa: F601
+                                        "orFunct" : 1,  # noqa: F601
+                                            "OnFunctCd" : 0,  # noqa: F601
+                                    "thesaLang" : 2,  # noqa: F601
+                                        "languageCode" : 0,  # noqa: F601
+                                        "countryCode"  : 1,  # noqa: F601
+                            "idPoC"      : 11,  # noqa: F601
+                            "resMaint"   : 12,  # noqa: F601
+                            "tpCat"      : 18,  # noqa: F601
                            }
 
         import json
@@ -348,30 +350,30 @@ def script_tool(project_gdb=""):
                                     "adminArea"    : 2, "postCode"     : 3, "eMailAdd"     : 4,
                                     "country"      : 5, "cntPhone"     : 1, "voiceNum"     : 0,
                                     "faxNum"       : 1, "cntHours"     : 2, "cntOnlineRes" : 3,
-                                    "linkage"      : 0, "protocol"     : 1, "orName"       : 2,
-                                    "orDesc"       : 3, "orFunct"      : 4, "OnFunctCd"    : 0,
-                                    "editorSave"   : 6, "displayName"  : 7, "role"         : 8,
+                                    "linkage"      : 0, "protocol"     : 1, "orName"       : 2,  # noqa: F601
+                                    "orDesc"       : 3, "orFunct"      : 4, "OnFunctCd"    : 0,  # noqa: F601
+                                    "editorSave"   : 6, "displayName"  : 7, "role"         : 8,  # noqa: F601
                                     "RoleCd"       : 0,
                                 "srcMedName" : 7,
                                     "MedNameCd" : 0,
                             "prcStep"    : 3,
                                 "stepDesc"   : 0,
                                 "stepProc"   : 1,
-                                    "editorSource" : 0, "editorDigest" : 1,"rpIndName"     : 2,
-                                    "rpOrgName"    : 3, "rpPosName"    : 4, "rpCntInfo"    : 5,
-                                    "cntAddress"   : 0, "delPoint"     : 0, "city"         : 1,
-                                    "adminArea"    : 2, "postCode"     : 3, "eMailAdd"     : 4,
-                                    "country"      : 5, "cntPhone"     : 1, "voiceNum"     : 0,
-                                    "faxNum"       : 1, "cntHours"     : 2, "cntOnlineRes" : 3,
-                                    "linkage"      : 0, "protocol"     : 1, "orName"       : 2,
-                                    "orDesc"       : 3, "orFunct"      : 4, "OnFunctCd"    : 0,
-                                    "editorSave"   : 6, "displayName"  : 7, "role"         : 8,
-                                    "RoleCd"       : 0,
+                                    "editorSource" : 0, "editorDigest" : 1,"rpIndName"     : 2,  # noqa: F601
+                                    "rpOrgName"    : 3, "rpPosName"    : 4, "rpCntInfo"    : 5,  # noqa: F601
+                                    "cntAddress"   : 0, "delPoint"     : 0, "city"         : 1,  # noqa: F601
+                                    "adminArea"    : 2, "postCode"     : 3, "eMailAdd"     : 4,  # noqa: F601
+                                    "country"      : 5, "cntPhone"     : 1, "voiceNum"     : 0,  # noqa: F601
+                                    "faxNum"       : 1, "cntHours"     : 2, "cntOnlineRes" : 3,  # noqa: F601
+                                    "linkage"      : 0, "protocol"     : 1, "orName"       : 2,  # noqa: F601
+                                    "orDesc"       : 3, "orFunct"      : 4, "OnFunctCd"    : 0,  # noqa: F601
+                                    "editorSave"   : 6, "displayName"  : 7, "role"         : 8,  # noqa: F601
+                                    "RoleCd"       : 0,  # noqa: F601
 
                                 "stepDateTm" : 2,
-                                "cntOnlineRes" : 3, "linkage"     : 0,
-                                "protocol"   : 1, "orName"       : 2, "orDesc"      : 3,
-                                "orFunct"    : 4, "OnFunctCd"    : 0,
+                                "cntOnlineRes" : 3, "linkage"     : 0,  # noqa: F601
+                                "protocol"   : 1, "orName"       : 2, "orDesc"      : 3,  # noqa: F601
+                                "orFunct"    : 4, "OnFunctCd"    : 0,  # noqa: F601
                       }
 
         import json
@@ -428,12 +430,12 @@ def script_tool(project_gdb=""):
                                 "unitsODist" : 0,
                                 "transSize"  : 1,
                                 "onLineSrc"  : 2,
-                                    "linkage"  : 0,
+                                    "linkage"  : 0,  # noqa: F601
                                     "protocol" : 1,
-                                    "orName"   : 2,
-                                    "orDesc"   : 3,
-                                    "orFunct"  : 4,
-                                        "OnFunctCd" : 0,
+                                    "orName"   : 2,  # noqa: F601
+                                    "orDesc"   : 3,  # noqa: F601
+                                    "orFunct"  : 4,  # noqa: F601
+                                        "OnFunctCd" : 0,  # noqa: F601
                            }
 
         import json
@@ -576,14 +578,16 @@ def script_tool(project_gdb=""):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -593,7 +597,7 @@ if __name__ == "__main__":
 
         project_gdb = arcpy.GetParameterAsText(0)
         if not project_gdb:
-            project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025\August 1 2025.gdb"
+            project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\February 1 2026\February 1 2026.gdb"
         else:
             pass
 
@@ -603,7 +607,7 @@ if __name__ == "__main__":
 
     except SystemExit:
         pass
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
     else:
