@@ -37,7 +37,7 @@ def export_metadata(project_gdb="", metadata_workspace=""):
         # Define variables
         project_folder = os.path.dirname(project_gdb)
         scratch_folder = rf"{project_folder}\Scratch"
-        scratch_gdb    = rf"{scratch_folder}\scratch.gdb"
+        scratch_gdb    = os.path.join(scratch_folder, "scratch.gdb")
 
         # Set the workspace environment to local file geodatabase
         arcpy.env.workspace = project_gdb

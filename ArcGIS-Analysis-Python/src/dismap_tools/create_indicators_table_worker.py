@@ -9,7 +9,8 @@
 # Copyright:   (c) john.f.kennedy 2024
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-import os, sys # built-ins first
+import os
+import sys
 import traceback
 import inspect
 
@@ -88,14 +89,16 @@ def printRowContent(region_indicators):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -187,7 +190,8 @@ def worker(region_gdb=""):
         #arcpy.AddMessage(datecode)
         #arcpy.AddMessage(dismap.date_code(datecode))
 
-        arcpy.env.cellSize = cellsize; del cellsize
+        arcpy.env.cellSize = cellsize
+        del cellsize
 
         # Region Raster Mask
         datasetcode_raster_mask = os.path.join(region_gdb, f"{table_name}_Raster_Mask")
@@ -214,7 +218,7 @@ def worker(region_gdb=""):
 
         input_rasters = {}
 
-        arcpy.AddMessage(f"\tCreate a list of input biomass raster path locations")
+        arcpy.AddMessage("\tCreate a list of input biomass raster path locations")
 
         #fields = "DatasetCode;Region;Season;Species;CommonName;SpeciesCommonName;CoreSpecies;Year;StdTime;Variable;Value;Dimensions"
         #fields = fields.split(";")
@@ -258,7 +262,7 @@ def worker(region_gdb=""):
         # Start with empty row_values list of list
         row_values = []
 
-        arcpy.AddMessage(f"Interate over the species names")
+        arcpy.AddMessage("Interate over the species names")
 
         for variable in sorted(input_rasters):
 
@@ -297,7 +301,7 @@ def worker(region_gdb=""):
                     first_year = year if year < first_year else first_year
                     #arcpy.AddMessage(f"\t{first_year}, {year} {first_year == year}")
 
-                    arcpy.AddMessage(f"\t> Calculating biomassArray")
+                    arcpy.AddMessage("\t> Calculating biomassArray")
 
                     biomassArray = arcpy.RasterToNumPyArray(input_raster_path, nodata_to_value=np.nan)
                     biomassArray[biomassArray <= 0.0] = np.nan
@@ -311,7 +315,7 @@ def worker(region_gdb=""):
 
                     # ###--->>> Biomass End
 
-                    arcpy.AddMessage(f"\t> Calculating latitudeArray")
+                    arcpy.AddMessage("\t> Calculating latitudeArray")
 
                     # ###--->>> Latitude Start
                     #CenterOfGravityLatitude    = None
@@ -413,7 +417,7 @@ def worker(region_gdb=""):
 
                     # ###--->>> Latitude End
 
-                    arcpy.AddMessage(f"\t> Calculating longitudeArray")
+                    arcpy.AddMessage("\t> Calculating longitudeArray")
 
                     # ###--->>> Longitude Start
                     #CenterOfGravityLongitude   = None
@@ -517,7 +521,7 @@ def worker(region_gdb=""):
 
                     # ###--->>> Longitude End
 
-                    arcpy.AddMessage(f"\t> Calculating bathymetryArray")
+                    arcpy.AddMessage("\t> Calculating bathymetryArray")
 
                     # ###--->>> Center of Gravity Depth (Bathymetry) Start
 
@@ -646,7 +650,7 @@ def worker(region_gdb=""):
                     arcpy.AddMessage('Something wrong with biomass raster')
 
 
-                arcpy.AddMessage(f"\t> Assigning variables to row values")
+                arcpy.AddMessage("\t> Assigning variables to row values")
 
                 # Clean-up
                 del maximumBiomass
@@ -712,9 +716,12 @@ def worker(region_gdb=""):
             del raster_years
             del first_year
 
-            if "first_year_offset_latitude"  in locals(): del first_year_offset_latitude
-            if "first_year_offset_longitude" in locals(): del first_year_offset_longitude
-            if "first_year_offset_depth"     in locals(): del first_year_offset_depth
+            if "first_year_offset_latitude"  in locals():
+                del first_year_offset_latitude
+            if "first_year_offset_longitude" in locals():
+                del first_year_offset_longitude
+            if "first_year_offset_depth"     in locals():
+                del first_year_offset_depth
 
         del region_bathymetry, region_latitude, region_longitude, input_rasters
 
@@ -732,7 +739,7 @@ def worker(region_gdb=""):
             try:
                 row = [None if x != x else x for x in row]
                 cursor.insertRow(row)
-            except:
+            except:  # noqa: E722
                 # Get the traceback object
                 tb = sys.exc_info()[2]
                 tbinfo = traceback.format_tb(tb)[0]
@@ -795,14 +802,16 @@ def worker(region_gdb=""):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -825,7 +834,7 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         # Set varaibales
         project_folder = os.path.dirname(project_gdb)
         scratch_folder = rf"{project_folder}\Scratch"
-        scratch_workspace = rf"{project_folder}\Scratch\scratch.gdb"
+        scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
 
         # Clear Scratch Folder
         #ClearScratchFolder = True
@@ -842,7 +851,7 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         del project_folder, scratch_workspace
 
         if not table_names:
-            table_names = [row[0] for row in arcpy.da.SearchCursor(f"{project_gdb}\Datasets",
+            table_names = [row[0] for row in arcpy.da.SearchCursor(os.path.join(project_gdb, "Datasets"),
                                                                    "TableName",
                                                                    where_clause = "TableName LIKE '%_IDW'")]
         else:
@@ -851,15 +860,15 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         for table_name in table_names:
             arcpy.AddMessage(f"Pre-Processing: {table_name}")
 
-            region_gdb = rf"{scratch_folder}\{table_name}.gdb"
-            region_scratch_workspace = rf"{scratch_folder}\{table_name}\scratch.gdb"
+            region_gdb = os.path.join(scratch_folder, f"{table_name}.gdb")
+            region_scratch_workspace = os.path.join(scratch_folder, f"{table_name}", "scratch.gdb")
 
             # Create Scratch Workspace for Region
             if not arcpy.Exists(region_scratch_workspace):
-                os.makedirs(rf"{scratch_folder}\{table_name}")
+                os.makedirs(os.path.join(scratch_folder,  table_name))
                 if not arcpy.Exists(region_scratch_workspace):
                     arcpy.AddMessage(f"Create File GDB: '{table_name}'")
-                    arcpy.management.CreateFileGDB(rf"{scratch_folder}\{table_name}", f"scratch")
+                    arcpy.management.CreateFileGDB(os.path.join(scratch_folder, f"{table_name}"), "scratch")
                     arcpy.AddMessage("\tCreate File GDB: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
             del region_scratch_workspace
             # # # CreateFileGDB
@@ -937,14 +946,16 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -958,7 +969,7 @@ def script_tool(project_gdb=""):
         start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
         arcpy.AddMessage(f"Python Script:  {os.path.basename(__file__)}")
-        arcpy.AddMessage(f"Location:       ../{'/'.join(__file__.split(os.sep)[-4:])}")
+        arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
         arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
@@ -1028,14 +1039,16 @@ def script_tool(project_gdb=""):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -1044,13 +1057,13 @@ if __name__ == '__main__':
     try:
         project_gdb = arcpy.GetParameterAsText(0)
         if not project_gdb:
-            project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025\August 1 2025.gdb"
+            project_gdb = os.path.join(os.path.expanduser('~'), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb")
         else:
             pass
         script_tool(project_gdb)
         arcpy.SetParameterAsText(1, "Result")
         del project_gdb
-    except:
+    except:  # noqa: E722
         traceback.print_exc()
     else:
         pass

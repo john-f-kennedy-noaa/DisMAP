@@ -22,7 +22,7 @@ def script_tool(project_gdb=""):
         # Define variables
         project_folder  = os.path.dirname(project_gdb)
         scratch_folder  = rf"{project_folder}\Scratch"
-        scratch_gdb     = rf"{scratch_folder}\scratch.gdb"
+        scratch_gdb     = os.path.join(scratch_folder, "scratch.gdb")
 
         # Set the workspace environment to local file geodatabase
         arcpy.env.workspace = project_gdb
@@ -2003,9 +2003,10 @@ def script_tool(project_gdb=""):
                              "Stratum", "StratumArea", "Latitude", "Longitude",
                              "Depth"]
         _Species_Filter = ["Species", "CommonName", "TaxonomicGroup", "FilterRegion",
-                           "FilterSubRegion", "ManagementBody", "ManagementPlan", "DistributionProjectName", "Haul_Inc_Dec", "Bio_Inc_Dec"]
-        _SpeciesPersistenceIndicatorTrend = ["Region", "SurveyName", "Species", "CommonName", "TrendCategory", "Notes"]
+                           "FilterSubRegion", "ManagementBody", "ManagementPlan", "DistributionProjectName"]
+        _SpeciesPersistenceIndicatorTrend = ["Region", "SurveyName", "Species", "CommonName", "TrendCategory", "Notes", "Haul_Inc_Dec", "Bio_Inc_Dec"]
         _SpeciesPersistenceIndicatorPercentileBin = ["Region", "SurveyName", "Year", "Species", "CommonName", "PercentileBin", "WTCPUE", "HaulProportion", "HaulBin"]
+
 
         #datasets_table = arcpy.ListTables("Datasets")[0]
         #datasets_table_fields = [f.name for f in arcpy.ListFields(datasets_table) if f.type not in ["Geometry", "OID"] and f.name not in ["Shape_Area", "Shape_Length"]]

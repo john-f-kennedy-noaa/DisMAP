@@ -77,10 +77,10 @@ def worker(project_gdb="", csv_file=""):
         table_name        = os.path.basename(csv_file).replace(".csv", "")
         csv_data_folder   = os.path.dirname(csv_file)
         project_folder    = os.path.dirname(csv_data_folder)
-        scratch_workspace = rf"{project_folder}\Scratch\scratch.gdb"
+        scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
         # Set basic workkpace variables
         arcpy.env.workspace                = project_gdb
-        arcpy.env.scratchWorkspace         = r"Scratch\scratch.gdb"
+        arcpy.env.scratchWorkspace         = r"Scratch\\scratch.gdb"
         arcpy.env.overwriteOutput          = True
         arcpy.env.parallelProcessingFactor = "100%"
         #arcpy.AddMessage(table_name)
@@ -295,12 +295,13 @@ def script_tool(project_folder=""):
         from lxml import etree
         from arcpy import metadata as md
         from  io import StringIO
+        import dismap_tools
         from time import gmtime, localtime, strftime, time
         # Set a start time so that we can see how log things take
         start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
         arcpy.AddMessage(f"Python Script:  {os.path.basename(__file__)}")
-        arcpy.AddMessage(f"Location:       ../{'/'.join(__file__.split(os.sep)[-4:])}")
+        arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
         arcpy.AddMessage(f"{'-' * 80}\n")
@@ -319,11 +320,11 @@ def script_tool(project_folder=""):
         survey_metadata_csv = rf"{csv_data_folder}\DisMAP_Survey_Info.csv"
         SpeciesPersistenceIndicatorTrend = rf"{csv_data_folder}\SpeciesPersistenceIndicatorTrend.csv"
         SpeciesPersistenceIndicatorPercentileBin = rf"{csv_data_folder}\SpeciesPersistenceIndicatorPercentileBin.csv"
-        arcpy.management.Copy(rf"{home_folder}\Initial Data\Datasets_20260201.csv", datasets_csv)
-        arcpy.management.Copy(rf"{home_folder}\Initial Data\Species_Filter_20260201.csv", species_filter_csv)
-        arcpy.management.Copy(rf"{home_folder}\Initial Data\DisMAP_Survey_Info_20260201.csv", survey_metadata_csv)
-        arcpy.management.Copy(rf"{home_folder}\Initial Data\SpeciesPersistenceIndicatorTrend_20260201.csv", SpeciesPersistenceIndicatorTrend)
-        arcpy.management.Copy(rf"{home_folder}\Initial Data\SpeciesPersistenceIndicatorPercentileBin_20260201.csv", SpeciesPersistenceIndicatorPercentileBin)
+        arcpy.management.Copy(rf"{home_folder}\Initial Data\Datasets_{dismap_tools.date_code(project_name)}.csv", datasets_csv)
+        arcpy.management.Copy(rf"{home_folder}\Initial Data\Species_Filter_{dismap_tools.date_code(project_name)}.csv", species_filter_csv)
+        arcpy.management.Copy(rf"{home_folder}\Initial Data\DisMAP_Survey_Info_{dismap_tools.date_code(project_name)}.csv", survey_metadata_csv)
+        arcpy.management.Copy(rf"{home_folder}\Initial Data\SpeciesPersistenceIndicatorTrend_{dismap_tools.date_code(project_name)}.csv", SpeciesPersistenceIndicatorTrend)
+        arcpy.management.Copy(rf"{home_folder}\Initial Data\SpeciesPersistenceIndicatorPercentileBin_{dismap_tools.date_code(project_name)}.csv", SpeciesPersistenceIndicatorPercentileBin)
         import json
         json_path = rf"{csv_data_folder}\root_dict.json"
         with open(json_path, "r") as json_file:
@@ -358,7 +359,7 @@ def script_tool(project_folder=""):
             del dataset_md
             del dataset
         del datasets
-        del project_folder, csv_data_folder
+        del csv_data_folder
         #
         UpdateDatecode = True
         if UpdateDatecode:
@@ -399,9 +400,9 @@ def script_tool(project_folder=""):
         # Declared Variables
         del contacts, target_tree, target_root, new_item_name, root_dict
         # Imports
-        del etree, md, StringIO
+        del etree, md, StringIO, dismap_tools
         # Function Parameters
-        del project_gdb
+        del project_folder
         # Elapsed time
         end_time = time()
         elapse_time =  end_time - start_time
@@ -443,15 +444,15 @@ def script_tool(project_folder=""):
 if __name__ == '__main__':
     try:
 
-        project_gdb = arcpy.GetParameterAsText(0)
-        if not project_gdb:
-            project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\February 1 2026"
+        project_folder = arcpy.GetParameterAsText(0)
+        if not project_folder:
+            project_folder = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\February 1 2026"
         else:
             pass
 
-        script_tool(project_gdb)
+        script_tool(project_folder)
         arcpy.SetParameterAsText(1, "Result")
-        del project_gdb
+        del project_folder
 
     except SystemExit:
         pass

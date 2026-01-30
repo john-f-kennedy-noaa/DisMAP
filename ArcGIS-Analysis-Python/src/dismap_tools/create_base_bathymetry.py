@@ -370,12 +370,6 @@ def create_alasaka_bathymetry(project_folder=""):
         arcpy.AddMessage("\t"+arcpy.GetMessages(0).replace("\n", "\n\t"))
         del gdb
 
-        gdb = rf"{project_folder}\Bathymetry\Bathymetry.gdb"
-        arcpy.AddMessage("Compacting the {os.path.basename(gdb)} GDB")
-        arcpy.management.Compact(gdb)
-        arcpy.AddMessage("\t"+arcpy.GetMessages(0).replace("\n", "\n\t"))
-        del gdb
-
         # Imports
         del check_transformation
         # Declared Variables for this function only
@@ -651,7 +645,7 @@ def main(project_folder=""):
         start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
         arcpy.AddMessage(f"Python Script:  {os.path.basename(__file__)}")
-        arcpy.AddMessage(f"Location:       ../{'/'.join(__file__.split(os.sep)[-4:])}")
+        arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
         arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
@@ -749,7 +743,7 @@ if __name__ == '__main__':
         project_folder = arcpy.GetParameterAsText(0)
 
         if not project_folder:
-            project_folder = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python"
+            project_folder = os.path.join(os.path.expanduser('~'), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python")
         else:
             pass
 

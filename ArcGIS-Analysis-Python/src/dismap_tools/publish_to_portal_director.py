@@ -84,18 +84,18 @@ def create_feature_class_layers(project_gdb=""):
         project_folder    = os.path.dirname(project_gdb)
         project_name      = os.path.basename(project_folder)
         csv_data_folder   = rf"{project_folder}\CSV_Data"
-        scratch_folder    = rf"{project_folder}\Scratch"
-        scratch_workspace = rf"{project_folder}\Scratch\scratch.gdb"
+        scratch_folder    = os.path.join(project_folder, "Scratch")
+        scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
 
         # Clear Scratch Folder
         dismap_tools.clear_folder(folder=scratch_folder)
 
         # Create Scratch Workspace for Project
-        if not arcpy.Exists(rf"{scratch_folder}\scratch.gdb"):
+        if not arcpy.Exists(os.path.join(scratch_folder, "scratch.gdb")):
             if not arcpy.Exists(scratch_folder):
-                os.makedirs(rf"{scratch_folder}")
-            if not arcpy.Exists(rf"{scratch_folder}\scratch.gdb"):
-                arcpy.management.CreateFileGDB(rf"{scratch_folder}", f"scratch")
+                os.makedirs(scratch_folder)
+            if not arcpy.Exists(os.path.join(scratch_folder, "scratch.gdb")):
+                arcpy.management.CreateFileGDB(rf"{scratch_folder}", "scratch")
 
         # Set basic workkpace variables
         arcpy.env.workspace                = project_gdb
@@ -412,15 +412,15 @@ def create_feature_class_services(project_gdb=""):
         project_folder    = os.path.dirname(project_gdb)
         project_name      = os.path.basename(project_folder)
         csv_data_folder   = rf"{project_folder}\CSV_Data"
-        scratch_folder    = rf"{project_folder}\Scratch"
-        scratch_workspace = rf"{project_folder}\Scratch\scratch.gdb"
+        scratch_folder    = os.path.join(project_folder, "Scratch")
+        scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
 
         # Create Scratch Workspace for Project
-        if not arcpy.Exists(rf"{scratch_folder}\scratch.gdb"):
+        if not arcpy.Exists(os.path.join(scratch_folder, "scratch.gdb")):
             if not arcpy.Exists(scratch_folder):
-                os.makedirs(rf"{scratch_folder}")
-            if not arcpy.Exists(rf"{scratch_folder}\scratch.gdb"):
-                arcpy.management.CreateFileGDB(rf"{scratch_folder}", f"scratch")
+                os.makedirs(scratch_folder)
+            if not arcpy.Exists(os.path.join(scratch_folder, "scratch.gdb")):
+                arcpy.management.CreateFileGDB(rf"{scratch_folder}", "scratch")
 
         # Set basic workkpace variables
         arcpy.env.workspace                = project_gdb
@@ -761,8 +761,8 @@ def create_feature_class_services(project_gdb=""):
 ##        # Get values for table_name from Datasets table
 ##        #fields = ["FeatureClassName", "FeatureServiceName", "FeatureServiceTitle"]
 ##        fields = ["DatasetCode", "PointFeatureType", "FeatureClassName", "Region", "Season", "DateCode", "DistributionProjectCode"]
-##        datasets = [row for row in arcpy.da.SearchCursor(rf"{project_gdb}\Datasets", fields, where_clause = f"FeatureClassName IS NOT NULL AND DistributionProjectCode NOT IN ('GLMME', 'GFDL')")]
-##        #datasets = [row for row in arcpy.da.SearchCursor(rf"{project_gdb}\Datasets", fields, where_clause = f"FeatureClassName IN ('AI_IDW_Sample_Locations', 'DisMAP_Regions')")]
+##        datasets = [row for row in arcpy.da.SearchCursor(os.path.join(project_gdb, "Datasets"), fields, where_clause = f"FeatureClassName IS NOT NULL AND DistributionProjectCode NOT IN ('GLMME', 'GFDL')")]
+##        #datasets = [row for row in arcpy.da.SearchCursor(os.path.join(project_gdb, "Datasets"), fields, where_clause = f"FeatureClassName IN ('AI_IDW_Sample_Locations', 'DisMAP_Regions')")]
 ##        del fields
 ##
 ##        for dataset in datasets:
@@ -875,15 +875,15 @@ def create_image_services(project_gdb=""):
 
         # Set basic workkpace variables
         project_folder    = os.path.dirname(project_gdb)
-        scratch_folder    = rf"{project_folder}\Scratch"
-        scratch_workspace = rf"{project_folder}\Scratch\scratch.gdb"
+        scratch_folder    = os.path.join(project_folder, "Scratch")
+        scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
 
         # Create Scratch Workspace for Project
-        if not arcpy.Exists(rf"{scratch_folder}\scratch.gdb"):
+        if not arcpy.Exists(os.path.join(scratch_folder, "scratch.gdb")):
             if not arcpy.Exists(scratch_folder):
-                os.makedirs(rf"{scratch_folder}")
-            if not arcpy.Exists(rf"{scratch_folder}\scratch.gdb"):
-                arcpy.management.CreateFileGDB(rf"{scratch_folder}", f"scratch")
+                os.makedirs(scratch_folder)
+            if not arcpy.Exists(os.path.join(scratch_folder, "scratch.gdb")):
+                arcpy.management.CreateFileGDB(rf"{scratch_folder}", "scratch")
 
         # Set basic workkpace variables
         arcpy.env.workspace                = project_gdb
@@ -1089,7 +1089,7 @@ def create_image_services(project_gdb=""):
 ##        for workspace in workspaces:
 ##
 ##            arcpy.env.workspace        = workspace
-##            arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
+##            arcpy.env.scratchWorkspace = os.path.join(scratch_folder, "scratch.gdb")
 ##
 ##            datasets = list()
 ##
@@ -1708,7 +1708,7 @@ def create_image_services(project_gdb=""):
 ##        for workspace in workspaces:
 ##
 ##            arcpy.env.workspace        = workspace
-##            arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
+##            arcpy.env.scratchWorkspace = os.path.join(scratch_folder, "scratch.gdb")
 ##
 ##            datasets = list()
 ##
@@ -2401,7 +2401,7 @@ def create_maps(project_gdb=""):
         scratch_folder      = rf"{project_folder}\Scratch"
 
         arcpy.env.workspace        = project_gdb
-        arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
+        arcpy.env.scratchWorkspace = os.path.join(scratch_folder, "scratch.gdb")
 
         aprx = arcpy.mp.ArcGISProject(base_project_file)
         home_folder = aprx.homeFolder
@@ -2593,8 +2593,8 @@ def create_maps(project_gdb=""):
 ##        # Get values for table_name from Datasets table
 ##        #fields = ["FeatureClassName", "FeatureServiceName", "FeatureServiceTitle"]
 ##        fields = ["DatasetCode", "PointFeatureType", "FeatureClassName", "Region", "Season", "DateCode", "DistributionProjectCode"]
-##        datasets = [row for row in arcpy.da.SearchCursor(rf"{project_gdb}\Datasets", fields, where_clause = f"FeatureClassName IS NOT NULL AND DistributionProjectCode NOT IN ('GLMME', 'GFDL')")]
-##        #datasets = [row for row in arcpy.da.SearchCursor(rf"{project_gdb}\Datasets", fields, where_clause = f"FeatureClassName IS NOT NULL and TableName = 'AI_IDW'")]
+##        datasets = [row for row in arcpy.da.SearchCursor(os.path.join(project_gdb, "Datasets"), fields, where_clause = f"FeatureClassName IS NOT NULL AND DistributionProjectCode NOT IN ('GLMME', 'GFDL')")]
+##        #datasets = [row for row in arcpy.da.SearchCursor(os.path.join(project_gdb, "Datasets"), fields, where_clause = f"FeatureClassName IS NOT NULL and TableName = 'AI_IDW'")]
 ##        del fields
 ##
 ##        for dataset in datasets:
@@ -2855,7 +2855,7 @@ def script_tool(project_gdb=""):
         start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
         arcpy.AddMessage(f"Python Script:  {os.path.basename(__file__)}")
-        arcpy.AddMessage(f"Location:       ../{'/'.join(__file__.split(os.sep)[-4:])}")
+        arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
         arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
@@ -2867,11 +2867,11 @@ def script_tool(project_gdb=""):
         del project_folder
 
         # Create project scratch workspace, if missing
-        if not arcpy.Exists(rf"{scratch_folder}\scratch.gdb"):
+        if not arcpy.Exists(os.path.join(scratch_folder, "scratch.gdb")):
             if not arcpy.Exists(scratch_folder):
-                os.makedirs(rf"{scratch_folder}")
-            if not arcpy.Exists(rf"{scratch_folder}\scratch.gdb"):
-                arcpy.management.CreateFileGDB(rf"{scratch_folder}", f"scratch")
+                os.makedirs(scratch_folder)
+            if not arcpy.Exists(os.path.join(scratch_folder, "scratch.gdb")):
+                arcpy.management.CreateFileGDB(rf"{scratch_folder}", "scratch")
         del scratch_folder
 
         # Set basic arcpy.env variables
@@ -2972,7 +2972,7 @@ if __name__ == '__main__':
     try:
         project_gdb = arcpy.GetParameterAsText(0)
         if not project_gdb:
-            project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025\August 1 2025.gdb"
+            project_gdb = os.path.join(os.path.expanduser('~'), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb"))
         else:
             pass
         script_tool(project_gdb)

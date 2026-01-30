@@ -152,7 +152,7 @@ def add_fields(csv_data_folder="", in_table=""):
         arcpy.env.overwriteOutput          = True
         arcpy.env.parallelProcessingFactor = "100%"
         arcpy.env.workspace                = project_gdb
-        arcpy.env.scratchWorkspace         = rf"Scratch\scratch.gdb"
+        arcpy.env.scratchWorkspace         = rf"Scratch\\scratch.gdb"
         arcpy.SetLogMetadata(True)
 
         if "_IDW_Region" in table:
@@ -341,7 +341,7 @@ def basic_metadata(csv_data_folder="", in_table=""):
         # set workspace environment
         arcpy.env.overwriteOutput = True
         arcpy.env.parallelProcessingFactor = "100%"
-        arcpy.env.scratchWorkspace = rf"Scratch\scratch.gdb"
+        arcpy.env.scratchWorkspace = rf"Scratch\\scratch.gdb"
         arcpy.env.workspace = project_gdb
         arcpy.SetLogMetadata(True)
 
@@ -882,7 +882,7 @@ def dataset_title_dict(project_gdb=""):
 
         __datasets_dict = {}
 
-        dataset_codes = {row[0] : [row[1], row[2], row[3], row[4]] for row in arcpy.da.SearchCursor(rf"{project_gdb}\Datasets", ["DatasetCode", "PointFeatureType", "DistributionProjectCode", "Region", "Season"])}
+        dataset_codes = {row[0] : [row[1], row[2], row[3], row[4]] for row in arcpy.da.SearchCursor(os.path.join(project_gdb, "Datasets"), ["DatasetCode", "PointFeatureType", "DistributionProjectCode", "Region", "Season"])}
         #for dataset_code in dataset_codes:
         #    dataset_codes[dataset_code] = [s for s in dataset_codes[dataset_code] if s.strip()]
         #    #print(f"Dataset Code: {dataset_code}\n\t{dataset_codes[dataset_code]}")
@@ -1682,7 +1682,7 @@ def export_metadata(csv_data_folder="", in_table=""):
         # Use all of the cores on the machine.
         arcpy.env.parallelProcessingFactor = "100%"
         # Set the scratch workspace
-        arcpy.env.scratchWorkspace = rf"Scratch\scratch.gdb"
+        arcpy.env.scratchWorkspace = rf"Scratch\\scratch.gdb"
         # Set the workspace to the workspace
         arcpy.env.workspace = ws
 
@@ -1853,6 +1853,8 @@ def get_transformation(gsr_wkt="", psr_wkt=""):
 
 def import_metadata(csv_data_folder="", dataset=""):
     try:
+        #arcpy.AddMessage(csv_data_folder)
+        #arcpy.AddMessage(dataset)
         if len(csv_data_folder) == 0 or len(dataset) == 0:
             arcpy.AddError(f"{os.path.basename(csv_data_folder)} or {os.path.basename(dataset)} is empty")
             raise SystemExit
@@ -1901,11 +1903,11 @@ def import_metadata(csv_data_folder="", dataset=""):
         arcpy.env.overwriteOutput          = True
         arcpy.env.parallelProcessingFactor = "100%"
         arcpy.env.workspace                = project_gdb
-        arcpy.env.scratchWorkspace         = rf"Scratch\scratch.gdb"
+        arcpy.env.scratchWorkspace         = os.path.join(os.path.dirname(project_gdb), "Scratch\\scratch.gdb")
         arcpy.SetLogMetadata(True)
 
         try:
-            arcpy.AddMessage(f"Create Metadata Dictionary")
+            arcpy.AddMessage("Create Metadata Dictionary")
             metadata_dictionary = dataset_title_dict(project_gdb)
             if metadata_dictionary:
                 pass
@@ -1991,7 +1993,9 @@ def import_metadata(csv_data_folder="", dataset=""):
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -2402,7 +2406,7 @@ def test_bed_1(project_gdb=""):
         ##
         ##        arcpy.env.overwriteOutput = True
         ##        arcpy.env.parallelProcessingFactor = "100%"
-        ##        arcpy.env.scratchWorkspace = rf"Scratch\scratch.gdb"
+        ##        arcpy.env.scratchWorkspace = rf"Scratch\\scratch.gdb"
         ##        arcpy.env.workspace = gdb
         ##        arcpy.SetLogMetadata(True)
         ##
@@ -2962,12 +2966,12 @@ def test_bed_2(project=""):
 ##        arcpy.env.overwriteOutput             = True
 ##        arcpy.env.parallelProcessingFactor = "100%"
 ##        arcpy.env.workspace                = project_gdb
-##        arcpy.env.scratchWorkspace         = rf"Scratch\scratch.gdb"
+##        arcpy.env.scratchWorkspace         = rf"Scratch\\scratch.gdb"
 ##        arcpy.SetLogMetadata(True)
 ##
 ##        metadata_dictionary = dataset_title_dict(project_gdb)
 ##
-##        dataset = rf"{project_gdb}\DisMAP_Regions"
+##        dataset = os.path.join(project_gdb, "DisMAP_Regions")
 ##        table = os.path.basename(dataset)
 ##
 ##        # #arcpy.conversion.FeaturesToJSON(
@@ -3193,7 +3197,7 @@ def script_tool(project_gdb=""):
         start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
         arcpy.AddMessage(f"Python Script:  {os.path.basename(__file__)}")
-        arcpy.AddMessage(f"Location:       ../{'/'.join(__file__.split(os.sep)[-4:])}")
+        arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
         arcpy.AddMessage(f"{'-' * 80}\n")
@@ -3233,7 +3237,7 @@ def script_tool(project_gdb=""):
             from dev_create_table_definitions_json import get_list_of_table_fields
             get_list_of_table_fields(project_gdb)
             del get_list_of_table_fields
-            csv_data_folder = rf"{project_folder}\CSV_Data"
+            csv_data_folder = os.path.join(project_folder, "CSV_Data")
             # First Test
             _table_definitions = table_definitions(csv_data_folder, "HI_IDW")
             arcpy.AddMessage(_table_definitions)
@@ -3266,7 +3270,7 @@ def script_tool(project_gdb=""):
 
         TestImportMetadata = True
         if TestImportMetadata:
-            csv_data_folder = rf"{project_folder}\CSV_Data"
+            csv_data_folder = os.path.join(project_folder, "CSV_Data")
             #table_name = "Datasets"
             #table_name = "Species_Filter"
             #table_name = "DisMAP_Survey_Info"
@@ -3332,7 +3336,7 @@ if __name__ == "__main__":
 
        project_gdb = arcpy.GetParameterAsText(0)
        if not project_gdb:
-           project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025\August 1 2025.gdb"
+           project_gdb = os.path.join(os.path.expanduser('~'), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb")
        else:
            pass
 

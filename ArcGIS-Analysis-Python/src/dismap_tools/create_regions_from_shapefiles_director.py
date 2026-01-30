@@ -9,10 +9,10 @@
 # Copyright:   (c) john.f.kennedy 2024
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-import os, sys # built-ins first
+import os
+import sys
 import traceback
 import inspect
-import shutil
 
 import arcpy # third-parties second
 
@@ -21,14 +21,14 @@ def create_dismap_regions(project_gdb=""):
         import dismap_tools
 
         project_folder  = os.path.dirname(project_gdb)
-        csv_data_folder = rf"{project_folder}\CSV_Data"
+        csv_data_folder = os.path.join(project_folder, "CSV_Data")
 
         arcpy.env.overwriteOutput = True
 
-        if arcpy.Exists(rf"{project_gdb}\DisMAP_Regions"):
-            arcpy.management.Delete(rf"{project_gdb}\DisMAP_Regions")
+        if arcpy.Exists(os.path.join(project_gdb, "DisMAP_Regions")):
+            arcpy.management.Delete(os.path.join(project_gdb, "DisMAP_Regions"))
 
-        arcpy.AddMessage(f"Creating: 'DisMAP_Regions'")
+        arcpy.AddMessage("Creating: 'DisMAP_Regions'")
         # Execute Tool
         # Spatial Reference factory code of 4326 is : GCS_WGS_1984
         # Spatial Reference factory code of 5714 is : Mean Sea Level (Height)
@@ -50,7 +50,7 @@ def create_dismap_regions(project_gdb=""):
         arcpy.AddMessage("\tCreate Featureclass: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
         del sp_ref
         dismap_tools.add_fields(csv_data_folder, os.path.join(project_gdb, "DisMAP_Regions"))
-        dismap_tools.import_metadata(dataset=rf"{project_gdb}\DisMAP_Regions")
+        dismap_tools.import_metadata(csv_data_folder, os.path.join(project_gdb, "DisMAP_Regions"))
 
         # Imports
         del dismap_tools
@@ -73,14 +73,16 @@ def create_dismap_regions(project_gdb=""):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         arcpy.management.ClearWorkspaceCache()
@@ -89,9 +91,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
     try:
         # Imports
         from arcpy import metadata as md
-        # Test if passed workspace exists, if not sys.exit()
-        if not arcpy.Exists(project_gdb):
-            sys.exit()(f"{os.path.basename(project_gdb)} is missing!!")
+
         # Imports
         import dismap_tools
         from create_regions_from_shapefiles_worker import worker
@@ -105,19 +105,19 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         arcpy.SetMessageLevels(['NORMAL']) # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
 
         project_folder    = os.path.dirname(project_gdb)
-        scratch_folder    = rf"{project_folder}\Scratch"
-        scratch_workspace = rf"{project_folder}\Scratch\scratch.gdb"
+        scratch_folder    = os.path.join(project_folder, "Scratch")
+        scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
         csv_data_folder   = rf"{project_folder}\CSV_Data"
 
         # Clear Scratch Folder
         dismap_tools.clear_folder(folder=scratch_folder)
 
         # Create Scratch Workspace for Project
-        if not arcpy.Exists(rf"{scratch_folder}\scratch.gdb"):
+        if not arcpy.Exists(os.path.join(scratch_folder, "scratch.gdb")):
             if not arcpy.Exists(scratch_folder):
-                os.makedirs(rf"{scratch_folder}")
-            if not arcpy.Exists(rf"{scratch_folder}\scratch.gdb"):
-                arcpy.management.CreateFileGDB(rf"{scratch_folder}", f"scratch")
+                os.makedirs(scratch_folder)
+            if not arcpy.Exists(os.path.join(scratch_folder, "scratch.gdb")):
+                arcpy.management.CreateFileGDB(rf"{scratch_folder}", "scratch")
 
         arcpy.env.workspace                = project_gdb
         arcpy.env.scratchWorkspace         = scratch_workspace
@@ -129,7 +129,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         create_dismap_regions(project_gdb)
 
         if not table_names:
-            table_names = [row[0] for row in arcpy.da.SearchCursor(f"{project_gdb}\Datasets",
+            table_names = [row[0] for row in arcpy.da.SearchCursor(os.path.join(project_gdb, "Datasets"),
                                                                    "TableName",
                                                                    where_clause = "TableName LIKE '%_IDW'")]
         else:
@@ -138,30 +138,30 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         # Pre Processing
         for table_name in table_names:
             arcpy.AddMessage(f"Pre-Processing: {table_name}")
-            region_gdb               = rf"{scratch_folder}\{table_name}.gdb"
+            region_gdb               = os.path.join(scratch_folder, f"{table_name}.gdb")
             region_scratch_workspace = rf"{scratch_folder}\{table_name}\scratch.gdb"
             # Create Scratch Workspace for Region
             if not arcpy.Exists(region_scratch_workspace):
-                os.makedirs(rf"{scratch_folder}\{table_name}")
+                os.makedirs(os.path.join(scratch_folder,  table_name))
                 if not arcpy.Exists(region_scratch_workspace):
-                    arcpy.management.CreateFileGDB(rf"{scratch_folder}\{table_name}", f"scratch")
+                    arcpy.management.CreateFileGDB(os.path.join(scratch_folder, f"{table_name}"), "scratch")
             del region_scratch_workspace
 
-            #datasets = [rf"{project_gdb}\Datasets"]
+            #datasets = [ros.path.join(project_gdb, "Datasets"]
             #if not any(arcpy.management.GetCount(d)[0] == 0 for d in datasets):
-            if not arcpy.Exists(rf"{scratch_folder}\{table_name}.gdb"):
+            if not arcpy.Exists(os.path.join(scratch_folder, f"{table_name}.gdb")):
                 arcpy.management.CreateFileGDB(rf"{scratch_folder}", f"{table_name}")
                 arcpy.AddMessage("\tCreate File GDB: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
             else:
                 pass
 
-            arcpy.management.Copy(rf"{project_gdb}\Datasets", rf"{region_gdb}\Datasets")
+            arcpy.management.Copy(os.path.join(project_gdb, "Datasets"), rf"{region_gdb}\Datasets")
             arcpy.AddMessage("\tCopy: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
-            arcpy.management.CreateFeatureclass(rf"{region_gdb}", "DisMAP_Regions", "POLYLINE", rf"{project_gdb}\DisMAP_Regions")
+            arcpy.management.CreateFeatureclass(rf"{region_gdb}", "DisMAP_Regions", "POLYLINE", os.path.join(project_gdb, "DisMAP_Regions"))
             arcpy.AddMessage("\tCopy: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
-            dismap_regions_md = md.Metadata(rf"{project_gdb}\DisMAP_Regions")
+            dismap_regions_md = md.Metadata(os.path.join(project_gdb, "DisMAP_Regions"))
             dataset_md = md.Metadata(rf"{region_gdb}\DisMAP_Regions")
             dataset_md.copy(dismap_regions_md)
             dataset_md.save()
@@ -183,11 +183,11 @@ def director(project_gdb="", Sequential=True, table_names=[]):
 
         # Sequential Processing
         if Sequential:
-            arcpy.AddMessage(f"Sequential Processing")
+            arcpy.AddMessage("Sequential Processing")
             for i in range(0, len(table_names)):
                 arcpy.AddMessage(f"Processing: {table_names[i]}")
                 table_name = table_names[i]
-                region_gdb = rf"{scratch_folder}\{table_name}.gdb"
+                region_gdb = os.path.join(scratch_folder, f"{table_name}.gdb")
                 try:
                     worker(region_gdb=region_gdb)
                 except SystemExit:
@@ -201,11 +201,11 @@ def director(project_gdb="", Sequential=True, table_names=[]):
 
         # Non-Sequential Processing
         if not Sequential:
-            arcpy.AddMessage(f"Non-Sequential Processing")
+            arcpy.AddMessage("Non-Sequential Processing")
             # Imports
             import multiprocessing
             from time import time, localtime, strftime, sleep, gmtime
-            arcpy.AddMessage(f"Start multiprocessing using the ArcGIS Pro pythonw.exe.")
+            arcpy.AddMessage("Start multiprocessing using the ArcGIS Pro pythonw.exe.")
             #Set multiprocessing exe in case we're running as an embedded process, i.e ArcGIS
             #get_install_path() uses a registry query to figure out 64bit python exe if available
             multiprocessing.set_executable(os.path.join(sys.exec_prefix, 'pythonw.exe'))
@@ -216,17 +216,17 @@ def director(project_gdb="", Sequential=True, table_names=[]):
             #Create a pool of workers, keep one cpu free for surfing the net.
             #Let each worker process only handle 1 task before being restarted (in case of nasty memory leaks)
             with multiprocessing.Pool(processes=_processes, maxtasksperchild=1) as pool:
-                arcpy.AddMessage(f"\tPrepare arguments for processing")
+                arcpy.AddMessage("\tPrepare arguments for processing")
                 # Use apply_async so we can handle exceptions gracefully
                 jobs={}
                 for i in range(0, len(table_names)):
                     try:
                         arcpy.AddMessage(f"Processing: {table_names[i]}")
                         table_name = table_names[i]
-                        region_gdb = rf"{scratch_folder}\{table_name}.gdb"
+                        region_gdb = os.path.join(scratch_folder, f"{table_name}.gdb")
                         jobs[table_name] = pool.apply_async(worker, [region_gdb])
                         del table_name, region_gdb
-                    except:
+                    except:  # noqa: E722
                         pool.terminate()
                         traceback.print_exc()
                         sys.exit()
@@ -241,7 +241,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
                     end_time = time()
                     elapse_time =  end_time - start_time
                     arcpy.AddMessage(f"\nStart Time: {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
-                    arcpy.AddMessage(f"Have the workers finished?")
+                    arcpy.AddMessage("Have the workers finished?")
                     finish_time = strftime('%a %b %d %I:%M %p', localtime())
                     time_elapsed = u"Elapsed Time {0} (H:M:S)".format(strftime("%H:%M:%S", gmtime(elapse_time)))
                     arcpy.AddMessage(f"It's {finish_time}\n{time_elapsed}")
@@ -272,11 +272,11 @@ def director(project_gdb="", Sequential=True, table_names=[]):
                 del result_completed
                 del start_time
                 del all_finished
-                arcpy.AddMessage(f"\tClose the process pool")
+                arcpy.AddMessage("\tClose the process pool")
                 # close the process pool
                 pool.close()
                 # wait for all tasks to complete and processes to close
-                arcpy.AddMessage(f"\tWait for all tasks to complete and processes to close")
+                arcpy.AddMessage("\tWait for all tasks to complete and processes to close")
                 pool.join()
                 # Just in case
                 pool.terminate()
@@ -284,7 +284,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
                 del jobs
             del _processes
             del time, multiprocessing, localtime, strftime, sleep, gmtime
-            arcpy.AddMessage(f"\tDone with multiprocessing Pool")
+            arcpy.AddMessage("\tDone with multiprocessing Pool")
 
         # Post-Processing
         arcpy.AddMessage("Post-Processing Begins")
@@ -299,7 +299,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         del walk
         for dataset in datasets:
             #print(dataset)
-            datasets_short_path = f"{os.path.basename(os.path.dirname(os.path.dirname(dataset)))}\{os.path.basename(os.path.dirname(dataset))}\{os.path.basename(dataset)}"
+            datasets_short_path = f".. {'/'.join(dataset.split(os.sep)[-4:])}"
             dataset_name = os.path.basename(dataset)
             region_gdb   = os.path.dirname(dataset)
             arcpy.AddMessage(f"\tDataset: '{dataset_name}'")
@@ -311,7 +311,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
                 arcpy.AddMessage(f"\tAppending the {dataset_name} Dataset to the DisMAP Regions Dataset")
                 # Process: Append
                 arcpy.management.Append(inputs        = rf"{project_gdb}\{dataset_name}",
-                                        target        = rf"{project_gdb}\DisMAP_Regions",
+                                        target        = os.path.join(project_gdb, "DisMAP_Regions"),
                                         schema_type   = "NO_TEST",
                                         field_mapping = "",
                                         subtype       = "")
@@ -350,14 +350,16 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -370,7 +372,7 @@ def script_tool(project_gdb=""):
         start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
         arcpy.AddMessage(f"Python Script:  {os.path.basename(__file__)}")
-        arcpy.AddMessage(f"Location:       ../{'/'.join(__file__.split(os.sep)[-4:])}")
+        arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
         arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
@@ -391,11 +393,12 @@ def script_tool(project_gdb=""):
                 #director(project_gdb=project_gdb, Sequential=False, table_names=["NEUS_SPR_IDW", "EBS_IDW"])
                 director(project_gdb=project_gdb, Sequential=False, table_names=[])
             del test
-        except:
+        except:  # noqa: E722
             traceback.print_exc()
             sys.exit()
 
         # Declared Varaiables
+        del project_gdb
         # Elapsed time
         end_time = time()
         elapse_time =  end_time - start_time
@@ -428,14 +431,16 @@ def script_tool(project_gdb=""):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -444,13 +449,13 @@ if __name__ == '__main__':
     try:
         project_gdb = arcpy.GetParameterAsText(0)
         if not project_gdb:
-            project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025\August 1 2025.gdb"
+            project_gdb = os.path.join(os.path.expanduser('~'), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb")
         else:
             pass
         script_tool(project_gdb)
         arcpy.SetParameterAsText(1, "Result")
         del project_gdb
-    except:
+    except:  # noqa: E722
         traceback.print_exc()
     else:
         pass

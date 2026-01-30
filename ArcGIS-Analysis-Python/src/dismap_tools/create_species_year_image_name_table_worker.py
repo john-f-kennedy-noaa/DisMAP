@@ -9,7 +9,8 @@
 # Copyright:   (c) john.f.kennedy 2024
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-import os, sys # built-ins first
+import os
+import sys
 import traceback
 
 import inspect
@@ -30,7 +31,7 @@ def print_table(table=""):
             del row
         del desc, fields, oid
         del table
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -91,8 +92,8 @@ def worker(region_gdb=""):
 
     # **********************************************************************
     # Start: Create new LayerSpeciesYearImageName table
-        arcpy.AddMessage(f"\nDatasets Table\n" )
-        datasets_table = rf"{region_gdb}\Datasets"
+        arcpy.AddMessage("\nDatasets Table\n" )
+        datasets_table = rf"{region_gdb}\\Datasets"
         datasets_table_fields = [f.name for f in arcpy.ListFields(datasets_table) if f.type not in ['Geometry', 'OID']]
         print_table(datasets_table)
         #region           = [row[0] for row in arcpy.da.SearchCursor(datasets_table, "Region", where_clause = f"TableName = '{table_name}'")][0]
@@ -103,7 +104,7 @@ def worker(region_gdb=""):
 
     # **********************************************************************
     # Start: Create new LayerSpeciesYearImageName table
-        arcpy.AddMessage(f"\nRegion IDW Table\n" )
+        arcpy.AddMessage("\nRegion IDW Table\n" )
         region_table_fields = [f.name for f in arcpy.ListFields(region_table) if f.type not in ['Geometry', 'OID']]
         # Get a record count to see if data is present; we don't want to add data
         getcount = arcpy.management.GetCount(region_table)[0]
@@ -116,7 +117,7 @@ def worker(region_gdb=""):
 
     # **********************************************************************
     # Start: Create new LayerSpeciesYearImageName table
-        arcpy.AddMessage(f"\nImage Name Table\n" )
+        arcpy.AddMessage("\nImage Name Table\n" )
         layer_species_year_image_name_fields = [f.name for f in arcpy.ListFields(layer_species_year_image_name) if f.type not in ['Geometry', 'OID']]
         arcpy.AddMessage(f"Image Name Fields:\n\t{', '.join(layer_species_year_image_name_fields)}")
         print_table(layer_species_year_image_name)
@@ -126,7 +127,7 @@ def worker(region_gdb=""):
     # **********************************************************************
     # Start: Get information from the species filter table to create a
     # species filter dictionary
-        arcpy.AddMessage(f"\nCreating the Species_Filter dictionary\n" )
+        arcpy.AddMessage("\nCreating the Species_Filter dictionary\n" )
 
         species_filter_table = os.path.join(region_gdb, "Species_Filter")
         species_filter_table_fields = [f.name for f in arcpy.ListFields(species_filter_table) if f.type not in ['Geometry', 'OID']]
@@ -163,7 +164,7 @@ def worker(region_gdb=""):
 # Image Name Table
 # DatasetCode, Region, Season, SummaryProduct, FilterRegion, FilterSubRegion, Species, CommonName, SpeciesCommonName, CommonNameSpecies, TaxonomicGroup, ManagementBody, ManagementPlan, DistributionProjectName, CoreSpecies, Variable, Value, Dimensions, ImageName
 
-        arcpy.AddMessage(f"\nDefining the case fields\n")
+        arcpy.AddMessage("\nDefining the case fields\n")
 
         case_fields = [f for f in layer_species_year_image_name_fields if f in region_table_fields]
         arcpy.AddMessage(f"Case Fields:\n\t{', '.join(case_fields)}")
@@ -420,14 +421,16 @@ def worker(region_gdb=""):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    else:
+    else:  # noqa: E722
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -450,7 +453,7 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         # Set varaibales
         project_folder = os.path.dirname(project_gdb)
         scratch_folder = rf"{project_folder}\Scratch"
-        scratch_workspace = rf"{project_folder}\Scratch\scratch.gdb"
+        scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
 
         # Clear Scratch Folder
         #ClearScratchFolder = True
@@ -467,7 +470,7 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         del project_folder, scratch_workspace
 
         if not table_names:
-            table_names = [row[0] for row in arcpy.da.SearchCursor(f"{project_gdb}\Datasets",
+            table_names = [row[0] for row in arcpy.da.SearchCursor(os.path.join(project_gdb, "Datasets"),
                                                                    "TableName",
                                                                    where_clause = "TableName LIKE '%_IDW'")]
         else:
@@ -476,14 +479,14 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         for table_name in table_names:
             arcpy.AddMessage(f"Pre-Processing: {table_name}")
 
-            region_gdb = rf"{scratch_folder}\{table_name}.gdb"
+            region_gdb = os.path.join(scratch_folder, f"{table_name}.gdb")
             region_scratch_workspace = rf"{scratch_folder}\{table_name}\scratch.gdb"
 
             # Create Scratch Workspace for Region
             if not arcpy.Exists(region_scratch_workspace):
-                os.makedirs(rf"{scratch_folder}\{table_name}")
+                os.makedirs(os.path.join(scratch_folder,  table_name))
                 if not arcpy.Exists(region_scratch_workspace):
-                    arcpy.management.CreateFileGDB(rf"{scratch_folder}\{table_name}", f"scratch")
+                    arcpy.management.CreateFileGDB(os.path.join(scratch_folder, f"{table_name}"), "scratch")
             del region_scratch_workspace
 
             arcpy.AddMessage(f"Creating File GDB: {table_name}")
@@ -576,14 +579,16 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -596,7 +601,7 @@ def script_tool(project_gdb=""):
         start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
         arcpy.AddMessage(f"Python Script:  {os.path.basename(__file__)}")
-        arcpy.AddMessage(f"Location:       ../{'/'.join(__file__.split(os.sep)[-4:])}")
+        arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
         arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
@@ -619,11 +624,11 @@ def script_tool(project_gdb=""):
 
         # Set varaibales
         project_folder    = os.path.dirname(project_gdb)
-        scratch_folder    = rf"{project_folder}\Scratch"
+        scratch_folder    = os.path.join(project_folder, "Scratch")
         del project_folder
 
         for table_name in table_names:
-            region_gdb = rf"{scratch_folder}\{table_name}.gdb"
+            region_gdb = os.path.join(scratch_folder, f"{table_name}.gdb")
 
             try:
                 pass
@@ -675,14 +680,16 @@ def script_tool(project_gdb=""):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -691,13 +698,13 @@ if __name__ == '__main__':
     try:
         project_gdb = arcpy.GetParameterAsText(0)
         if not project_gdb:
-            project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025\August 1 2025.gdb"
+            project_gdb = os.path.join(os.path.expanduser('~'), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb")
         else:
             pass
         script_tool(project_gdb)
         arcpy.SetParameterAsText(1, "Result")
         del project_gdb
-    except:
+    except:  # noqa: E722
         traceback.print_exc()
     else:
         pass

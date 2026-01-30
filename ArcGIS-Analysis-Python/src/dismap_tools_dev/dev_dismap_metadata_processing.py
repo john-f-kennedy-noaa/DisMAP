@@ -117,7 +117,7 @@ def dataset_title_dict(project_gdb=""):
 
         __datasets_dict = {}
 
-        dataset_codes = {row[0] : [row[1], row[2], row[3], row[4], row[5]] for row in arcpy.da.SearchCursor(rf"{project_gdb}\Datasets", ["DatasetCode", "PointFeatureType", "DistributionProjectCode", "FilterRegion", "FilterSubRegion", "Season"])}
+        dataset_codes = {row[0] : [row[1], row[2], row[3], row[4], row[5]] for row in arcpy.da.SearchCursor(os.path.join(project_gdb, "Datasets"), ["DatasetCode", "PointFeatureType", "DistributionProjectCode", "FilterRegion", "FilterSubRegion", "Season"])}
         for dataset_code in dataset_codes:
             point_feature_type        = dataset_codes[dataset_code][0] if dataset_codes[dataset_code][0] else ""
             distribution_project_code = dataset_codes[dataset_code][1] if dataset_codes[dataset_code][1] else ""
@@ -810,7 +810,7 @@ def import_basic_template_xml(dataset_path=""):
         scratch_folder = rf"{project_folder}\Scratch"
 
         arcpy.env.workspace        = project_gdb
-        arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
+        arcpy.env.scratchWorkspace = os.path.join(scratch_folder, "scratch.gdb")
 
         import json
         json_path = rf"{project_folder}\root_dict.json"
@@ -1138,7 +1138,7 @@ def update_eainfo_xml_elements(dataset_path=""):
         scratch_folder = rf"{project_folder}\Scratch"
 
         arcpy.env.workspace        = project_gdb
-        arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
+        arcpy.env.scratchWorkspace = os.path.join(scratch_folder, "scratch.gdb")
 
         import json
         json_path = rf"{project_folder}\root_dict.json"
@@ -1330,7 +1330,7 @@ def insert_missing_elements(dataset_path):
         del json
 
         arcpy.env.workspace        = project_gdb
-        arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
+        arcpy.env.scratchWorkspace = os.path.join(scratch_folder, "scratch.gdb")
         del scratch_folder
         del project_folder
         del project_gdb
@@ -3041,7 +3041,7 @@ def basic_metadata_report(dataset_path=""):
         scratch_folder = rf"{project_folder}\Scratch"
 
         arcpy.env.workspace        = project_gdb
-        arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
+        arcpy.env.scratchWorkspace = os.path.join(scratch_folder, "scratch.gdb")
         del scratch_folder
         del project_folder
         del project_gdb
@@ -4167,7 +4167,7 @@ def main(project_gdb=""):
         #print(project_folder)
 
         arcpy.env.workspace        = project_gdb
-        arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
+        arcpy.env.scratchWorkspace = os.path.join(scratch_folder, "scratch.gdb")
 
         #metadata_dictionary = dataset_title_dict(project_gdb)
         #for key in metadata_dictionary:

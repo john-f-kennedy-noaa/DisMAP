@@ -53,7 +53,7 @@ def create_basic_template_xml_files(base_project_file="", project=""):
         for workspace in workspaces:
 
             arcpy.env.workspace        = workspace
-            arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
+            arcpy.env.scratchWorkspace = os.path.join(scratch_folder, "scratch.gdb")
 
             datasets = list()
 
@@ -692,7 +692,7 @@ def import_basic_template_xml_files(base_project_file="", project=""):
         for workspace in workspaces:
 
             arcpy.env.workspace        = workspace
-            arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
+            arcpy.env.scratchWorkspace = os.path.join(scratch_folder, "scratch.gdb")
 
             datasets = list()
 
@@ -1639,7 +1639,7 @@ def create_thumbnails(base_project_file="", project=""):
         scratch_folder      = rf"{project_folder}\Scratch"
 
         arcpy.env.workspace        = project_gdb
-        arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
+        arcpy.env.scratchWorkspace = os.path.join(scratch_folder, "scratch.gdb")
 
         aprx = arcpy.mp.ArcGISProject(base_project_file)
         home_folder = aprx.homeFolder
@@ -1649,7 +1649,7 @@ def create_thumbnails(base_project_file="", project=""):
         for workspace in workspaces:
 
             arcpy.env.workspace        = workspace
-            arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
+            arcpy.env.scratchWorkspace = os.path.join(scratch_folder, "scratch.gdb")
 
             datasets = list()
 
@@ -2002,9 +2002,9 @@ def export_to_inport_xml_files(base_project_file="", project=""):
         scratch_folder      = rf"{project_folder}\Scratch"
 
         arcpy.env.workspace        = project_gdb
-        arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
+        arcpy.env.scratchWorkspace = os.path.join(scratch_folder, "scratch.gdb")
 
-        datasets = [rf"{project_gdb}\Species_Filter", rf"{project_gdb}\Indicators", rf"{project_gdb}\DisMAP_Regions", rf"{project_gdb}\GMEX_IDW_Sample_Locations", rf"{project_gdb}\GMEX_IDW_Mosaic", rf"{crfs_folder}\GMEX_IDW.crf"]
+        datasets = [rf"{project_gdb}\Species_Filter", rf"{project_gdb}\Indicators", os.path.join(project_gdb, "DisMAP_Regions"), rf"{project_gdb}\GMEX_IDW_Sample_Locations", rf"{project_gdb}\GMEX_IDW_Mosaic", rf"{crfs_folder}\GMEX_IDW.crf"]
 
         for dataset_path in sorted(datasets):
             print(dataset_path)
@@ -2092,7 +2092,7 @@ def create_maps(base_project_file="", project="", dataset=""):
         scratch_folder      = rf"{project_folder}\Scratch"
 
         arcpy.env.workspace        = project_gdb
-        arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
+        arcpy.env.scratchWorkspace = os.path.join(scratch_folder, "scratch.gdb")
 
         aprx = arcpy.mp.ArcGISProject(base_project_file)
 
@@ -2477,7 +2477,7 @@ def main(project=""):
 
             CreateMaps = False
             if CreateMaps:
-                result = create_maps(base_project_file, project, dataset=rf"{project_gdb}\DisMAP_Regions")
+                result = create_maps(base_project_file, project, dataset=os.path.join(project_gdb, "DisMAP_Regions"))
                 results.extend(result); del result
             del CreateMaps
 

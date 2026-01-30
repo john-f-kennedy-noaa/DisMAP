@@ -9,7 +9,8 @@
 # Copyright:   (c) john.f.kennedy 2024
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-import os, sys # built-ins first
+import os
+import sys
 import traceback
 
 import inspect
@@ -383,7 +384,7 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         # Set varaibales
         project_folder = os.path.dirname(project_gdb)
         scratch_folder = rf"{project_folder}\Scratch"
-        scratch_workspace = rf"{project_folder}\Scratch\scratch.gdb"
+        scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
 
         # Clear Scratch Folder
         #ClearScratchFolder = True
@@ -400,7 +401,7 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         del project_folder, scratch_workspace
 
         if not table_names:
-            table_names = [row[0] for row in arcpy.da.SearchCursor(f"{project_gdb}\Datasets",
+            table_names = [row[0] for row in arcpy.da.SearchCursor(os.path.join(project_gdb, "Datasets")
                                                                    "TableName",
                                                                    where_clause = "TableName LIKE '%_IDW'")]
         else:
@@ -409,14 +410,14 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         for table_name in table_names:
             arcpy.AddMessage(f"Pre-Processing: {table_name}")
 
-            region_gdb = rf"{scratch_folder}\{table_name}.gdb"
-            region_scratch_workspace = rf"{scratch_folder}\{table_name}\scratch.gdb"
+            region_gdb = os.path.join(scratch_folder, f"{table_name}.gdb")
+            region_scratch_workspace = os.path.join(scratch_folder, f"{table_name}", "scratch.gdb")
 
             # Create Scratch Workspace for Region
             if not arcpy.Exists(region_scratch_workspace):
-                os.makedirs(rf"{scratch_folder}\{table_name}")
+                os.makedirs(os.path.join(scratch_folder,  table_name))
                 if not arcpy.Exists(region_scratch_workspace):
-                    arcpy.management.CreateFileGDB(rf"{scratch_folder}\{table_name}", f"scratch")
+                    arcpy.management.CreateFileGDB(os.path.join(scratch_folder, f"{table_name}"), "scratch")
             del region_scratch_workspace
 
             sample_locations = rf"{table_name}_Sample_Locations"
@@ -517,7 +518,7 @@ def script_tool(project_gdb=""):
         start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
         arcpy.AddMessage(f"Python Script:  {os.path.basename(__file__)}")
-        arcpy.AddMessage(f"Location:       ../{'/'.join(__file__.split(os.sep)[-4:])}")
+        arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
         arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
@@ -609,7 +610,7 @@ if __name__ == '__main__':
     try:
         project_gdb = arcpy.GetParameterAsText(0)
         if not project_gdb:
-            project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025\August 1 2025.gdb"
+            project_gdb = os.path.join(os.path.expanduser('~'), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb"))
         else:
             pass
         script_tool(project_gdb)
