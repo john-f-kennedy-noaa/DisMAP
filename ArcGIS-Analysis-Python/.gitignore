@@ -144,6 +144,7 @@ Initial Data
 Dataset Shapefiles
 _Dataset Shapefiles
 December 1 2024
+February 1 2026
 GpMessages
 ImportLog
 Index
@@ -160,13 +161,11 @@ Scratch
 *.ags
 *.docx
 .pyHistory
-*.py
 *.~py
 *.pyt 
 *.xml
 *.xsl
 *.zip
-__init__.py
 *.txt
 conftest.py
 main.py
@@ -174,17 +173,16 @@ setip.py
 utils.py
 Metadata.md
 src/dismap_tools/esri
-src/dismap_tools_dev
-Initial Data
 Initial Data/*.csv
 NCEI Archive
 _Dataset Shapefiles/*
-#src/dismap_tools_dev
+# src/dismap_tools_dev (kept commented — enable if you want to ignore dev files)
 #############
 # Do not ignore these files
 !README.md
 !src/dismap_tools/*.py
-src/dismap_tools_dev/*.py
-src/dismap_tools/dev_*.py
-src/dismap_tools/__init__.py
+!src/dismap_tools_dev/*.py
+!src/dismap_tools/dev_*.py
+!src/dismap_tools/__init__.py
+!src/dismap_tools_dev/__init__.py
 !src/dismap_tools/README.md
