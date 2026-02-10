@@ -9,8 +9,6 @@ This folder sets up the directory structure needed to run the data processing st
 3. [`clean_taxa.R`](https://github.com/nmfs-fish-tools/DisMAP/blob/main/data_processing_rcode/code/clean_taxa.R) - contains the code for the function used to obtain clean taxa names. Use of this code will only be needed occasionally when taxonomic naming errors are flagged in the Compile code.
 4. [`create_data_for_map_generation.R`](https://github.com/nmfs-fish-tools/DisMAP/blob/main/data_processing_rcode/code/create_data_for_map_generation.R) - run this after Compile script to get the data in the needed file format for use in the Python script and generate the interpolated biomass rasters and calculate the indicators. 
 5. [`Species_Persistence.Rmd`](https://github.com/nmfs-ost/DisMAP/blob/dev-branch/data_processing_rcode/code/Species_Persistence.Rmd) - run this code after the Compile script to calculate the species persistence indicator data (abundance indicator and persistence trends).
-6. [`DisMAP_data_download_API.R`](https://github.com/nmfs-fish-tools/DisMAP/blob/main/data_processing_rcode/code/DisMAP_Data_Download_API.R) - this code runs through example scripts of how to download the data presented on the DisMAP site using API to connect to our [Inport records](https://www.fisheries.noaa.gov/inport/item/66799)
-
 
 ## The raw data downloaded using the download_x.R scripts will be saved to the "data" folder, and outputs generated will be saved to the appropriate subfolders of the "outputs" folder. 
 
