@@ -30,7 +30,8 @@ build/
 *.obj
 *.pch
 *.pdb
-*.pgc
+Initial Data
+Data
 *.pgd
 *.rsp
 *.sbr
@@ -40,9 +41,7 @@ build/
 *.tmp
 *.tmp_proj
 *.log
-*.vspscc
-*.vssscc
-.builds
+NCEI Archive
 *.pidb
 *.log
 *.scc
@@ -65,14 +64,15 @@ ipch/
 #############
 
 # Windows image file caches
-Thumbs.db
+src/dismap_tools_dev
 ehthumbs.db
 
 # Folder config file
-Desktop.ini
-
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
+!src/dismap_tools/*.py
+!src/dismap_tools_dev/*.py
+!src/dismap_tools/dev_*.py
+!src/dismap_tools/__init__.py
+!src/dismap_tools/README.md
 
 # Mac crap
 .DS_Store
