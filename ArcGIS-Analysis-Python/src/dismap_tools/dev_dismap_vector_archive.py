@@ -201,18 +201,19 @@ if __name__ == '__main__':
         archive_folder = arcpy.GetParameterAsText(2)
 
         if not home_folder:
-            home_folder = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMap\ArcGIS-Analysis-Python"
+            home_folder = os.path.join(os.path.expanduser('~'), "Documents\\ArcGIS\\Projects\\DisMap\\ArcGIS-Analysis-Python")
         else:
             arcpy.AddMessage(f"Home Folder: {os.path.basename(home_folder)}")
 
         if not versions:
-            versions = ["April 1 2023", "July 1 2024", "August 1 2025",]
+            versions = ["February 1 2026"]
+            #versions = ["April 1 2023", "July 1 2024", "August 1 2025", "February 1 2026"]
             #versions = ["July 1 2024", "August 1 2025",]
         else:
             arcpy.AddMessage(f"Versions: {', '.join(versions)}")
 
         if not archive_folder:
-            archive_folder = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMap\ArcGIS-Analysis-Python\NCEI Archive"
+            archive_folder = os.path.join(os.path.expanduser('~'), "Documents\\ArcGIS\\Projects\\DisMap\\ArcGIS-Analysis-Python\\NCEI Archive")
         else:
             arcpy.AddMessage(f"Home Folder: {os.path.basename(home_folder)}")
 

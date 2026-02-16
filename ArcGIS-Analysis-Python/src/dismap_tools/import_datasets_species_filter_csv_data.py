@@ -11,6 +11,15 @@ import traceback
 import inspect
 import arcpy
 
+def trace():
+    import sys, traceback  # noqa: E401
+    tb = sys.exc_info()[2]
+    tbinfo = traceback.format_tb(tb)[0]
+    line = tbinfo.split(", ")[1]
+    filename = sys.path[0] + os.sep + "test.py"
+    synerror = traceback.format_exc().splitlines()[-1]
+    return line, filename, synerror
+
 def get_encoding_index_col(csv_file):
     try:
         # Imports
@@ -412,54 +421,48 @@ def script_tool(project_folder=""):
         arcpy.AddMessage(f"{'-' * 80}")
         del elapse_time, end_time, start_time
         del gmtime, localtime, strftime, time
-    except KeyboardInterrupt:
-        raise SystemExit
-    except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
+
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        raise SystemExit
-    except SystemExit:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        raise SystemExit
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        raise SystemExit
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
+        return False
     except:  # noqa: E722
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        raise SystemExit
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)
+        return False
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk:
-            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
-        del rk
         return True
-    finally:
-        pass
+
 if __name__ == '__main__':
     try:
 
         project_folder = arcpy.GetParameterAsText(0)
         if not project_folder:
-            project_folder = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\February 1 2026"
+            project_folder = os.path.join(os.path.expanduser('~'), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026")
         else:
             pass
 
         script_tool(project_folder)
+
         arcpy.SetParameterAsText(1, "Result")
+
         del project_folder
 
-    except SystemExit:
-        pass
+    except arcpy.ExecuteError:
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
     except:  # noqa: E722
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-    else:
-        pass
-    finally:
-        sys.exit()
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)

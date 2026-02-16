@@ -9,11 +9,21 @@
 # Copyright:   (c) john.f.kennedy 2024
 # Licence:     <your licence>
 # -------------------------------------------------------------------------------
-import os, sys  # built-ins first
+import os
+import sys
 import traceback
-import inspect
 
 import arcpy  # third-parties second
+
+def trace():
+    import sys, traceback  # noqa: E401
+    tb = sys.exc_info()[2]
+    tbinfo = traceback.format_tb(tb)[0]
+    line = tbinfo.split(", ")[1]
+    #filename = sys.path[0] + os.sep + f"{os.path.basename(__file__)}"
+    filename = os.path.basename(__file__)
+    synerror = traceback.format_exc().splitlines()[-1]
+    return line, filename, synerror
 
 def feature_sharing_draft_report(sd_draft=""):
     try:
@@ -24,7 +34,7 @@ def feature_sharing_draft_report(sd_draft=""):
         value_list = docs.getElementsByTagName("Value")
 
         for i in range(key_list.length):
-            value = f"Value: {value_list[i].firstChild.nodeValue}" if value_list[i].firstChild else f"Value is missing"
+            value = f"Value: {value_list[i].firstChild.nodeValue}" if value_list[i].firstChild else "Value is missing"
 
             arcpy.AddMessage(f"\t\tKey: {key_list[i].firstChild.nodeValue:<45} {value}")
             # arcpy.AddMessage(f"\t\tKey: {key_list[i].firstChild.nodeValue:<45} {value[:50]}")
@@ -33,40 +43,28 @@ def feature_sharing_draft_report(sd_draft=""):
         del DOM, key_list, value_list, docs
         del sd_draft
 
-    except KeyboardInterrupt:
-        sys.exit()
-    except arcpy.ExecuteWarning:
-        arcpy.AddWarning(f"Caught an arcpy.ExecuteWarning error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
-        arcpy.AddError(f"Caught an arcpy.ExecuteError error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except SystemExit as se:
-        arcpy.AddError(f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function.")
-        sys.exit()
-    except Exception as e:
-        arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
-        traceback.print_exc()
-        sys.exit()
-    except:
-        arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
-        traceback.print_exc()
-        sys.exit()
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
+        return False
+    except:  # noqa: E722
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)
+        return False
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
         return True
-    finally:
-        pass
 
 def create_feature_class_layers(project_gdb=""):
     try:
         # Import
         from arcpy import metadata as md
-        from dismap_tools import dataset_title_dict, parse_xml_file_format_and_save
+        from dismap_tools import dataset_title_dict, parse_xml_file_format_and_save, clear_folder
 
         # Test if passed workspace exists, if not sys.exit()
         if not arcpy.Exists(project_gdb):
@@ -88,7 +86,7 @@ def create_feature_class_layers(project_gdb=""):
         scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
 
         # Clear Scratch Folder
-        dismap_tools.clear_folder(folder=scratch_folder)
+        clear_folder(folder=scratch_folder)
 
         # Create Scratch Workspace for Project
         if not arcpy.Exists(os.path.join(scratch_folder, "scratch.gdb")):
@@ -134,11 +132,11 @@ def create_feature_class_layers(project_gdb=""):
 
             if desc["dataType"] == "FeatureClass":
 
-                arcpy.AddMessage(f"\tMake Feature Layer")
+                arcpy.AddMessage("\tMake Feature Layer")
                 feature_class_layer = arcpy.management.MakeFeatureLayer(feature_class_path, feature_service_title)
                 feature_class_layer_file = rf"{project_folder}\Layers\{feature_class_layer}.lyrx"
 
-                arcpy.AddMessage(f"\tSave Layer File")
+                arcpy.AddMessage("\tSave Layer File")
                 _result = arcpy.management.SaveToLayerFile(
                                                            in_layer         = feature_class_layer,
                                                            out_layer        = feature_class_layer_file,
@@ -152,7 +150,7 @@ def create_feature_class_layers(project_gdb=""):
 
             elif desc["dataType"] == "Table":
 
-                arcpy.AddMessage(f"\tMake Table View")
+                arcpy.AddMessage("\tMake Table View")
                 feature_class_layer = arcpy.management.MakeTableView(
                                                                      in_table     = feature_class_path,
                                                                      out_view     = feature_service_title,
@@ -162,7 +160,7 @@ def create_feature_class_layers(project_gdb=""):
                                                                     )
                 feature_class_layer_file = rf"{project_folder}\Layers\{feature_class_layer}.lyrx"
 
-                arcpy.AddMessage(f"\tSave Layer File")
+                arcpy.AddMessage("\tSave Layer File")
                 _result = arcpy.management.SaveToLayerFile(
                                                            in_layer         = feature_class_layer,
                                                            out_layer        = feature_class_layer_file,
@@ -178,7 +176,7 @@ def create_feature_class_layers(project_gdb=""):
                 pass
 
             if [f.name for f in arcpy.ListFields(feature_class_path) if f.name == "StdTime"]:
-                arcpy.AddMessage(f"\tSet Time Enabled if time field is in dataset")
+                arcpy.AddMessage("\tSet Time Enabled if time field is in dataset")
                 # Get time information from a layer in a layer file
                 layer_file = arcpy.mp.LayerFile(feature_class_layer_file)
                 layer = layer_file.listLayers()[0]
@@ -212,7 +210,7 @@ def create_feature_class_layers(project_gdb=""):
                     del layer
                 del layer_file
             else:
-                arcpy.AddMessage(f"\tDataset does not have a time field")
+                arcpy.AddMessage("\tDataset does not have a time field")
 
             layer_file = arcpy.mp.LayerFile(feature_class_layer_file)
 
@@ -266,7 +264,7 @@ def create_feature_class_layers(project_gdb=""):
             aprx.save()
             del basemap
 
-            arcpy.AddMessage(f"\t\tCreate map thumbnail and update metadata")
+            arcpy.AddMessage("\t\tCreate map thumbnail and update metadata")
             current_map_view = current_map.defaultView
             current_map_view.exportToPNG(
                                             rf"{project_folder}\Layers\{feature_service_title}.png",
@@ -300,7 +298,7 @@ def create_feature_class_layers(project_gdb=""):
 
             arcpy.AddMessage(f"\t\tLayer File Path:     {layer_file.filePath}")
             arcpy.AddMessage(f"\t\tLayer File Version:  {layer_file.version}")
-            arcpy.AddMessage(f"\t\tLayer File Metadata:")
+            arcpy.AddMessage("\t\tLayer File Metadata:")
             arcpy.AddMessage(f"\t\t\tLayer File Title:              {layer_file.metadata.title}")
             #arcpy.AddMessage(f"\t\t\tLayer File Tags:               {layer_file.metadata.tags}")
             #arcpy.AddMessage(f"\t\t\tLayer File Summary:            {layer_file.metadata.summary}")
@@ -308,13 +306,13 @@ def create_feature_class_layers(project_gdb=""):
             #arcpy.AddMessage(f"\t\t\tLayer File Credits:            {layer_file.metadata.credits}")
             #arcpy.AddMessage(f"\t\t\tLayer File Access Constraints: {layer_file.metadata.accessConstraints}")
 
-            arcpy.AddMessage(f"\t\tList of layers or tables in Layer File:")
+            arcpy.AddMessage("\t\tList of layers or tables in Layer File:")
             if current_map.listLayers(feature_service_title):
                 layer = current_map.listLayers(feature_service_title)[0]
             elif current_map.listTables(feature_service_title):
                 layer = current_map.listTables(feature_service_title)[0]
             else:
-                arcpy.AddWarning(f"Something wrong")
+                arcpy.AddWarning("Something wrong")
 
             in_md = md.Metadata(feature_class_path)
             layer.metadata.copy(in_md)
@@ -324,7 +322,7 @@ def create_feature_class_layers(project_gdb=""):
             del in_md
 
             arcpy.AddMessage(f"\t\t\tLayer Name: {layer.name}")
-            arcpy.AddMessage(f"\t\t\tLayer Metadata:")
+            arcpy.AddMessage("\t\t\tLayer Metadata:")
             arcpy.AddMessage(f"\t\t\t\tLayer Title:              {layer.metadata.title}")
             #arcpy.AddMessage(f"\t\t\t\tLayer Tags:               {layer.metadata.tags}")
             #arcpy.AddMessage(f"\t\t\t\tLayer Summary:            {layer.metadata.summary}")
@@ -361,34 +359,22 @@ def create_feature_class_layers(project_gdb=""):
         # Function Parameters
         del project_gdb
 
-    except KeyboardInterrupt:
-        sys.exit()
-    except arcpy.ExecuteWarning:
-        arcpy.AddWarning(f"Caught an arcpy.ExecuteWarning error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
-        arcpy.AddError(f"Caught an arcpy.ExecuteError error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except SystemExit as se:
-        arcpy.AddError(f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function.")
-        sys.exit()
-    except Exception as e:
-        arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
-        traceback.print_exc()
-        sys.exit()
-    except:
-        arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
-        traceback.print_exc()
-        sys.exit()
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
+        return False
+    except:  # noqa: E722
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)
+        return False
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
         return True
-    finally:
-        pass
 
 def create_feature_class_services(project_gdb=""):
     try:
@@ -530,13 +516,13 @@ def create_feature_class_services(project_gdb=""):
 
             del layer_file
 
-            arcpy.AddMessage(f"\t\tList of layers or tables in Layer File:")
+            arcpy.AddMessage("\t\tList of layers or tables in Layer File:")
             if current_map.listLayers(feature_service_title):
                 lyr = current_map.listLayers(feature_service_title)[0]
             elif current_map.listTables(feature_service_title):
                 lyr = current_map.listTables(feature_service_title)[0]
             else:
-                arcpy.AddWarning(f"Something wrong")
+                arcpy.AddWarning("Something wrong")
 
             in_md = md.Metadata(rf"{project_gdb}\{dataset}")
             lyr.metadata.copy(in_md)
@@ -544,7 +530,7 @@ def create_feature_class_services(project_gdb=""):
             aprx.save()
             del in_md
 
-            arcpy.AddMessage(f"\tGet Web Layer Sharing Draft")
+            arcpy.AddMessage("\tGet Web Layer Sharing Draft")
             # Get Web Layer Sharing Draft
             server_type = "HOSTING_SERVER"  # FEDERATED_SERVER
             #            m.getWebLayerSharingDraft (server_type, service_type, service_name, {layers_and_tables})
@@ -580,7 +566,7 @@ def create_feature_class_services(project_gdb=""):
             #arcpy.AddMessage(f"\t\tTags:                       {sddraft.tags}")
             #arcpy.AddMessage(f"\t\tUse Limitations:            {sddraft.useLimitations}")
 
-            arcpy.AddMessage(f"\tExport to SD Draft")
+            arcpy.AddMessage("\tExport to SD Draft")
             # Create Service Definition Draft file
             sddraft.exportToSDDraft(rf"{project_folder}\Publish\{feature_service}.sddraft")
 
@@ -588,7 +574,7 @@ def create_feature_class_services(project_gdb=""):
 
             sd_draft = rf"{project_folder}\Publish\{feature_service}.sddraft"
 
-            arcpy.AddMessage(f"\tModify SD Draft")
+            arcpy.AddMessage("\tModify SD Draft")
             # https://pro.arcgis.com/en/pro-app/latest/arcpy/sharing/featuresharingdraft-class.htm
             # https://www.esri.com/arcgis-blog/products/arcgis-pro/mapping/streamline-your-code-with-new-properties-in-arcpy-sharing
             import xml.dom.minidom as DOM
@@ -599,7 +585,7 @@ def create_feature_class_services(project_gdb=""):
 
             for i in range(key_list.length):
                 if key_list[i].firstChild.nodeValue == "maxRecordCount":
-                    arcpy.AddMessage(f"\t\tUpdating maxRecordCount from 2000 to 10000")
+                    arcpy.AddMessage("\t\tUpdating maxRecordCount from 2000 to 10000")
                     value_list[i].firstChild.nodeValue = 2000
                 if key_list[i].firstChild.nodeValue == "ServiceTitle":
                     arcpy.AddMessage(f"\t\tUpdating ServiceTitle from {value_list[i].firstChild.nodeValue} to {feature_service_title}")
@@ -663,7 +649,7 @@ def create_feature_class_services(project_gdb=""):
         current_maps = aprx.listMaps()
 
         if current_maps:
-            arcpy.AddMessage(f"\nCurrent Maps\n")
+            arcpy.AddMessage("\nCurrent Maps\n")
             for current_map in current_maps:
                 arcpy.AddMessage(f"\tProject Map: {current_map.name}")
                 del current_map
@@ -687,34 +673,22 @@ def create_feature_class_services(project_gdb=""):
         # Function Parameters
         del project_gdb
 
-    except KeyboardInterrupt:
-        sys.exit()
-    except arcpy.ExecuteWarning:
-        arcpy.AddWarning(f"Caught an arcpy.ExecuteWarning error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
-        arcpy.AddError(f"Caught an arcpy.ExecuteError error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except SystemExit as se:
-        arcpy.AddError(f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function.")
-        sys.exit()
-    except Exception as e:
-        arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
-        traceback.print_exc()
-        sys.exit()
-    except:
-        arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
-        traceback.print_exc()
-        sys.exit()
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
+        return False
+    except:  # noqa: E722
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)
+        return False
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
         return True
-    finally:
-        pass
 
 ##def update_metadata_from_published_md(project_gdb=""):
 ##    try:
@@ -849,12 +823,6 @@ def create_feature_class_services(project_gdb=""):
 def create_image_services(project_gdb=""):
     try:
         # Import
-        import dismap_tools
-        from arcpy import metadata as md
-
-        # Test if passed workspace exists, if not sys.exit()
-        if not arcpy.Exists(base_project_file):
-            sys.exit()(f"{os.path.basename(base_project_file)} is missing!!")
 
         # Set History and Metadata logs, set serverity and message level
         arcpy.SetLogHistory(True) # Look in %AppData%\Roaming\Esri\ArcGISPro\ArcToolbox\History
@@ -864,17 +832,13 @@ def create_image_services(project_gdb=""):
                                   # 2—If a tool produces an error, it will throw an exception. This is the default.
         arcpy.SetMessageLevels(['NORMAL']) # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
 
-        aprx = arcpy.mp.ArcGISProject(base_project_file)
-        home_folder = aprx.homeFolder
-
-        project_gdb = rf"{project_folder}\{project}.gdb"
-
-        # Test if passed workspace exists, if not sys.exit()
-        if not arcpy.Exists(project_gdb):
-            sys.exit()(f"{os.path.basename(project_gdb)} is missing!!")
+        #aprx = arcpy.mp.ArcGISProject(base_project_file)  # noqa: F821
+        #home_folder = aprx.homeFolder
+        #project_gdb = rf"{project_folder}\{project}.gdb"  # noqa: F821
 
         # Set basic workkpace variables
         project_folder    = os.path.dirname(project_gdb)
+        crfs_folder       = os.path.join(project_folder, "CRFs")
         scratch_folder    = os.path.join(project_folder, "Scratch")
         scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
 
@@ -893,29 +857,34 @@ def create_image_services(project_gdb=""):
 
         del scratch_folder, scratch_workspace
 
-        LogIntoPortal = False
-        if LogIntoPortal:
-            try:
-                portal = "https://noaa.maps.arcgis.com/"
-                user = "John.F.Kennedy_noaa"
+        arcpy.env.workspace = crfs_folder
 
-                #portal = "https://maps.fisheries.noaa.gov/portal/home"
-                #portal = "https://maps.fisheries.noaa.gov"
-                #user   = "John.F.Kennedy_noaa"
+        for crf in arcpy.ListRasters("*"):
+            arcpy.AddMessage(crf)
 
-                # Sign in to portal
-                # arcpy.SignInToPortal("https://www.arcgis.com", "MyUserName", "MyPassword")
-                # For example: 'http://www.arcgis.com/'
-                arcpy.SignInToPortal(portal)
+        arcpy.env.workspace = project_gdb
 
-                arcpy.AddMessage(f"###---> Signed into Portal: {arcpy.GetActivePortalURL()} <---###")
-                del portal, user
-            except:
-                arcpy.AddError(f"###---> Signed into Portal faild <---###")
-                sys.exit()
-        del LogIntoPortal
-
-        arcpy.AddMessage(f"\n{'-' * 90}\n")
+##        LogIntoPortal = False
+##        if LogIntoPortal:
+##            try:
+##                portal = "https://noaa.maps.arcgis.com/"
+##                user = "John.F.Kennedy_noaa"
+##
+##                #portal = "https://maps.fisheries.noaa.gov/portal/home"
+##                #portal = "https://maps.fisheries.noaa.gov"
+##                #user   = "John.F.Kennedy_noaa"
+##
+##                # Sign in to portal
+##                # arcpy.SignInToPortal("https://www.arcgis.com", "MyUserName", "MyPassword")
+##                # For example: 'http://www.arcgis.com/'
+##                arcpy.SignInToPortal(portal)
+##
+##                arcpy.AddMessage(f"###---> Signed into Portal: {arcpy.GetActivePortalURL()} <---###")
+##                del portal, user
+##            except:  # noqa: E722
+##                arcpy.AddError("###---> Signed into Portal faild <---###")
+##                sys.exit()
+##        del LogIntoPortal
 
         # Publishes an image service to a machine "myserver" from a folder of ortho images
         # this code first author a mosaic dataset from the images, then publish it as an image service.
@@ -936,47 +905,29 @@ def create_image_services(project_gdb=""):
         #Sddraft = os.path.join(MyWorkspace,Name+".sddraft")
         #Sd = os.path.join(MyWorkspace,Name+".sd")
         #con = os.path.join(MyWorkspace, "arcgis on myserver_6080 (admin).ags")
-        con = r"{os.environ['USERPROFILE']}\Documents\ArcGIS\Projects\DisMAP-ArcGIS-Analysis\server on maps.fisheries.noaa.gov.ags"
 
-        mosiac_name    = "SEUS_FAL_Mosaic"
+        con = os.path.join(os.path.expanduser('~'), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis\\image on maps.fisheries.noaa.gov.ags")
+
+        mosiac_name    = "SEUS_FAL_IDW_Mosaic"
         mosiac_path    = rf"{project_gdb}\{mosiac_name}"
         mosiac_sddraft = rf"{project_folder}\Publish\{mosiac_name}.sddraft"
 
-##        SrsLookup = {
-##          'Mercator': "PROJCS['World_Mercator',GEOGCS['GCS_WGS_1984',DATUM['D_WGS_1984',SPHEROID['WGS_1984',6378137,298.257223563]],PRIMEM['Greenwich',0],UNIT['Degree',0.017453292519943295]],PROJECTION['Mercator'],PARAMETER['False_Easting',0],PARAMETER['False_Northing',0],PARAMETER['Central_Meridian',0],PARAMETER['Standard_Parallel_1',0],UNIT['Meter',1]]",
-##          'WGS84': "GEOGCS['GCS_WGS_1984',DATUM['D_WGS_1984',SPHEROID['WGS_1984',6378137,298.257223563]],PRIMEM['Greenwich',0],UNIT['Degree',0.017453292519943295]]",
-##          'GZ4': "PROJCS['Germany_Zone_4',GEOGCS['GCS_Deutsches_Hauptdreiecksnetz',DATUM['D_Deutsches_Hauptdreiecksnetz',SPHEROID['Bessel_1841',6377397.155,299.1528128]],PRIMEM['Greenwich',0],UNIT['Degree',0.017453292519943295]],PROJECTION['Transverse_Mercator'],PARAMETER['False_Easting',4500000],PARAMETER['False_Northing',0],PARAMETER['Central_Meridian',12],PARAMETER['Scale_Factor',1],PARAMETER['Latitude_Of_Origin',0],UNIT['Meter',1]]",
-##          'GCS_NAD83': "GEOGCS['GCS_North_American_1983',DATUM['D_North_American_1983',SPHEROID['GRS_1980',6378137,298.257222101]],PRIMEM['Greenwich',0],UNIT['Degree',0.017453292519943295]]",
-##          'PUG': "PROJCS['PUG1',GEOGCS['GCS_North_American_1983',DATUM['D_North_American_1983',SPHEROID['GRS_1980',6378137.0,298.257222101]],PRIMEM['Greenwich',0.0],UNIT['Degree',0.0174532925199433]],PROJECTION['Transverse_Mercator'],PARAMETER['False_Easting',1640416.666666667],PARAMETER['False_Northing',0.0],PARAMETER['Central_Meridian',-87.0],PARAMETER['Scale_Factor',0.9996],PARAMETER['Latitude_Of_Origin',0.0],UNIT['Foot_US',0.3048006096012192]]",
-##          'Florida_East': "PROJCS['NAD_1983_StatePlane_Florida_East_FIPS_0901_Feet',GEOGCS['GCS_North_American_1983',DATUM['D_North_American_1983',SPHEROID['GRS_1980',6378137,298.257222101]],PRIMEM['Greenwich',0],UNIT['Degree',0.0174532925199432955]],PROJECTION['Transverse_Mercator'],PARAMETER['False_Easting',656166.6666666665],PARAMETER['False_Northing',0],PARAMETER['Central_Meridian',-81],PARAMETER['Scale_Factor',0.9999411764705882],PARAMETER['Latitude_Of_Origin',24.33333333333333],UNIT['Foot_US',0.304800609601219241]]",
-##          'SoCalNad83': "PROJCS['NAD_1983_StatePlane_California_V_FIPS_0405',GEOGCS['GCS_North_American_1983',DATUM['D_North_American_1983',SPHEROID['GRS_1980',6378137,298.257222101]],PRIMEM['Greenwich',0],UNIT['Degree',0.0174532925199432955]],PROJECTION['Lambert_Conformal_Conic'],PARAMETER['False_Easting',2000000],PARAMETER['False_Northing',500000],PARAMETER['Central_Meridian',-118],PARAMETER['Standard_Parallel_1',34.03333333333333],PARAMETER['Standard_Parallel_2',35.46666666666667],PARAMETER['Latitude_Of_Origin',33.5],UNIT['Meter',1]]"
-##        }
-
-##        # First author a mosaic dataset from a folder of images
-##        try:
-##            arcpy.AddMessage("Creating fgdb")
-##            arcpy.CreateFileGDB_management(MyWorkspace, GdbName)
-##
-##            arcpy.AddMessage("Creating mosaic dataset")
-##            #arcpy.CreateMosaicDataset_management(GDBpath, Name, SrsLookup['Mercator'], "", "", "NONE", "")
-##            arcpy.CreateMosaicDataset_management(project_gdb, mosiac_name, SrsLookup['Mercator'], "", "", "NONE", "")
-##
-##            arcpy.AddMessage("Adding images to mosaic dataset") # also caculate cell size range, build boundary, and build overviews
-##            #arcpy.AddRastersToMosaicDataset_management(Md, "Raster Dataset", ImageSource, "UPDATE_CELL_SIZES", "UPDATE_BOUNDARY", "UPDATE_OVERVIEWS", "#", "0", "1500", "#", "#", "SUBFOLDERS", "ALLOW_DUPLICATES", "NO_PYRAMIDS", "NO_STATISTICS", "NO_THUMBNAILS", "", "NO_FORCE_SPATIAL_REFERENCE")
-##            arcpy.AddRastersToMosaicDataset_management(mosiac_path, "Raster Dataset", ImageSource, "UPDATE_CELL_SIZES", "UPDATE_BOUNDARY", "UPDATE_OVERVIEWS", "#", "0", "1500", "#", "#", "SUBFOLDERS", "ALLOW_DUPLICATES", "NO_PYRAMIDS", "NO_STATISTICS", "NO_THUMBNAILS", "", "NO_FORCE_SPATIAL_REFERENCE")
-##        except:
-##            arcpy.AddError(arcpy.GetMessages()+ "\n\n")
-##            sys.exit("Failed in authoring a mosaic dataset")
 
         # Create service definition draft
         try:
             arcpy.AddMessage("Creating SD draft")
             #arcpy.CreateImageSDDraft(Md, Sddraft, Name, 'ARCGIS_SERVER', con, False, None, "Ortho Images","ortho images,image service")
-            arcpy.CreateImageSDDraft(mosiac_path, mosiac_sddraft, mosiac_name, 'ARCGIS_SERVER', con, False, None, "Ortho Images", "ortho images,image service")
-        except:
-            arcpy.AddError(arcpy.GetMessages()+ "\n\n")
-            sys.exit("Failed in creating SD draft")
-
+            arcpy.CreateImageSDDraft(mosiac_path, mosiac_sddraft, mosiac_name, 'ARCGIS_SERVER', con, False, None, "Biomass Rasters", "biomass rasters,image service")
+        except arcpy.ExecuteError:
+            #Return Geoprocessing tool specific errors
+            line, filename, err = trace()
+            arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+            for msg in range(0, arcpy.GetMessageCount()):
+                if arcpy.GetSeverity(msg) == 2:
+                    arcpy.AddReturnMessage(msg)
+            import traceback
+            traceback.print_exc()
+            return False
 ##        # Analyze the service definition draft
 ##        analysis = arcpy.mapping.AnalyzeForSD(Sddraft)
 ##        arcpy.AddMessage("The following information was returned during analysis of the image service:")
@@ -1010,1376 +961,44 @@ def create_image_services(project_gdb=""):
 ##            arcpy.AddError("Service could not be published because errors were found during analysis.")
 ##            arcpy.AddError(arcpy.GetMessages(2))
 
-        arcpy.AddMessage(f"\n{'-' * 90}\n")
-
-        del project_gdb
+        #del project_gdb
 
         # Declared Variables set in function for aprx
-        del home_folder
+        #del home_folder
         # Save aprx one more time and then delete
-        aprx.save()
-        del aprx
+        #aprx.save()
+        #del aprx
 
         # Declared Variables set in function
 
         # Imports
 
         # Function Parameters
-        del base_project_file, project
+        del project_gdb
 
-    except KeyboardInterrupt:
-        sys.exit()
-    except arcpy.ExecuteWarning:
-        arcpy.AddWarning(f"Caught an arcpy.ExecuteWarning error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
-        arcpy.AddError(f"Caught an arcpy.ExecuteError error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except SystemExit as se:
-        arcpy.AddError(f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function.")
-        sys.exit()
-    except Exception as e:
-        arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
-        traceback.print_exc()
-        sys.exit()
-    except:
-        arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
-        traceback.print_exc()
-        sys.exit()
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
+        return False
+    except Exception:
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)
+        return False
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
         return True
-    finally:
-        pass
-
-##def create_basic_template_xml_files(project_gdb=""):
-##    try:
-##        # Import
-##        from arcpy import metadata as md
-##        from dismap_tools import dataset_title_dict, parse_xml_file_format_and_save
-##
-##        arcpy.env.overwriteOutput          = True
-##        arcpy.env.parallelProcessingFactor = "100%"
-##        arcpy.SetLogMetadata(True)
-##        arcpy.SetSeverityLevel(2)
-##        arcpy.SetMessageLevels(['NORMAL']) # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
-##
-##        # Map Cleanup
-##        MapCleanup = False
-##        if MapCleanup:
-##            map_cleanup(base_project_file)
-##        del MapCleanup
-##
-##        base_project_folder = rf"{os.path.dirname(base_project_file)}"
-##        base_project_file   = rf"{base_project_folder}\DisMAP.aprx"
-##        project_folder      = rf"{base_project_folder}\{project}"
-##        project_gdb         = rf"{project_folder}\{project}.gdb"
-##        metadata_folder     = rf"{project_folder}\Export Metadata"
-##        crfs_folder         = rf"{project_folder}\CRFs"
-##        scratch_folder      = rf"{project_folder}\Scratch"
-##
-##        metadata_dictionary = dataset_title_dict(project_gdb)
-##
-##        workspaces = [project_gdb, crfs_folder]
-##
-##        for workspace in workspaces:
-##
-##            arcpy.env.workspace        = workspace
-##            arcpy.env.scratchWorkspace = os.path.join(scratch_folder, "scratch.gdb")
-##
-##            datasets = list()
-##
-##            walk = arcpy.da.Walk(workspace)
-##
-##            for dirpath, dirnames, filenames in walk:
-##                for filename in filenames:
-##                    datasets.append(os.path.join(dirpath, filename))
-##                    del filename
-##                del dirpath, dirnames, filenames
-##            del walk
-##
-##            for dataset_path in sorted(datasets):
-##                #arcpy.AddMessage(dataset_path)
-##                dataset_name = os.path.basename(dataset_path)
-##
-##                arcpy.AddMessage(f"Dataset Name: {dataset_name}")
-##
-##                if "Datasets" == dataset_name:
-##
-##                    arcpy.AddMessage(f"\tDataset Table")
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    del empty_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    datasets_table_template = rf"{project_folder}\Metadata_Export\datasets_table_template.xml"
-##                    dataset_md.saveAsXML(datasets_table_template)
-##                    parse_xml_file_format_and_save(csv_data_folder=csv_data_folder, xml_file=datasets_table_template, sort=True)
-##                    del datasets_table_template
-##
-##                    del dataset_md
-##
-##                elif "Species_Filter" == dataset_name:
-##
-##                    arcpy.AddMessage(f"\tSpecies Filter Table")
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    del empty_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##
-##                    dataset_md.synchronize("ALWAYS")
-##
-##                    species_filter_table_template = rf"{metadata_folder}\species_filter_table_template.xml"
-##                    dataset_md.saveAsXML(species_filter_table_template)
-##                    parse_xml_file_format_and_save(csv_data_folder=csv_data_folder, xml_file=species_filter_table_template, sort=True)
-##                    del species_filter_table_template
-##
-##                    del dataset_md
-##
-##                elif "Indicators" in dataset_name:
-##
-##                    arcpy.AddMessage(f"\tIndicators")
-##
-##                    if dataset_name == "Indicators":
-##                        dataset_name = f"{dataset_name}_Table"
-##                    else:
-##                        pass
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    del empty_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##
-##                    dataset_md.synchronize("ALWAYS")
-##
-##                    indicators_template = rf"{metadata_folder}\indicators_template.xml"
-##                    dataset_md.saveAsXML(indicators_template)
-##                    parse_xml_file_format_and_save(indicators_template)
-##                    parse_xml_file_format_and_save(csv_data_folder=csv_data_folder, xml_file=indicators_template, sort=True)
-##                    del indicators_template
-##
-##                    del dataset_md
-##
-##                elif "LayerSpeciesYearImageName" in dataset_name:
-##
-##                    arcpy.AddMessage(f"\tLayer Species Year Image Name")
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    del empty_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##
-##                    dataset_md.synchronize("ALWAYS")
-##
-##                    layer_species_year_image_name_template = rf"{metadata_folder}\layer_species_year_image_name_template.xml"
-##                    dataset_md.saveAsXML(layer_species_year_image_name_template)
-##                    parse_xml_file_format_and_save(csv_data_folder=csv_data_folder, xml_file=layer_species_year_image_name_template, sort=True)
-##                    del layer_species_year_image_name_template
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Boundary"):
-##
-##                    arcpy.AddMessage(f"\tBoundary")
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    del empty_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##
-##                    dataset_md.synchronize("ALWAYS")
-##
-##                    boundary_template = rf"{metadata_folder}\boundary_template.xml"
-##                    dataset_md.saveAsXML(boundary_template)
-##                    parse_xml_file_format_and_save(csv_data_folder=csv_data_folder, xml_file=boundary_template, sort=True)
-##                    del boundary_template
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Extent_Points"):
-##
-##                    arcpy.AddMessage(f"\tExtent_Points")
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    del empty_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##                    extent_points_template = rf"{metadata_folder}\extent_points_template.xml"
-##                    dataset_md.saveAsXML(extent_points_template)
-##                    parse_xml_file_format_and_save(csv_data_folder=csv_data_folder, xml_file=extent_points_template, sort=True)
-##                    del extent_points_template
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Fishnet"):
-##
-##                    arcpy.AddMessage(f"\tFishnet")
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    del empty_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    fishnet_template = rf"{metadata_folder}\fishnet_template.xml"
-##                    dataset_md.saveAsXML(fishnet_template)
-##                    parse_xml_file_format_and_save(fishnet_template)
-##                    del fishnet_template
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Lat_Long"):
-##
-##                    arcpy.AddMessage(f"\tLat_Long")
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    del empty_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    lat_long_template = rf"{metadata_folder}\lat_long_template.xml"
-##                    dataset_md.saveAsXML(lat_long_template)
-##                    parse_xml_file_format_and_save(lat_long_template)
-##                    del lat_long_template
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Region"):
-##
-##                    arcpy.AddMessage(f"\tRegion")
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    del empty_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    region_template = rf"{metadata_folder}\region_template.xml"
-##                    dataset_md.saveAsXML(region_template)
-##                    parse_xml_file_format_and_save(region_template)
-##                    del region_template
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Sample_Locations"):
-##
-##                    arcpy.AddMessage(f"\tSample_Locations")
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    del empty_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    sample_locations_template = rf"{metadata_folder}\sample_locations_template.xml"
-##                    dataset_md.saveAsXML(sample_locations_template)
-##                    parse_xml_file_format_and_save(sample_locations_template)
-##                    del sample_locations_template
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("GRID_Points"):
-##
-##                    arcpy.AddMessage(f"\tGRID_Points")
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    del empty_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    grid_points_template = rf"{metadata_folder}\grid_points_template.xml"
-##                    dataset_md.saveAsXML(grid_points_template)
-##                    parse_xml_file_format_and_save(grid_points_template)
-##                    del grid_points_template
-##
-##                    del dataset_md
-##
-##                elif "DisMAP_Regions" == dataset_name:
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    del empty_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    dismap_regions_template = rf"{metadata_folder}\dismap_regions_template.xml"
-##                    dataset_md.saveAsXML(dismap_regions_template)
-##                    parse_xml_file_format_and_save(dismap_regions_template)
-##                    del dismap_regions_template
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Bathymetry"):
-##
-##                    arcpy.AddMessage(f"\tBathymetry")
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    del empty_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    bathymetry_template = rf"{metadata_folder}\bathymetry_template.xml"
-##                    dataset_md.saveAsXML(bathymetry_template)
-##                    parse_xml_file_format_and_save(bathymetry_template)
-##                    del bathymetry_template
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Latitude"):
-##
-##                    arcpy.AddMessage(f"\tLatitude")
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    del empty_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    latitude_template = rf"{metadata_folder}\latitude_template.xml"
-##                    dataset_md.saveAsXML(latitude_template)
-##                    parse_xml_file_format_and_save(latitude_template)
-##                    del latitude_template
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Longitude"):
-##
-##                    arcpy.AddMessage(f"\tLongitude")
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    del empty_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    longitude_template = rf"{metadata_folder}\longitude_template.xml"
-##                    dataset_md.saveAsXML(longitude_template)
-##                    parse_xml_file_format_and_save(longitude_template)
-##                    del longitude_template
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Raster_Mask"):
-##
-##                    arcpy.AddMessage(f"\tRaster_Mask")
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    del empty_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    raster_mask_template = rf"{metadata_folder}\raster_mask_template.xml"
-##                    dataset_md.saveAsXML(raster_mask_template)
-##                    parse_xml_file_format_and_save(raster_mask_template)
-##                    del raster_mask_template
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Mosaic"):
-##
-##                    arcpy.AddMessage(f"\tMosaic")
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    del empty_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    mosaic_template = rf"{metadata_folder}\mosaic_template.xml"
-##                    dataset_md.saveAsXML(mosaic_template)
-##                    parse_xml_file_format_and_save(mosaic_template)
-##                    del mosaic_template
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith(".crf"):
-##
-##                    arcpy.AddMessage(f"\tCRF")
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    del empty_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    crf_template = rf"{metadata_folder}\crf_template.xml"
-##                    dataset_md.saveAsXML(crf_template)
-##                    parse_xml_file_format_and_save(crf_template)
-##                    del crf_template
-##
-##                    del dataset_md
-##
-##                else:
-##                    arcpy.AddMessage(f"\tRegion Table")
-##
-##                    if dataset_name.endswith("IDW"):
-##
-##                        dataset_md = md.Metadata(dataset_path)
-##                        empty_md   = md.Metadata()
-##                        dataset_md.copy(empty_md)
-##                        dataset_md.save()
-##                        del empty_md
-##
-##                        dataset_md.title             = metadata_dictionary[f"{dataset_name}"]["Dataset Service Title"]
-##                        dataset_md.tags              = metadata_dictionary[f"{dataset_name}"]["Tags"]
-##                        dataset_md.summary           = metadata_dictionary[f"{dataset_name}"]["Summary"]
-##                        dataset_md.description       = metadata_dictionary[f"{dataset_name}"]["Description"]
-##                        dataset_md.credits           = metadata_dictionary[f"{dataset_name}"]["Credits"]
-##                        dataset_md.accessConstraints = metadata_dictionary[f"{dataset_name}"]["Access Constraints"]
-##                        dataset_md.save()
-##                        dataset_md.synchronize("ALWAYS")
-##                        dataset_md.save()
-##
-##                        idw_region_table_template = rf"{metadata_folder}\idw_region_table_template.xml"
-##                        dataset_md.saveAsXML(idw_region_table_template)
-##                        parse_xml_file_format_and_save(idw_region_table_template)
-##                        del idw_region_table_template
-##
-##                        del dataset_md
-##                    else:
-##                        pass
-##                del dataset_name, dataset_path
-##            del workspace
-##
-##        del datasets
-##
-##        # Declared Variables set in function
-##        del project_gdb, base_project_folder, metadata_folder
-##        del project_folder, scratch_folder, crfs_folder
-##        del metadata_dictionary, workspaces
-##
-##        # Imports
-##        del dataset_title_dict, parse_xml_file_format_and_save
-##        del md
-##
-##        # Function Parameters
-##        del base_project_file, project
-##
-##    except KeyboardInterrupt:
-##        sys.exit()
-##    except arcpy.ExecuteWarning:
-##        arcpy.AddWarning(arcpy.GetMessages(1))
-##    except arcpy.ExecuteError:
-##        arcpy.AddError(arcpy.GetMessages(2))
-##        traceback.print_exc()
-##        sys.exit()
-##    except SystemExit:
-##        arcpy.AddError(arcpy.GetMessages(2))
-##        traceback.print_exc()
-##        sys.exit()
-##    except Exception:
-##        arcpy.AddError(arcpy.GetMessages(2))
-##        traceback.print_exc()
-##        sys.exit()
-##    except:
-##        arcpy.AddError(arcpy.GetMessages(2))
-##        traceback.print_exc()
-##        sys.exit()
-##    else:
-##        # While in development, leave here. For test, move to finally
-##        rk = [key for key in locals().keys() if not key.startswith('__')]
-##        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
-##        return True
-##    finally:
-##        pass
-##
-##def import_basic_template_xml_files(project_gdb=""):
-##    try:
-##        # Import
-##        from arcpy import metadata as md
-##
-##        from dismap_tools import dataset_title_dict, parse_xml_file_format_and_saves, unique_years
-##
-##        arcpy.env.overwriteOutput          = True
-##        arcpy.env.parallelProcessingFactor = "100%"
-##        arcpy.SetLogMetadata(True)
-##        arcpy.SetSeverityLevel(2)
-##        arcpy.SetMessageLevels(['NORMAL']) # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
-##
-##        # Map Cleanup
-##        MapCleanup = False
-##        if MapCleanup:
-##            map_cleanup(base_project_file)
-##        del MapCleanup
-##
-##        base_project_folder = rf"{os.path.dirname(base_project_file)}"
-##        base_project_file   = rf"{base_project_folder}\DisMAP.aprx"
-##        project_folder      = rf"{base_project_folder}\{project}"
-##        project_gdb         = rf"{project_folder}\{project}.gdb"
-##        metadata_folder     = rf"{project_folder}\Current Metadata"
-##        crfs_folder         = rf"{project_folder}\CRFs"
-##        scratch_folder      = rf"{project_folder}\Scratch"
-##
-##        #arcpy.AddMessage("Creating the Metadata Dictionary. Please wait!!")
-##        metadata_dictionary = dataset_title_dict(project_gdb)
-##        #arcpy.AddMessage("Creating the Metadata Dictionary. Completed")
-##
-##        #workspaces = [project_gdb, crfs_folder]
-##        workspaces = [crfs_folder]
-##
-##        for workspace in workspaces:
-##
-##            arcpy.env.workspace        = workspace
-##            arcpy.env.scratchWorkspace = os.path.join(scratch_folder, "scratch.gdb")
-##
-##            datasets = list()
-##
-##            walk = arcpy.da.Walk(workspace)
-##
-##            for dirpath, dirnames, filenames in walk:
-##                for filename in filenames:
-##                    datasets.append(os.path.join(dirpath, filename))
-##                    del filename
-##                del dirpath, dirnames, filenames
-##            del walk
-##
-##            for dataset_path in sorted(datasets):
-##                #arcpy.AddMessage(dataset_path)
-##                dataset_name = os.path.basename(dataset_path)
-##
-##                arcpy.AddMessage(f"Dataset Name: {dataset_name}")
-##
-##                if "Datasets" == dataset_name:
-##
-##                    arcpy.AddMessage(f"\tDataset Table")
-##
-##                    datasets_table_template = rf"{metadata_folder}\datasets_table_template.xml"
-##                    template_md = md.Metadata(datasets_table_template)
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    dataset_md.copy(template_md)
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    del empty_md, template_md, datasets_table_template
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    del dataset_md
-##
-##                elif "Species_Filter" == dataset_name:
-##
-##                    arcpy.AddMessage(f"\tSpecies Filter Table")
-##
-##                    species_filter_table_template = rf"{metadata_folder}\species_filter_table_template.xml"
-##                    template_md = md.Metadata(species_filter_table_template)
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    dataset_md.copy(template_md)
-##                    dataset_md.save()
-##                    del empty_md, template_md, species_filter_table_template
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    del dataset_md
-##
-##                elif "Indicators" in dataset_name:
-##
-##                    arcpy.AddMessage(f"\tIndicators")
-##
-##                    if dataset_name == "Indicators":
-##                        indicators_template = rf"{metadata_folder}\indicators_template.xml"
-##                    else:
-##                        indicators_template = rf"{metadata_folder}\region_indicators_template.xml"
-##
-##                    template_md = md.Metadata(indicators_template)
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    dataset_md.copy(template_md)
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##                    del empty_md, template_md, indicators_template
-##
-##                    # Max-Min Year range table
-##                    years_md = unique_years(dataset_path)
-##                    _tags = f", {min(years_md)} to {max(years_md)}"
-##                    del years_md
-##
-##                    #arcpy.AddMessage(metadata_dictionary[dataset_name]["Tags"])
-##                    #arcpy.AddMessage(_tags)
-##
-##                    if dataset_name == "Indicators":
-##                        dataset_name = f"{dataset_name}_Table"
-##                    else:
-##                        pass
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"] + _tags
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    del dataset_md, _tags
-##
-##                elif "LayerSpeciesYearImageName" in dataset_name:
-##
-##                    arcpy.AddMessage(f"\tLayer Species Year Image Name")
-##
-##                    layer_species_year_image_name_template = rf"{metadata_folder}\layer_species_year_image_name_template.xml"
-##                    template_md = md.Metadata(layer_species_year_image_name_template)
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    dataset_md.copy(template_md)
-##                    dataset_md.save()
-##                    del empty_md, template_md, layer_species_year_image_name_template
-##
-##                    # Max-Min Year range table
-##                    years_md = unique_years(dataset_path)
-##                    _tags = f", {min(years_md)} to {max(years_md)}"
-##                    del years_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"] + _tags
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    del dataset_md, _tags
-##
-##                elif dataset_name.endswith("Boundary"):
-##
-##                    arcpy.AddMessage(f"\tBoundary")
-##
-##                    boundary_template = rf"{metadata_folder}\boundary_template.xml"
-##                    template_md = md.Metadata(boundary_template)
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    dataset_md.copy(template_md)
-##                    dataset_md.save()
-##                    del empty_md, template_md, boundary_template
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Extent_Points"):
-##
-##                    arcpy.AddMessage(f"\tExtent_Points")
-##
-##                    extent_points_template = rf"{metadata_folder}\extent_points_template.xml"
-##                    template_md = md.Metadata(extent_points_template)
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    dataset_md.copy(template_md)
-##                    dataset_md.save()
-##                    del empty_md, template_md, extent_points_template
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Fishnet"):
-##
-##                    arcpy.AddMessage(f"\tFishnet")
-##
-##                    fishnet_template = rf"{metadata_folder}\fishnet_template.xml"
-##                    template_md = md.Metadata(fishnet_template)
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    dataset_md.copy(template_md)
-##                    dataset_md.save()
-##                    del empty_md, template_md, fishnet_template
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Lat_Long"):
-##
-##                    arcpy.AddMessage(f"\tLat_Long")
-##
-##                    lat_long_template = rf"{metadata_folder}\lat_long_template.xml"
-##                    template_md = md.Metadata(lat_long_template)
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    dataset_md.copy(template_md)
-##                    dataset_md.save()
-##                    del empty_md, template_md, lat_long_template
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Region"):
-##
-##                    arcpy.AddMessage(f"\tRegion")
-##
-##                    region_template = rf"{metadata_folder}\region_template.xml"
-##                    template_md = md.Metadata(region_template)
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    dataset_md.copy(template_md)
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    del template_md, region_template
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Sample_Locations"):
-##
-##                    arcpy.AddMessage(f"\tSample_Locations")
-##
-##                    sample_locations_template = rf"{metadata_folder}\sample_locations_template.xml"
-##                    template_md = md.Metadata(sample_locations_template)
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    dataset_md.copy(template_md)
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##                    del template_md, sample_locations_template
-##
-##                    # Max-Min Year range table
-##                    years_md = unique_years(dataset_path)
-##                    _tags = f", {min(years_md)} to {max(years_md)}"
-##                    del years_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"] + _tags
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    del dataset_md, _tags
-##
-####                elif dataset_name.endswith("GRID_Points"):
-####
-####                    arcpy.AddMessage(f"\tGRID_Points")
-####
-####                    grid_points_template = rf"{metadata_folder}\grid_points_template.xml"
-####                    template_md = md.Metadata(grid_points_template)
-####
-####                    dataset_md = md.Metadata(dataset_path)
-####                    empty_md   = md.Metadata()
-####                    dataset_md.copy(empty_md)
-####                    dataset_md.save()
-####                    dataset_md.copy(template_md)
-####                    dataset_md.save()
-####                    del empty_md, template_md, grid_points_template
-####
-####                    # Max-Min Year range table
-####                    years_md = unique_years(dataset_path)
-####                    _tags = f", {min(years_md)} to {max(years_md)}"
-####                    del years_md
-####
-####                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-####                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"] + _tags
-####                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-####                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-####                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-####                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-####                    dataset_md.save()
-####
-####                    dataset_md.synchronize("ALWAYS")
-####
-####                    del dataset_md, _tags
-##
-##                elif "DisMAP_Regions" == dataset_name:
-##
-##                    arcpy.AddMessage(f"\tDisMAP_Regions")
-##
-##                    dismap_regions_template = rf"{metadata_folder}\dismap_regions_template.xml"
-##                    template_md = md.Metadata(dismap_regions_template)
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    dataset_md.copy(template_md)
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    del template_md, dismap_regions_template
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##                    dataset_md.synchronize("ALWAYS")
-##                    dataset_md.save()
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Bathymetry"):
-##
-##                    arcpy.AddMessage(f"\tBathymetry")
-##
-##                    bathymetry_template = rf"{metadata_folder}\bathymetry_template.xml"
-##                    template_md = md.Metadata(bathymetry_template)
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    dataset_md.copy(template_md)
-##                    dataset_md.save()
-##                    del empty_md, template_md, bathymetry_template
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##
-##                    dataset_md.synchronize("ALWAYS")
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Latitude"):
-##
-##                    arcpy.AddMessage(f"\tLatitude")
-##
-##                    latitude_template = rf"{metadata_folder}\latitude_template.xml"
-##                    template_md = md.Metadata(latitude_template)
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    dataset_md.copy(template_md)
-##                    dataset_md.save()
-##                    del empty_md, template_md, latitude_template
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##
-##                    dataset_md.synchronize("ALWAYS")
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Longitude"):
-##
-##                    arcpy.AddMessage(f"\tLongitude")
-##
-##                    longitude_template = rf"{metadata_folder}\longitude_template.xml"
-##                    template_md = md.Metadata(longitude_template)
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    dataset_md.copy(template_md)
-##                    dataset_md.save()
-##                    del empty_md, template_md, longitude_template
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##
-##                    dataset_md.synchronize("ALWAYS")
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Raster_Mask"):
-##
-##                    arcpy.AddMessage(f"\tRaster_Mask")
-##
-##                    raster_mask_template = rf"{metadata_folder}\raster_mask_template.xml"
-##                    template_md = md.Metadata(raster_mask_template)
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    dataset_md.copy(template_md)
-##                    dataset_md.save()
-##                    del empty_md, template_md, raster_mask_template
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##
-##                    dataset_md.synchronize("ALWAYS")
-##
-##                    del dataset_md
-##
-##                elif dataset_name.endswith("Mosaic"):
-##
-##                    arcpy.AddMessage(f"\tMosaic")
-##
-##                    mosaic_template = rf"{metadata_folder}\mosaic_template.xml"
-##                    template_md = md.Metadata(mosaic_template)
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    dataset_md.copy(template_md)
-##                    dataset_md.save()
-##                    del empty_md, template_md, mosaic_template
-##
-##                    # Max-Min Year range table
-##                    years_md = unique_years(dataset_path)
-##                    _tags = f", {min(years_md)} to {max(years_md)}"
-##                    del years_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"] + _tags
-##                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
-##                    dataset_md.save()
-##
-##                    dataset_md.synchronize("ALWAYS")
-##
-##                    del dataset_md, _tags
-##
-##                elif dataset_name.endswith(".crf"):
-##
-##                    arcpy.AddMessage(f"\tCRF")
-##                    #arcpy.AddMessage(dataset_name)
-##                    #arcpy.AddMessage(dataset_path)
-##                    #dataset_path = dataset_path.replace(crfs_folder, project_gdb).replace(".crf", "_Mosaic")
-##                    #arcpy.AddMessage(dataset_path)
-##
-##                    crf_template = rf"{metadata_folder}\crf_template.xml"
-##                    template_md = md.Metadata(crf_template)
-##
-##                    dataset_md = md.Metadata(dataset_path)
-##                    empty_md   = md.Metadata()
-##                    dataset_md.copy(empty_md)
-##                    dataset_md.save()
-##                    dataset_md.copy(template_md)
-##                    dataset_md.save()
-##                    del empty_md, template_md, crf_template
-##
-##                    # Max-Min Year range table
-##                    years_md = unique_years(dataset_path.replace(crfs_folder, project_gdb).replace(".crf", "_Mosaic"))
-##                    _tags = f", {min(years_md)} to {max(years_md)}"
-##                    del years_md
-##
-##                    dataset_md.title             = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Dataset Service Title"]
-##                    dataset_md.tags              = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Tags"] + _tags
-##                    dataset_md.summary           = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Summary"]
-##                    dataset_md.description       = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Description"]
-##                    dataset_md.credits           = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Credits"]
-##                    dataset_md.accessConstraints = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Access Constraints"]
-##                    dataset_md.save()
-##
-##                    dataset_md.synchronize("ALWAYS")
-##
-##                    del dataset_md, _tags
-##
-##                else:
-##                    arcpy.AddMessage(f"\tRegion Table")
-##
-##                    if dataset_name.endswith("IDW"):
-##
-##                        idw_region_table_template = rf"{metadata_folder}\idw_region_table_template.xml"
-##                        template_md = md.Metadata(idw_region_table_template)
-##
-##                        dataset_md = md.Metadata(dataset_path)
-##                        empty_md   = md.Metadata()
-##                        dataset_md.copy(empty_md)
-##                        dataset_md.save()
-##                        dataset_md.copy(template_md)
-##                        dataset_md.save()
-##                        del empty_md, template_md, idw_region_table_template
-##
-##                        # Max-Min Year range table
-##                        years_md = unique_years(dataset_path)
-##                        _tags = f", {min(years_md)} to {max(years_md)}"
-##                        del years_md
-##
-##                        dataset_md.title             = metadata_dictionary[f"{dataset_name}"]["Dataset Service Title"]
-##                        dataset_md.tags              = metadata_dictionary[f"{dataset_name}"]["Tags"] + _tags
-##                        dataset_md.summary           = metadata_dictionary[f"{dataset_name}"]["Summary"]
-##                        dataset_md.description       = metadata_dictionary[f"{dataset_name}"]["Description"]
-##                        dataset_md.credits           = metadata_dictionary[f"{dataset_name}"]["Credits"]
-##                        dataset_md.accessConstraints = metadata_dictionary[f"{dataset_name}"]["Access Constraints"]
-##                        dataset_md.save()
-##
-##                        dataset_md.synchronize("ALWAYS")
-##
-##                        del dataset_md, _tags
-##
-####                    elif dataset_name.endswith("GLMME"):
-####
-####                        glmme_region_table_template = rf"{metadata_folder}\glmme_region_table_template.xml"
-####                        template_md = md.Metadata(glmme_region_table_template)
-####
-####                        dataset_md = md.Metadata(dataset_path)
-####                        empty_md   = md.Metadata()
-####                        dataset_md.copy(empty_md)
-####                        dataset_md.save()
-####                        dataset_md.copy(template_md)
-####                        dataset_md.save()
-####                        del empty_md, template_md, glmme_region_table_template
-####
-####                        # Max-Min Year range table
-####                        years_md = unique_years(dataset_path)
-####                        _tags = f", {min(years_md)} to {max(years_md)}"
-####                        del years_md
-####
-####                        dataset_md.title             = metadata_dictionary[f"{dataset_name}"]["Dataset Service Title"]
-####                        dataset_md.tags              = metadata_dictionary[f"{dataset_name}"]["Tags"] + _tags
-####                        dataset_md.summary           = metadata_dictionary[f"{dataset_name}"]["Summary"]
-####                        dataset_md.description       = metadata_dictionary[f"{dataset_name}"]["Description"]
-####                        dataset_md.credits           = metadata_dictionary[f"{dataset_name}"]["Credits"]
-####                        dataset_md.accessConstraints = metadata_dictionary[f"{dataset_name}"]["Access Constraints"]
-####                        dataset_md.save()
-####
-####                        dataset_md.synchronize("ALWAYS")
-####
-####                        del dataset_md, _tags
-##
-##                    else:
-##                        pass
-##                del dataset_name, dataset_path
-##            del workspace
-##
-##        base_project_folder = os.path.dirname(os.path.dirname(__file__))
-##
-##        #parse_xml_file_format_and_saves(rf"{base_project_folder}\{project}\Current Metadata")
-##
-##        del datasets
-##
-##        # Declared Variables set in function
-##        del project_gdb, base_project_folder, metadata_folder
-##        del project_folder, scratch_folder, crfs_folder
-##        del metadata_dictionary, workspaces
-##
-##        # Imports
-##        del dataset_title_dict, parse_xml_file_format_and_saves, unique_years
-##        del md
-##
-##        # Function Parameters
-##        del base_project_file, project
-##
-##    except KeyboardInterrupt:
-##        sys.exit()
-##    except arcpy.ExecuteWarning:
-##        arcpy.AddWarning(arcpy.GetMessages(1))
-##    except arcpy.ExecuteError:
-##        arcpy.AddError(arcpy.GetMessages(2))
-##        traceback.print_exc()
-##        sys.exit()
-##    except SystemExit:
-##        arcpy.AddError(arcpy.GetMessages(2))
-##        traceback.print_exc()
-##        sys.exit()
-##    except Exception:
-##        arcpy.AddError(arcpy.GetMessages(2))
-##        traceback.print_exc()
-##        sys.exit()
-##    except:
-##        arcpy.AddError(arcpy.GetMessages(2))
-##        traceback.print_exc()
-##        sys.exit()
-##    else:
-##        # While in development, leave here. For test, move to finally
-##        rk = [key for key in locals().keys() if not key.startswith('__')]
-##        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
-##        return True
-##    finally:
-##        pass
 
 def create_maps(project_gdb=""):
     try:
         # Import
         from arcpy import metadata as md
 
-        from dismap_tools import dataset_title_dict, parse_xml_file_format_and_save
+        from dismap_tools import dataset_title_dict
 
         arcpy.env.overwriteOutput          = True
         arcpy.env.parallelProcessingFactor = "100%"
@@ -2387,16 +1006,16 @@ def create_maps(project_gdb=""):
         arcpy.SetSeverityLevel(2)
         arcpy.SetMessageLevels(['NORMAL']) # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
 
-        # Map Cleanup
-        MapCleanup = False
-        if MapCleanup:
-            map_cleanup(base_project_file)
-        del MapCleanup
+##        # Map Cleanup
+##        MapCleanup = False
+##        if MapCleanup:
+##            map_cleanup(base_project_file)
+##        del MapCleanup
 
-        base_project_folder = rf"{os.path.dirname(base_project_file)}"
+        base_project_folder = rf"{os.path.dirname(base_project_file)}"  # noqa: F821
         base_project_file   = rf"{base_project_folder}\DisMAP.aprx"
-        project_folder      = rf"{base_project_folder}\{project}"
-        project_gdb         = rf"{project_folder}\{project}.gdb"
+        project_folder      = rf"{base_project_folder}\{project}"  # noqa: F821
+        project_gdb         = rf"{project_folder}\{project}.gdb"  # noqa: F821
         metadata_folder     = rf"{project_folder}\Export Metadata"
         scratch_folder      = rf"{project_folder}\Scratch"
 
@@ -2432,38 +1051,27 @@ def create_maps(project_gdb=""):
                 if "IDW" in dataset_name:
                     arcpy.AddMessage(f"Dataset Name: {dataset_name}")
                     if "Indicators" in dataset_name:
-                        arcpy.AddMessage(f"\tRegion Indicators")
+                        arcpy.AddMessage("\tRegion Indicators")
 
                     elif "LayerSpeciesYearImageName" in dataset_name:
-                        arcpy.AddMessage(f"\tRegion Layer Species Year Image Name")
+                        arcpy.AddMessage("\tRegion Layer Species Year Image Name")
 
                     else:
-                        arcpy.AddMessage(f"\tRegion Table")
-
-##                elif "GLMME" in dataset_name:
-##                    arcpy.AddMessage(f"Dataset Name: {dataset_name}")
-##                    if "Indicators" in dataset_name:
-##                        arcpy.AddMessage(f"\tGLMME Region Indicators")
-##
-##                    elif "LayerSpeciesYearImageName" in dataset_name:
-##                        arcpy.AddMessage(f"\tGLMME Layer Species Year Image Name")
-##
-##                    else:
-##                        arcpy.AddMessage(f"\tGLMME Region Table")
+                        arcpy.AddMessage("\tRegion Table")
 
                 else:
                     arcpy.AddMessage(f"Dataset Name: {dataset_name}")
                     if "Indicators" in dataset_name:
-                        arcpy.AddMessage(f"\tMain Indicators Table")
+                        arcpy.AddMessage("\tMain Indicators Table")
 
                     elif "LayerSpeciesYearImageName" in dataset_name:
-                        arcpy.AddMessage(f"\tLayer Species Year Image Name")
+                        arcpy.AddMessage("\tLayer Species Year Image Name")
 
                     elif "Datasets" in dataset_name:
-                        arcpy.AddMessage(f"\tDataset Table")
+                        arcpy.AddMessage("\tDataset Table")
 
                     elif "Species_Filter" in dataset_name:
-                        arcpy.AddMessage(f"\tSpecies Filter Table")
+                        arcpy.AddMessage("\tSpecies Filter Table")
 
                     else:
                         arcpy.AddMessage(f"\tDataset Name: {dataset_name}")
@@ -2474,53 +1082,30 @@ def create_maps(project_gdb=""):
                 if "IDW" in dataset_name:
                     arcpy.AddMessage(f"Dataset Name: {dataset_name}")
                     if dataset_name.endswith("Boundary"):
-                        arcpy.AddMessage(f"\tBoundary")
+                        arcpy.AddMessage("\tBoundary")
 
                     elif dataset_name.endswith("Extent_Points"):
-                        arcpy.AddMessage(f"\tExtent_Points")
+                        arcpy.AddMessage("\tExtent_Points")
 
                     elif dataset_name.endswith("Fishnet"):
-                        arcpy.AddMessage(f"\tFishnet")
+                        arcpy.AddMessage("\tFishnet")
 
                     elif dataset_name.endswith("Lat_Long"):
-                        arcpy.AddMessage(f"\tLat_Long")
+                        arcpy.AddMessage("\tLat_Long")
 
                     elif dataset_name.endswith("Region"):
-                        arcpy.AddMessage(f"\tRegion")
+                        arcpy.AddMessage("\tRegion")
 
                     elif dataset_name.endswith("Sample_Locations"):
-                        arcpy.AddMessage(f"\tSample_Locations")
+                        arcpy.AddMessage("\tSample_Locations")
 
                     else:
                         pass
 
-##                elif "GLMME" in dataset_name:
-##                    arcpy.AddMessage(f"Dataset Name: {dataset_name}")
-##                    if dataset_name.endswith("Boundary"):
-##                        arcpy.AddMessage(f"\tBoundary")
-##
-##                    elif dataset_name.endswith("Extent_Points"):
-##                        arcpy.AddMessage(f"\tExtent_Points")
-##
-##                    elif dataset_name.endswith("Fishnet"):
-##                        arcpy.AddMessage(f"\tFishnet")
-##
-##                    elif dataset_name.endswith("Lat_Long"):
-##                        arcpy.AddMessage(f"\tLat_Long")
-##
-##                    elif dataset_name.endswith("Region"):
-##                        arcpy.AddMessage(f"\tRegion")
-##
-##                    elif dataset_name.endswith("GRID_Points"):
-##                        arcpy.AddMessage(f"\tGRID_Points")
-##
-##                    else:
-##                        pass
-
                 elif "DisMAP_Regions" == dataset_name:
                     arcpy.AddMessage(f"Dataset Name: {dataset_name}")
                     if dataset_name.endswith("Regions"):
-                        arcpy.AddMessage(f"\tDisMAP Regions")
+                        arcpy.AddMessage("\tDisMAP Regions")
 
                 else:
                     arcpy.AddMessage(f"Else Dataset Name: {dataset_name}")
@@ -2530,30 +1115,16 @@ def create_maps(project_gdb=""):
                 if "IDW" in dataset_name:
                     arcpy.AddMessage(f"Dataset Name: {dataset_name}")
                     if dataset_name.endswith("Bathymetry"):
-                        arcpy.AddMessage(f"\tBathymetry")
+                        arcpy.AddMessage("\tBathymetry")
 
                     elif dataset_name.endswith("Latitude"):
-                        arcpy.AddMessage(f"\tLatitude")
+                        arcpy.AddMessage("\tLatitude")
 
                     elif dataset_name.endswith("Longitude"):
-                        arcpy.AddMessage(f"\tLongitude")
+                        arcpy.AddMessage("\tLongitude")
 
                     elif dataset_name.endswith("Raster_Mask"):
-                        arcpy.AddMessage(f"\tRaster_Mask")
-
-##                elif "GLMME" in dataset_name:
-##                    arcpy.AddMessage(f"Dataset Name: {dataset_name}")
-##                    if dataset_name.endswith("Bathymetry"):
-##                        arcpy.AddMessage(f"\tBathymetry")
-##
-##                    elif dataset_name.endswith("Latitude"):
-##                        arcpy.AddMessage(f"\tLatitude")
-##
-##                    elif dataset_name.endswith("Longitude"):
-##                        arcpy.AddMessage(f"\tLongitude")
-##
-##                    elif dataset_name.endswith("Raster_Mask"):
-##                        arcpy.AddMessage(f"\tRaster_Mask")
+                        arcpy.AddMessage("\tRaster_Mask")
                 else:
                     pass
 
@@ -2562,17 +1133,14 @@ def create_maps(project_gdb=""):
                 if "IDW" in dataset_name:
                     arcpy.AddMessage(f"Dataset Name: {dataset_name}")
                     if dataset_name.endswith("Mosaic"):
-                        arcpy.AddMessage(f"\tMosaic")
-
-##                elif "GLMME" in dataset_name:
-##                    arcpy.AddMessage(f"Dataset Name: {dataset_name}")
-##                    if dataset_name.endswith("Mosaic"):
-##                        arcpy.AddMessage(f"\tMosaic")
+                        arcpy.AddMessage("\tMosaic")
+                    else:
+                        pass
 
                 elif "CRF" in dataset_name:
                     arcpy.AddMessage(f"Dataset Name: {dataset_name}")
                     if dataset_name.endswith("CRF"):
-                        arcpy.AddMessage(f"\tCRF")
+                        arcpy.AddMessage("\tCRF")
 
                 else:
                     pass
@@ -2583,223 +1151,6 @@ def create_maps(project_gdb=""):
 
             del dataset_name, dataset_path
         del datasets
-
-##        # DatasetCode, CSVFile, TransformUnit, TableName, GeographicArea, CellSize,
-##        # PointFeatureType, FeatureClassName, Region, Season, DateCode, Status,
-##        # DistributionProjectCode, DistributionProjectName, SummaryProduct,
-##        # FilterRegion, FilterSubRegion, FeatureServiceName, FeatureServiceTitle,
-##        # MosaicName, MosaicTitle, ImageServiceName, ImageServiceTitle
-##
-##        # Get values for table_name from Datasets table
-##        #fields = ["FeatureClassName", "FeatureServiceName", "FeatureServiceTitle"]
-##        fields = ["DatasetCode", "PointFeatureType", "FeatureClassName", "Region", "Season", "DateCode", "DistributionProjectCode"]
-##        datasets = [row for row in arcpy.da.SearchCursor(os.path.join(project_gdb, "Datasets"), fields, where_clause = f"FeatureClassName IS NOT NULL AND DistributionProjectCode NOT IN ('GLMME', 'GFDL')")]
-##        #datasets = [row for row in arcpy.da.SearchCursor(os.path.join(project_gdb, "Datasets"), fields, where_clause = f"FeatureClassName IS NOT NULL and TableName = 'AI_IDW'")]
-##        del fields
-##
-##        for dataset in datasets:
-##            dataset_code, point_feature_type, feature_class_name, region_latitude, season, date_code, distribution_project_code = dataset
-##
-##            feature_service_name  = f"{dataset_code}_{point_feature_type}_{date_code}".replace("None", "").replace(" ", "_").replace("__", "_")
-##
-##            if distribution_project_code == "IDW":
-##                feature_service_title = f"{region_latitude} {season} {point_feature_type} {date_code}".replace("None", "").replace("  ", " ")
-##            elif distribution_project_code in ["GLMME", "GFDL"]:
-##                feature_service_title = f"{region_latitude} {distribution_project_code} {point_feature_type} {date_code}".replace("None", "").replace("  ", " ")
-##            else:
-##                feature_service_title = f"{feature_service_name}".replace("_", " ")
-##
-##            map_title = feature_service_title.replace("GRID Points", "").replace("Sample Locations", "").replace("  ", " ")
-##
-##            feature_class_path = f"{project_gdb}\{feature_class_name}"
-##
-##            arcpy.AddMessage(f"Dataset Code: {dataset_code}")
-##            arcpy.AddMessage(f"\tFeature Service Name:   {feature_service_name}")
-##            arcpy.AddMessage(f"\tFeature Service Title:  {feature_service_title}")
-##            arcpy.AddMessage(f"\tMap Title:              {map_title}")
-##            arcpy.AddMessage(f"\tFeature Class Name:     {feature_class_name}")
-##            arcpy.AddMessage(f"\tFeature Class Path:     {feature_class_path}")
-##
-##            height = arcpy.Describe(feature_class_path).extent.YMax - arcpy.Describe(feature_class_path).extent.YMin
-##            width  = arcpy.Describe(feature_class_path).extent.XMax - arcpy.Describe(feature_class_path).extent.XMin
-##
-##            # map_width, map_height
-##            map_width, map_height = 2, 3
-##            #map_width, map_height = 8.5, 11
-##
-##            if height > width:
-##                page_height = map_height; page_width = map_width
-##            elif height < width:
-##                page_height = map_width; page_width = map_height
-##            else:
-##                page_width = map_width; page_height = map_height
-##
-##            del map_width, map_height
-##            del height, width
-##
-##            if map_title not in [cm.name for cm in aprx.listMaps()]:
-##                arcpy.AddMessage(f"Creating Map: {map_title}")
-##                aprx.createMap(f"{map_title}", "Map")
-##                aprx.save()
-##
-##            if map_title not in [cl.name for cl in aprx.listLayouts()]:
-##                arcpy.AddMessage(f"Creating Layout: {map_title}")
-##                aprx.createLayout(page_width, page_height, "INCH", f"{map_title}")
-##                aprx.save()
-##
-##            del feature_service_name, feature_service_title
-##            del dataset_code, point_feature_type, feature_class_name, region_latitude, season
-##            del date_code, distribution_project_code
-##
-##            current_map = [cm for cm in aprx.listMaps() if cm.name == map_title][0]
-##            arcpy.AddMessage(f"Current Map:  {current_map.name}")
-##
-##            feature_class_layer = arcpy.management.MakeFeatureLayer(feature_class_path, f"{map_title}")
-##
-##            feature_class_layer_file = arcpy.management.SaveToLayerFile(feature_class_layer, rf"{project_folder}\Layers\{feature_class_layer}.lyrx")
-##            del feature_class_layer_file
-##
-##            feature_class_layer_file = arcpy.mp.LayerFile(rf"{project_folder}\Layers\{feature_class_layer}.lyrx")
-##
-##            arcpy.management.Delete(feature_class_layer)
-##            del feature_class_layer
-##
-##            current_map.addLayer(feature_class_layer_file)
-##            del feature_class_layer_file
-##
-##            #aprx_basemaps = aprx.listBasemaps()
-##            #basemap = 'GEBCO Basemap/Contours (NOAA NCEI Visualization)'
-##            basemap = "Terrain with Labels"
-##
-##            current_map.addBasemap(basemap)
-##            del basemap
-##
-##            #current_map_view = current_map.defaultView
-##            #current_map_view.exportToPNG(rf"{project_folder}\Layers\{map_title}.png", width=200, height=133, resolution = 96, color_mode="24-BIT_TRUE_COLOR", embed_color_profile=True)
-##            #del current_map_view
-##
-##        # #            from arcpy import metadata as md
-##        # #
-##        # #            fc_md = md.Metadata(feature_class_path)
-##        # #            fc_md.thumbnailUri = rf"{project_folder}\Layers\{map_title}.png"
-##        # #            fc_md.save()
-##        # #            del fc_md
-##        # #            del md
-##
-##            aprx.save()
-##
-##            current_layout = [cl for cl in aprx.listLayouts() if cl.name == map_title][0]
-##            arcpy.AddMessage(f"Current Layout: {current_layout.name}")
-##
-##            current_layout.openView()
-##
-##            arcpy.AddMessage(f"Create a new map frame using a point geometry")
-##            #Create a new map frame using a point geometry
-##            mf1 = current_layout.createMapFrame(arcpy.Point(0.01,0.01), current_map, 'New MF - Point')
-##            #mf1.elementWidth = 10
-##            #mf1.elementHeight = 7.5
-##            mf1.elementWidth  = page_width  - 0.01
-##            mf1.elementHeight = page_height - 0.01
-##
-##            lyr = current_map.listLayers(f"{map_title}")[0]
-##
-##            #Zoom to ALL selected features and export to PDF
-##            arcpy.SelectLayerByAttribute_management(lyr, 'NEW_SELECTION')
-##            mf1.zoomToAllLayers(True)
-##            arcpy.SelectLayerByAttribute_management(lyr, 'CLEAR_SELECTION')
-##
-##            #Set the map frame extent to the extent of a layer and export to PDF
-##            mf1.camera.setExtent(mf1.getLayerExtent(lyr, False, True))
-##            mf1.camera.scale = mf1.camera.scale * 1.1 #add a slight buffer
-##
-##            del lyr
-##
-##            arcpy.AddMessage(f"Create a new bookmark set to the map frame's default extent")
-##            #Create a new bookmark set to the map frame's default extent
-##            bkmk = mf1.createBookmark('Default Extent', "The map's default extent")
-##            bkmk.updateThumbnail()
-##            del mf1
-##            del bkmk
-##
-##            #Create point text element using a system style item
-##            #txtStyleItem = aprx.listStyleItems('ArcGIS 2D', 'TEXT', 'Title (Serif)')[0]
-##            #ptTxt = aprx.createTextElement(current_layout, arcpy.Point(5.5, 4.25), 'POINT', f'{map_title}', 10, style_item=txtStyleItem)
-##            #del txtStyleItem
-##
-##            #Change the anchor position and reposition the text to center
-##            #ptTxt.setAnchor('Center_Point')
-##            #ptTxt.elementPositionX = page_width / 2.0
-##            #ptTxt.elementPositionY = page_height - 0.25
-##            #del ptTxt
-##
-##            #arcpy.AddMessage(f"Using CIM to update border")
-##            #current_layout_cim = current_layout.getDefinition('V3')
-##            #for elm in current_layout_cim.elements:
-##            #    if type(elm).__name__ == 'CIMMapFrame':
-##            #        if elm.graphicFrame.borderSymbol.symbol.symbolLayers:
-##            #            sym = elm.graphicFrame.borderSymbol.symbol.symbolLayers[0]
-##            #            sym.width = 5
-##            #            sym.color.values = [255, 0, 0, 100]
-##            #        else:
-##            #            arcpy.AddWarning(elm.name + ' has NO symbol layers')
-##            #current_layout.setDefinition(current_layout_cim)
-##            #del current_layout_cim, elm, sym
-##
-##            ExportLayout = True
-##            if ExportLayout:
-##                #Export the resulting imported layout and changes to JPEG
-##                arcpy.AddMessage(f"Exporting '{current_layout.name}'")
-##                current_layout.exportToJPEG(rf"{project_folder}\Layouts\{current_layout.name}.jpg")
-##            del ExportLayout
-##
-##
-##            from arcpy import metadata as md
-##
-##            fc_md = md.Metadata(feature_class_path)
-##            #fc_md.thumbnailUri = rf"{project_folder}\Layers\{map_title}.png"
-##            fc_md.thumbnailUri = rf"{project_folder}\Layouts\{current_layout.name}.jpg"
-##            fc_md.save()
-##            del fc_md
-##            del md
-##
-##            aprx.save()
-##
-##            aprx.deleteItem(current_map); del current_map
-##            aprx.deleteItem(current_layout); del current_layout
-##
-##            del page_width, page_height
-##            del map_title, feature_class_path
-##            del dataset
-##        del datasets
-##
-##        # TODO: Possibly create a dictionary that can be saved to JSON
-##
-##        aprx.save()
-##
-##        arcpy.AddMessage(f"\nCurrent Maps & Layouts")
-##
-##        current_maps    = aprx.listMaps()
-##        current_layouts = aprx.listLayouts()
-##
-##        if current_maps:
-##            arcpy.AddMessage(f"\nCurrent Maps\n")
-##            for current_map in current_maps:
-##                arcpy.AddMessage(f"\tProject Map: {current_map.name}")
-##                del current_map
-##        else:
-##            arcpy.AddWarning("No maps in Project")
-##
-##        if current_layouts:
-##            arcpy.AddMessage(f"\nCurrent Layouts\n")
-##            for current_layout in current_layouts:
-##                arcpy.AddMessage(f"\tProject Layout: {current_layout.name}")
-##                del current_layout
-##        else:
-##            arcpy.AddWarning("No layouts in Project")
-##
-##        arcpy.AddMessage(f"\n{'-' * 90}\n")
-##
-##        del current_layouts, current_maps
 
         # Declared Variables set in function for aprx
         del home_folder
@@ -2813,39 +1164,27 @@ def create_maps(project_gdb=""):
         del metadata_dictionary
 
         # Imports
-        del dismap_tools, dataset_title_dict, md
+        del dataset_title_dict, md
 
         # Function Parameters
         del project_gdb
 
-    except KeyboardInterrupt:
-        sys.exit()
-    except arcpy.ExecuteWarning:
-        arcpy.AddWarning(f"Caught an arcpy.ExecuteWarning error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
-        arcpy.AddError(f"Caught an arcpy.ExecuteError error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except SystemExit as se:
-        arcpy.AddError(f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function.")
-        sys.exit()
-    except Exception as e:
-        arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
-        traceback.print_exc()
-        sys.exit()
-    except:
-        arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
-        traceback.print_exc()
-        sys.exit()
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
+        return False
+    except:  # noqa: E722
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)
+        return False
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
         return True
-    finally:
-        pass
 
 def script_tool(project_gdb=""):
     try:
@@ -2890,7 +1229,7 @@ def script_tool(project_gdb=""):
                 create_feature_class_services(project_gdb=project_gdb)
             del CreateFeaturClasseServices
 
-            CreateImagesServices = False
+            CreateImagesServices = True
             if CreateImagesServices:
                 create_image_services(project_gdb=project_gdb)
             del CreateImagesServices
@@ -2939,48 +1278,47 @@ def script_tool(project_gdb=""):
         del elapse_time, end_time, start_time
         del gmtime, localtime, strftime, time
 
-    except KeyboardInterrupt:
-        sys.exit()
-    except arcpy.ExecuteWarning:
-        arcpy.AddWarning(f"Caught an arcpy.ExecuteWarning error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
-        arcpy.AddError(f"Caught an arcpy.ExecuteError error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except SystemExit as se:
-        arcpy.AddError(f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function.")
-        sys.exit()
-    except Exception as e:
-        arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
-        traceback.print_exc()
-        sys.exit()
-    except:
-        arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
-        traceback.print_exc()
-        sys.exit()
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
+        return False
+    except:  # noqa: E722
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)
+        return False
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
         return True
-    finally:
-        pass
 
 if __name__ == '__main__':
     try:
         project_gdb = arcpy.GetParameterAsText(0)
+
         if not project_gdb:
-            project_gdb = os.path.join(os.path.expanduser('~'), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb"))
+            project_gdb = os.path.join(os.path.expanduser('~'), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb")
         else:
             pass
+
         script_tool(project_gdb)
+
         arcpy.SetParameterAsText(1, "Result")
+
         del project_gdb
-    except:
-        traceback.print_exc()
-    else:
-        pass
-    finally:
-        pass
+
+    except arcpy.ExecuteError:
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
+    except:  # noqa: E722
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)

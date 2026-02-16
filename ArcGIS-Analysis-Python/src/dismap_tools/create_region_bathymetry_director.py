@@ -44,17 +44,17 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         scratch_folder    = os.path.join(project_folder, "Scratch")
         scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
         csv_data_folder   = os.path.join(project_folder, "CSV_Data")
-        project_bathymetry_gdb = os.path.join(os.path.dirname(project_folder), "Bathymetry\\Bathymetry.gdb")
+        base_project_bathymetry_gdb = os.path.join(os.path.dirname(project_folder), "Bathymetry\\Bathymetry.gdb")
 
-        # Clear Scratch Folder
-        #ClearScratchFolder = True
-        #if ClearScratchFolder:
-        if clear_folder:
-            dismap_tools.clear_folder(folder = scratch_folder)
-        else:
-            pass
-        #del ClearScratchFolder
-        del clear_folder
+##        # Clear Scratch Folder
+##        #ClearScratchFolder = True
+##        #if ClearScratchFolder:
+##        if clear_folder:
+##            dismap_tools.clear_folder(folder = scratch_folder)
+##        else:
+##            pass
+##        #del ClearScratchFolder
+##        del clear_folder
 
         arcpy.env.workspace        = project_gdb
         arcpy.env.scratchWorkspace = scratch_workspace
@@ -95,7 +95,7 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
             # # # Datasets
 
             # # # Fishnet
-            region_fishnet = rf"{project_gdb}\{table_name}_Fishnet"
+            region_fishnet = os.path.join(project_gdb, f"{table_name}_Fishnet")
             arcpy.AddMessage(f"The table '{table_name}_Fishnet' has {arcpy.management.GetCount(region_fishnet)[0]} records")
             arcpy.management.Copy(region_fishnet, os.path.join(region_gdb, f"{table_name}_Fishnet"))
             arcpy.AddMessage("\tCopy: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
@@ -103,15 +103,21 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
             # # # Fishnet
 
             # # # Raster_Mask
+            region_raster_mask = os.path.join(project_gdb, f"{table_name}_Raster_Mask")
             arcpy.AddMessage(f"Copy Raster Mask for '{table_name}'")
-            arcpy.management.Copy(os.path.join(project_gdb, f"{table_name}_Raster_Mask"), os.path.join(region_gdb, f"{table_name}_Raster_Mask"))
+            #arcpy.management.Copy(os.path.join(project_gdb, f"{table_name}_Raster_Mask"), os.path.join(region_gdb, f"{table_name}_Raster_Mask"))
+            arcpy.management.CopyRaster(region_raster_mask, os.path.join(region_gdb, f"{table_name}_Raster_Mask"))
             arcpy.AddMessage("\tCopy: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
+            del region_raster_mask
             # # # Raster_Mask
 
             # # # Bathymetry
+            base_fishnet_bathymetry = os.path.join(base_project_bathymetry_gdb, f"{table_name}_Bathymetry")
             arcpy.AddMessage(f"Copy Bathymetry for '{table_name}'")
-            arcpy.management.Copy(os.path.join(project_bathymetry_gdb, f"{table_name}_Bathymetry"), os.path.join(region_gdb, f"{table_name}_Fishnet_Bathymetry"))
+            #arcpy.management.Copy(os.path.join(project_bathymetry_gdb, f"{table_name}_Bathymetry"), os.path.join(region_gdb, f"{table_name}_Fishnet_Bathymetry"))
+            arcpy.management.CopyRaster(base_fishnet_bathymetry, os.path.join(region_gdb, f"{table_name}_Fishnet_Bathymetry"))
             arcpy.AddMessage("\tCopy: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
+            del base_fishnet_bathymetry
             # # # Bathymetry
 
             # Declared Variables
@@ -119,7 +125,7 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
 
         # Declared Variables
         del scratch_folder, region_gdb
-        del csv_data_folder, project_bathymetry_gdb
+        del csv_data_folder, base_project_bathymetry_gdb
         # Imports
         del dismap_tools
         # Function Parameters
@@ -178,57 +184,6 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         preprocessing(project_gdb=project_gdb, table_names=table_names, clear_folder=True)
 
         del project_folder, scratch_workspace
-
-##        if not table_names:
-##            table_names = [row[0] for row in arcpy.da.SearchCursor(os.path.join(project_gdb, "Datasets")
-##                                                                   "TableName",
-##                                                                   where_clause = "TableName LIKE '%_IDW'")]
-##        else:
-##            pass
-##
-##        # Pre Processing
-##        for table_name in table_names:
-##            arcpy.AddMessage(f"Pre-Processing: {table_name}")
-##
-##            region_gdb               = os.path.join(scratch_folder, f"{table_name}.gdb")
-##            region_scratch_workspace = os.path.join(scratch_folder, f"{table_name}", "scratch.gdb")
-##
-##            # Create Scratch Workspace for Region
-##            if not arcpy.Exists(region_scratch_workspace):
-##                os.makedirs(os.path.join(scratch_folder,  table_name))
-##                if not arcpy.Exists(region_scratch_workspace):
-##                    arcpy.management.CreateFileGDB(os.path.join(scratch_folder, f"{table_name}"), "scratch")
-##            del region_scratch_workspace
-##
-##            #datasets = [rf"{project_gdb}\{table_name}_Fishnet", ]
-##            #if not any(arcpy.management.GetCount(d)[0] == 0 for d in datasets):
-##
-##            if not arcpy.Exists(os.path.join(scratch_folder, f"{table_name}.gdb")):
-##                arcpy.management.CreateFileGDB(rf"{scratch_folder}", f"{table_name}")
-##                arcpy.AddMessage("\tCreate File GDB: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
-##            else:
-##                pass
-##            arcpy.management.Copy(rf"{project_gdb}\{table_name}_Fishnet", rf"{region_gdb}\{table_name}_Fishnet")
-##            arcpy.AddMessage("\tCopy: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
-##
-##            arcpy.management.CopyRaster(rf"{project_gdb}\{table_name}_Raster_Mask", rf"{region_gdb}\{table_name}_Raster_Mask")
-##            arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
-##
-##            arcpy.management.CopyRaster(rf"{project_bathymetry_gdb}\{table_name}_Bathymetry", rf"{region_gdb}\{table_name}_Fishnet_Bathymetry")
-##            arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
-##
-##            #else:
-##            #    arcpy.AddWarning(f"One or more datasets contains zero records!!")
-##            #    for d in datasets:
-##            #        arcpy.AddMessage(f"\t{os.path.basename(d)} has {arcpy.management.GetCount(d)[0]} records")
-##            #        del d
-##            #    se = f"SystemExit at line number: '{traceback.extract_stack()[-1].lineno}'"
-##            #   sys.exit()(se)
-##            #if "datasets" in locals().keys(): del datasets
-##
-##            del region_gdb, table_name
-##
-##        del project_bathymetry_gdb
 
         # Sequential Processing
         if Sequential:
@@ -363,12 +318,12 @@ def director(project_gdb="", Sequential=True, table_names=[]):
             arcpy.AddMessage(f"\t\tPath:       '{dataset_short_path}'")
             arcpy.AddMessage(f"\t\tRegion GDB: '{os.path.basename(region_gdb)}'")
 
-            if arcpy.Exists(rf"{project_gdb}\{dataset_name}"):
-                arcpy.management.Delete(rf"{project_gdb}\{dataset_name}")
-            else:
-                pass
+##            if arcpy.Exists(rf"{project_gdb}\{dataset_name}"):
+##                arcpy.management.Delete(rf"{project_gdb}\{dataset_name}")
+##            else:
+##                pass
 
-            arcpy.management.Copy(dataset, rf"{project_gdb}\{dataset_name}")
+            arcpy.management.CopyRaster(dataset, rf"{project_gdb}\{dataset_name}")
             arcpy.AddMessage("\tCopy: {0} {1}\n".format(f"{dataset_name}", arcpy.GetMessages(0).replace("\n", '\n\t')))
 
             desc = arcpy.da.Describe(dataset)
@@ -422,20 +377,6 @@ def script_tool(project_gdb=""):
         arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
         arcpy.AddMessage(f"{'-' * 80}\n")
 
-##        # Clear Scratch Folder
-##        ClearScratchFolder = False
-##        if ClearScratchFolder:
-##            import dismap_tools
-##            dismap_tools.clear_folder(folder=scratch_folder)
-##            del dismap_tools
-##        else:
-##            pass
-##        del ClearScratchFolder
-
-        tbn = ["AI_IDW", "EBS_IDW", "ENBS_IDW", "GMEX_IDW", "GOA_IDW", "HI_IDW", "NBS_IDW", "NEUS_FAL_IDW", "NEUS_SPR_IDW", "SEUS_FAL_IDW", "SEUS_SPR_IDW", "SEUS_SUM_IDW", "WC_ANN_IDW", "WC_TRI_IDW",]
-        preprocessing(project_gdb=project_gdb, table_names=tbn, clear_folder=True)
-        del tbn
-
         try:
             # "AI_IDW", "EBS_IDW", "ENBS_IDW", "GMEX_IDW", "GOA_IDW", "HI_IDW", "NBS_IDW", "NEUS_FAL_IDW", "NEUS_SPR_IDW",
             # "SEUS_FAL_IDW", "SEUS_SPR_IDW", "SEUS_SUM_IDW", "WC_ANN_IDW", "WC_TRI_IDW",
@@ -444,9 +385,8 @@ def script_tool(project_gdb=""):
             if Test:
                 director(project_gdb=project_gdb, Sequential=True, table_names=["HI_IDW"])
             else:
-                director(project_gdb=project_gdb, Sequential=False, table_names=["NBS_IDW", "ENBS_IDW", "HI_IDW", "SEUS_FAL_IDW", "SEUS_SPR_IDW", "SEUS_SUM_IDW",])
-                director(project_gdb=project_gdb, Sequential=False, table_names=["WC_TRI_IDW", "GMEX_IDW", "AI_IDW", "GOA_IDW", "WC_ANN_IDW", "NEUS_FAL_IDW",])
-                director(project_gdb=project_gdb, Sequential=False, table_names=["NEUS_SPR_IDW", "EBS_IDW"])
+                director(project_gdb=project_gdb, Sequential=False, table_names=["AI_IDW", "EBS_IDW", "ENBS_IDW", "GMEX_IDW", "GOA_IDW", "HI_IDW", "NBS_IDW",])
+                director(project_gdb=project_gdb, Sequential=False, table_names=["NEUS_FAL_IDW", "NEUS_SPR_IDW", "SEUS_FAL_IDW", "SEUS_SPR_IDW", "SEUS_SUM_IDW", "WC_ANN_IDW", "WC_TRI_IDW",])
             del Test
 
         except:  # noqa: E722

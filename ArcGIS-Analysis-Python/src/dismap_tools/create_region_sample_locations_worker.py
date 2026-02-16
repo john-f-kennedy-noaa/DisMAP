@@ -12,10 +12,18 @@
 import os
 import sys
 import traceback
-
 import inspect
 
 import arcpy # third-parties second
+
+def trace():
+    import sys, traceback  # noqa: E401
+    tb = sys.exc_info()[2]
+    tbinfo = traceback.format_tb(tb)[0]
+    line = tbinfo.split(", ")[1]
+    filename = sys.path[0] + os.sep + "test.py"
+    synerror = traceback.format_exc().splitlines()[-1]
+    return line, filename, synerror
 
 def worker(region_gdb=""):
     try:
@@ -600,36 +608,22 @@ def script_tool(project_gdb=""):
         del elapse_time, end_time, start_time
         del gmtime, localtime, strftime, time
 
-    except KeyboardInterrupt:
-        sys.exit()
-    except arcpy.ExecuteWarning:
-        arcpy.AddWarning(f"Caught an arcpy.ExecuteWarning error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
-        arcpy.AddError(f"Caught an arcpy.ExecuteError error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except SystemExit as se:
-        arcpy.AddError(f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function.")
-        sys.exit()
-    except Exception as e:
-        arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
-        traceback.print_exc()
-        sys.exit()
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
+        return False
     except:  # noqa: E722
-        arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
-        traceback.print_exc()
-        sys.exit()
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)
+        return False
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk:
-            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
-        del rk
         return True
-    finally:
-        pass
 
 if __name__ == '__main__':
     try:
@@ -641,9 +635,16 @@ if __name__ == '__main__':
         script_tool(project_gdb)
         arcpy.SetParameterAsText(1, "Result")
         del project_gdb
+
+    except arcpy.ExecuteError:
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
     except:  # noqa: E722
-        traceback.print_exc()
-    else:
-        pass
-    finally:
-        pass
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)

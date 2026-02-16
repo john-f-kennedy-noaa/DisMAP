@@ -985,7 +985,7 @@ def script_tool(project_gdb=""):
 
         table_names = ["HI_IDW",]
 
-        #preprocessing(project_gdb=project_gdb, table_names=table_names, clear_folder=True)
+        preprocessing(project_gdb=project_gdb, table_names=table_names, clear_folder=True)
 
         for table_name in table_names:
             region_gdb = rf"{os.path.dirname(project_gdb)}\Scratch\{table_name}.gdb"

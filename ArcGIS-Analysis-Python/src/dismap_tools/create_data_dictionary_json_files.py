@@ -1893,7 +1893,8 @@ def script_tool(project_gdb=""):
                                     "field_precision": 0,
                                     "field_required": "true",
                                     "field_scale": 0,
-                                    "field_type": "String",
+                                    #"field_type": "String",
+                                    "field_type": "Integer",
                                     "field_attrdef": "Year",
                                     "field_attrdefs": "DisMAP Project GDB Data Dictionary",
                                     "field_attrdomv": {

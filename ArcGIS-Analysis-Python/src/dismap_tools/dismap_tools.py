@@ -13,10 +13,18 @@
 import os
 import sys
 import traceback
-#import importlib
 import inspect
 
 import arcpy  # third-parties second
+
+def trace():
+    import sys, traceback  # noqa: E401
+    tb = sys.exc_info()[2]
+    tbinfo = traceback.format_tb(tb)[0]
+    line = tbinfo.split(", ")[1]
+    filename = sys.path[0] + os.sep + "test.py"
+    synerror = traceback.format_exc().splitlines()[-1]
+    return line, filename, synerror
 
 def parse_xml_file_format_and_save(csv_data_folder="", xml_file="", sort=False):
     try:
@@ -152,7 +160,7 @@ def add_fields(csv_data_folder="", in_table=""):
         arcpy.env.overwriteOutput          = True
         arcpy.env.parallelProcessingFactor = "100%"
         arcpy.env.workspace                = project_gdb
-        arcpy.env.scratchWorkspace         = rf"Scratch\\scratch.gdb"
+        arcpy.env.scratchWorkspace         = r"Scratch\\scratch.gdb"
         arcpy.SetLogMetadata(True)
 
         if "_IDW_Region" in table:
@@ -664,31 +672,24 @@ def clear_folder(folder=""):
         # Function Parameter
         del folder
 
-    except KeyboardInterrupt:
-        sys.exit()
-    except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
-        traceback.print_exc()
-        sys.exit()
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
         sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
+        return False
     except:  # noqa: E722
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)
         sys.exit()
+        return False
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
         return True
-    finally:
-        pass
 
 def compare_metadata_xml(file1="", file2=""):
     """This requires the use of the clone ArcGIS Pro env and the installation of xmldiff."""

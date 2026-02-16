@@ -6,19 +6,22 @@ Script documentation
                                         arcpy.SetParameterAsText()
 """
 import traceback
+
 import arcpy
+
 def script_tool(home_folder="", source_zip_file=""):
     """Script code goes below"""
     try:
         import os
-        import copy
         from zipfile import ZipFile
         #aprx = arcpy.mp.ArcGISProject("CURRENT")
         #aprx.save()
         #home_folder = aprx.homeFolder
         arcpy.AddMessage(home_folder)
+
         out_data_path = rf"{home_folder}\Dataset_Shapefiles"
         arcpy.AddMessage(out_data_path)
+
         # Change Directory
         os.chdir(out_data_path)
         arcpy.AddMessage(f"Un-Zipping files from {os.path.basename(source_zip_file)}")
@@ -27,23 +30,29 @@ def script_tool(home_folder="", source_zip_file=""):
                 archive.extract(file, ".")
                 del file
         del archive
+
         arcpy.AddMessage(f"Done Un-Zipping files from {os.path.basename(source_zip_file)}")
+
         del home_folder
         del source_zip_file
-        return out_data_path
-    except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
+
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-    except:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
+        return False
+    except:  # noqa: E722
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)
+        return False
     else:
-        pass
-    finally:
-        pass
-        #del out_data_path
+        return True
+
 if __name__ == "__main__":
     try:
         home_folder = arcpy.GetParameterAsText(0)
