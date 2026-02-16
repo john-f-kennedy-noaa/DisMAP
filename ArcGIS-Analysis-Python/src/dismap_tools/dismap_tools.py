@@ -9,9 +9,11 @@
 # Copyright:   (c) john.f.kennedy 2024
 # Licence:     <your licence>
 # -------------------------------------------------------------------------------
-import os, sys  # built-ins first
+# built-ins first
+import os
+import sys
 import traceback
-import importlib
+#import importlib
 import inspect
 
 import arcpy  # third-parties second
@@ -70,7 +72,7 @@ def parse_xml_file_format_and_save(csv_data_folder="", xml_file="", sort=False):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -121,7 +123,7 @@ def print_xml_file(xml_file="", sort=False):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -204,7 +206,7 @@ def add_fields(csv_data_folder="", in_table=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -277,7 +279,7 @@ def alter_fields(csv_data_folder="", in_table=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -314,7 +316,7 @@ def backup_gdb(project_gdb=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -394,7 +396,7 @@ def basic_metadata(csv_data_folder="", in_table=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -615,7 +617,7 @@ def check_datasets(datasets=[]):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -676,7 +678,7 @@ def clear_folder(folder=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -730,7 +732,7 @@ def compare_metadata_xml(file1="", file2=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -752,7 +754,7 @@ def convertSeconds(seconds):
         _hour, _min = divmod(_min, 60)
         return f"{int(_hour)}:{int(_min)}:{_sec:.3f}"
 
-    except:
+    except:  # noqa: E722
         traceback.print_exc()
 
 ##def calculate_core_species(table):
@@ -848,7 +850,7 @@ def convertSeconds(seconds):
 ##        arcpy.AddError(arcpy.GetMessages(2))
 ##        traceback.print_exc()
 ##        raise SystemExit
-##    except:
+##    except:  # noqa: E722
 ##        arcpy.AddError(arcpy.GetMessages(2))
 ##        traceback.print_exc()
 ##        raise SystemExit
@@ -1450,7 +1452,7 @@ def dataset_title_dict(project_gdb=""):
         sys.exit()
     except SystemExit:
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -1500,7 +1502,7 @@ def date_code(version):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -1566,7 +1568,7 @@ def dTypesCSV(csv_data_folder="", table=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -1637,7 +1639,7 @@ def dTypesGDB(csv_data_folder="", table=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -1730,7 +1732,7 @@ def export_metadata(csv_data_folder="", in_table=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -1750,7 +1752,7 @@ def field_definitions(csv_data_folder="", field=""):
         with open(os.path.join(csv_data_folder, "field_definitions.json"), "r") as json_file:
             try:
                 _field_definitions = json.load(json_file)
-            except:
+            except:  # noqa: E722
                 arcpy.AddError(f"CSV Data:   {csv_data_folder}")
                 arcpy.AddError(f"Field Defs: {json_file.name}")
                 sys.exit(0)
@@ -1783,7 +1785,7 @@ def field_definitions(csv_data_folder="", field=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -1914,7 +1916,7 @@ def import_metadata(csv_data_folder="", dataset=""):
                 arcpy.AddWarning("Metadata Dictionary is empty")
             else:
                 pass
-        except:
+        except:  # noqa: E722
             traceback.print_exc()
             raise SystemExit
 
@@ -1982,7 +1984,7 @@ def import_metadata(csv_data_folder="", dataset=""):
         sys.exit()
     except SystemExit:
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -2024,7 +2026,7 @@ def metadata_dictionary_json(csv_data_folder="", dataset_name=""):
         sys.exit()
     except SystemExit:
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -2081,7 +2083,7 @@ def pretty_format_xml_file(metadata=""):
                 with open(metadata, "w") as f:
                     f.write(xmlstr)
                     del f
-            except:
+            except:  # noqa: E722
                 arcpy.AddError(f"The metadata file: {os.path.basename(metadata)} can not be overwritten!!")
             del xmlstr, tree, root
         else:
@@ -2104,7 +2106,7 @@ def pretty_format_xml_file(metadata=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         raise SystemExit
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         raise SystemExit
@@ -2145,7 +2147,7 @@ def pretty_format_xml_files(metadata_folder=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -2206,7 +2208,7 @@ def table_definitions(csv_data_folder="", dataset_name=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -2841,7 +2843,7 @@ def test_bed_1(project_gdb=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -3101,7 +3103,7 @@ def test_bed_2(project=""):
 ## #
 ## #                del dataset_md, md
 ## #
-## #            except:
+## #            except:  # noqa: E722
 ## #                arcpy.AddError(f"\tDataset metadata import error!! {arcpy.GetMessages()}")
 ## #        else:
 ## #            arcpy.AddWarning(f"\tDataset missing metadata file!!")
@@ -3172,7 +3174,7 @@ def test_bed_2(project=""):
         #arcpy.AddError(arcpy.GetMessages(2))
         #traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -3277,7 +3279,7 @@ def script_tool(project_gdb=""):
                 import_metadata(csv_data_folder, dataset=rf"{project_gdb}\{table_name}")
                 #import_metadata(csv_data_folder, dataset=rf"{project_folder}\Scratch\HI_IDW.gdb\{table_name}")
 
-            except:
+            except:  # noqa: E722
                 pass
 
             del table_name, csv_data_folder
@@ -3313,7 +3315,7 @@ def script_tool(project_gdb=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -3344,7 +3346,7 @@ if __name__ == "__main__":
 
     except SystemExit:
         pass
-    except:
+    except:  # noqa: E722
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
     else:
