@@ -37,18 +37,21 @@ def script_tool(new_project_folder, project_folders):
             arcpy.AddMessage(arcpy.GetMessages())
         else:
             arcpy.AddMessage(f"Project GDB: {new_project_folder}.gdb exists")
+            
         if not arcpy.Exists(rf"{home_folder}\{new_project_folder}\Scratch"):
             arcpy.AddMessage("Creating the Scratch Folder")
             arcpy.management.CreateFolder(rf"{home_folder}\{new_project_folder}", "Scratch")
             arcpy.AddMessage(arcpy.GetMessages())
         else:
             arcpy.AddMessage(f"Scratch Folder: {new_project_folder} exists")
+            
         if not arcpy.Exists(rf"{home_folder}\{new_project_folder}\Scratch\scratch.gdb"):
             arcpy.AddMessage("Creating the Scratch GDB")
             arcpy.management.CreateFileGDB(rf"{home_folder}\{new_project_folder}\Scratch", "scratch")
             arcpy.AddMessage(arcpy.GetMessages())
         else:
             arcpy.AddMessage("Scratch GDB Exists")
+            
         for _project_folder in project_folders.split(";"):
             if not arcpy.Exists(rf"{home_folder}\{new_project_folder}\{_project_folder}"):
                 arcpy.AddMessage(f"Creating Folder: {_project_folder}")
