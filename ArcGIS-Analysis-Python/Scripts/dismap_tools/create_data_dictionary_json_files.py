@@ -6,7 +6,7 @@ Script documentation
 - Update derived parameter values using arcpy.SetParameter() or
                                         arcpy.SetParameterAsText()
 """
-import arcpy, os
+import arcpy, os, sys, inspect
 import traceback
 
 def script_tool(project_gdb=""):

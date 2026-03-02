@@ -12,8 +12,16 @@
 import os, sys # built-ins first
 import traceback
 import inspect
+import numpy as np
+import math
+from time import gmtime
+from time import localtime
+from time import strftime
+from time import time
 
 import arcpy # third-parties second
+
+import dismap_tools
 
 def printRowContent(region_indicators):
     try:
@@ -100,7 +108,7 @@ def printRowContent(region_indicators):
     finally:
         pass
 
-def worker(region_gdb=""):
+def worker(region_gdb=""): # type: ignore
     try:
         # Test if passed workspace exists, if not sys.exit()
         if not arcpy.Exists(rf"{region_gdb}"):
@@ -109,11 +117,6 @@ def worker(region_gdb=""):
             sys.exit()
         else:
             pass
-
-        import numpy as np
-        import math
-
-        import dismap_tools
 
         np.seterr(divide='ignore', invalid='ignore')
 
@@ -772,7 +775,6 @@ def worker(region_gdb=""):
         # Declared Variables assigned based on the passed paramater
         del table_name, scratch_folder, project_folder, scratch_workspace
         # Imported modules
-        del np, math, dismap_tools
         # Passed paramater
         del region_gdb
 
@@ -809,7 +811,6 @@ def worker(region_gdb=""):
 
 def preprocessing(project_gdb="", table_names="", clear_folder=True):
     try:
-        import dismap_tools
 
         arcpy.SetLogHistory(True) # Look in %AppData%\Roaming\Esri\ArcGISPro\ArcToolbox\History
         arcpy.SetLogMetadata(True)
@@ -842,7 +843,7 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         del project_folder, scratch_workspace
 
         if not table_names:
-            table_names = [row[0] for row in arcpy.da.SearchCursor(f"{project_gdb}\Datasets",
+            table_names = [row[0] for row in arcpy.da.SearchCursor(os.path.join(project_gdb, "Datasets"),
                                                                    "TableName",
                                                                    where_clause = "TableName LIKE '%_IDW'")]
         else:
@@ -914,7 +915,6 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         # Declared Variables
         del scratch_folder, region_gdb
         # Imports
-        del dismap_tools
         # Function Parameters
         del project_gdb, table_names
 
@@ -951,14 +951,12 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
 
 def script_tool(project_gdb=""):
     try:
-        # Imports
-        import dismap_tools
-        from time import gmtime, localtime, strftime, time
+        # Imports        
         # Set a start time so that we can see how log things take
         start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
         arcpy.AddMessage(f"Python Script:  {os.path.basename(__file__)}")
-        arcpy.AddMessage(f"Location:       ..\Documents\ArcGIS\Projects\..\{os.path.basename(os.path.dirname(__file__))}\{os.path.basename(__file__)}")
+        arcpy.AddMessage(f"Location:       {os.path.join(*os.path.normpath(__file__).split(os.sep)[-4:])}")        
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
         arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
@@ -990,7 +988,6 @@ def script_tool(project_gdb=""):
 
         # Declared Varaiables
         # Imports
-        del dismap_tools
         # Function Parameters
         del project_gdb
 
@@ -1007,7 +1004,6 @@ def script_tool(project_gdb=""):
         arcpy.AddMessage(f"{'-' * 80}")
         del hours, rem, minutes, seconds
         del elapse_time, end_time, start_time
-        del gmtime, localtime, strftime, time
 
     except KeyboardInterrupt:
         sys.exit()
