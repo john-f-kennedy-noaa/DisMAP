@@ -9,7 +9,8 @@
 # Copyright:   (c) john.f.kennedy 2024
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-import os, sys # built-ins first
+import os # built-ins first
+import sys
 import traceback
 import inspect
 
