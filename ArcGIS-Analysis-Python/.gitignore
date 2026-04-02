@@ -13,9 +13,6 @@ __init__.py
 !**/*.py
 !**/*.pyt
 
-# still ignore py backup variants
-*.~py
-
 # include Scripts folder and its contents
 !Scripts/
 !Scripts/**
@@ -31,3 +28,8 @@ __init__.py
 
 # explicitly exclude esri folder under dismap_tools
 src/dismap_tools/esri/
+
+.ipynb_checkpoints
+__pycache__
+# still ignore py backup variants
+*.~py
