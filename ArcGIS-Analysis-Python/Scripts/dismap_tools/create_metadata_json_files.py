@@ -593,7 +593,7 @@ if __name__ == "__main__":
 
         project_gdb = arcpy.GetParameterAsText(0)
         if not project_gdb:
-            project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\February 1 2026\February 1 2026.gdb"
+            project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025\August 1 2025.gdb"
         else:
             pass
 

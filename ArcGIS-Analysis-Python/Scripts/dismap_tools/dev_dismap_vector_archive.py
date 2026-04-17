@@ -206,9 +206,8 @@ if __name__ == '__main__':
             arcpy.AddMessage(f"Home Folder: {os.path.basename(home_folder)}")
 
         if not versions:
-            #versions = ["April 1 2023", "July 1 2024", "August 1 2025",]
+            versions = ["April 1 2023", "July 1 2024", "August 1 2025",]
             #versions = ["July 1 2024", "August 1 2025",]
-            versions = ["April 1 2023"]
         else:
             arcpy.AddMessage(f"Versions: {', '.join(versions)}")
 
