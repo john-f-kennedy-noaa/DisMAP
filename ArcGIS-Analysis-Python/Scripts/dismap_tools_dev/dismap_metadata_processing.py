@@ -2457,7 +2457,7 @@ def main(project=""):
 
         try:
 
-            CreateBasicTemplateXMLFiles = False
+            CreateBasicTemplateXMLFiles = True
             if CreateBasicTemplateXMLFiles:
                 result = create_basic_template_xml_files(base_project_file, project)
                 results.extend(result); del result
