@@ -9,12 +9,19 @@
 # Copyright:   (c) john.f.kennedy 2024
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-import os, sys # built-ins first
-import traceback
-import importlib
-import inspect
+import os
+import sys
 
 import arcpy # third-parties second
+
+def trace():
+    import sys, traceback  # noqa: E401
+    tb = sys.exc_info()[2]
+    tbinfo = traceback.format_tb(tb)[0]
+    line = tbinfo.split(", ")[1]
+    filename = sys.path[0] + os.sep + "test.py"
+    synerror = traceback.format_exc().splitlines()[-1]
+    return line, filename, synerror
 
 def raster_properties_report(dataset=""):
     try:
@@ -44,31 +51,22 @@ def raster_properties_report(dataset=""):
             del pixel_types
         del dataset
 
-    except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-    except SystemExit:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-    except:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
+        return False
+    except:  # noqa: E722
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)
+        return False
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk:
-            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
-        else:
-            pass
-        del rk
         return True
-    finally:
-        pass
 
 def create_alasaka_bathymetry(project_folder=""):
     try:
@@ -97,7 +95,7 @@ def create_alasaka_bathymetry(project_folder=""):
 
         arcpy.env.outputCoordinateSystem = None
 
-        arcpy.AddMessage(f"Processing Alaska Bathymetry")
+        arcpy.AddMessage("Processing Alaska Bathymetry")
 
 # ###--->>> Setting up the base folder bathymetry for all projects
         # Set Alaska Bathymetry
@@ -120,7 +118,7 @@ def create_alasaka_bathymetry(project_folder=""):
         enbs_bathymetry  = rf"{project_folder}\Bathymetry\Bathymetry.gdb\ENBS_IDW_Bathymetry"
         nbs_bathymetry   = rf"{project_folder}\Bathymetry\Bathymetry.gdb\NBS_IDW_Bathymetry"
 
-        arcpy.AddMessage(f"Processing Esri Raster Grids")
+        arcpy.AddMessage("Processing Esri Raster Grids")
 
         spatial_ref = arcpy.Describe(ai_bathy).spatialReference.name
         arcpy.AddMessage(f"Spatial Reference for {os.path.basename(ai_bathy)}: {spatial_ref}")
@@ -140,61 +138,61 @@ def create_alasaka_bathymetry(project_folder=""):
 
         del spatial_ref
 
-        arcpy.AddMessage(f"Copy AI_IDW_Bathy.grd to AI_IDW_Bathy_Grid")
+        arcpy.AddMessage("Copy AI_IDW_Bathy.grd to AI_IDW_Bathy_Grid")
 
         arcpy.management.CopyRaster(ai_bathy, ai_bathy_grid)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
         del ai_bathy
 
-        arcpy.AddMessage(f"Copy EBS_IDW_Bathy.grd to EBS_IDW_Bathy_Grid")
+        arcpy.AddMessage("Copy EBS_IDW_Bathy.grd to EBS_IDW_Bathy_Grid")
 
         arcpy.management.CopyRaster(ebs_bathy, ebs_bathy_grid)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
         del ebs_bathy
 
-        arcpy.AddMessage(f"Copy GOA_IDW_Bathy.grd to GOA_IDW_Bathy_Grid")
+        arcpy.AddMessage("Copy GOA_IDW_Bathy.grd to GOA_IDW_Bathy_Grid")
 
         arcpy.management.CopyRaster(goa_bathy, goa_bathy_grid)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
         del goa_bathy
 
-        arcpy.AddMessage(f"Converting AI_IDW_Bathy_Grid from positive values to negative")
+        arcpy.AddMessage("Converting AI_IDW_Bathy_Grid from positive values to negative")
 
         tmp_grid = arcpy.sa.Times(ai_bathy_grid, -1)
         arcpy.AddMessage("\tTimes: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
         tmp_grid.save(ai_bathy_raster)
         del tmp_grid
 
-        arcpy.AddMessage(f"Converting EBS_IDW_Bathy_Grid from positive values to negative")
+        arcpy.AddMessage("Converting EBS_IDW_Bathy_Grid from positive values to negative")
 
         tmp_grid = arcpy.sa.Times(ebs_bathy_grid, -1)
         arcpy.AddMessage("\tTimes: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
         tmp_grid.save(ebs_bathy_raster)
         del tmp_grid
 
-        arcpy.AddMessage(f"Setting values equal to and less than 0 in the GOA_IDW_Bathy_Grid Null values")
+        arcpy.AddMessage("Setting values equal to and less than 0 in the GOA_IDW_Bathy_Grid Null values")
 
         tmp_grid = arcpy.sa.SetNull(goa_bathy_grid, goa_bathy_grid, "Value < -1.0")
         arcpy.AddMessage("\tSet Null: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
         tmp_grid.save(goa_bathy_raster+'_SetNull')
         del tmp_grid
 
-        arcpy.AddMessage(f"Converting the GOA_IDW_Bathy_Grid from positive values to negative")
+        arcpy.AddMessage("Converting the GOA_IDW_Bathy_Grid from positive values to negative")
 
         tmp_grid = arcpy.sa.Times(goa_bathy_raster+'_SetNull', -1)
         arcpy.AddMessage("\tTimes: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
         tmp_grid.save(goa_bathy_raster)
         del tmp_grid
 
-        arcpy.AddMessage(f"Deleteing the GOA_IDW_Bathy Null grid")
+        arcpy.AddMessage("Deleteing the GOA_IDW_Bathy Null grid")
 
         arcpy.management.Delete(goa_bathy_raster+'_SetNull')
         arcpy.AddMessage("\tDelete: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
-        arcpy.AddMessage(f"Appending the AI raster to the GOA grid to ensure complete coverage")
+        arcpy.AddMessage("Appending the AI raster to the GOA grid to ensure complete coverage")
 
         extent = arcpy.Describe(goa_bathy_raster).extent
         X_Min, Y_Min, X_Max, Y_Max = extent.XMin-(1000 * 366), extent.YMin-(1000 * 80), extent.XMax, extent.YMax
@@ -204,13 +202,13 @@ def create_alasaka_bathymetry(project_folder=""):
         arcpy.management.Append(inputs = ai_bathy_raster, target = goa_bathy_raster, schema_type="TEST", field_mapping="", subtype="")
         arcpy.AddMessage("\tAppend: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
-        arcpy.AddMessage(f"Cliping GOA Raster")
+        arcpy.AddMessage("Cliping GOA Raster")
 
         arcpy.management.Clip(goa_bathy_raster, extent, goa_bathy_raster+"_Clip")
         arcpy.AddMessage("\tClip: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
         del extent
 
-        arcpy.AddMessage(f"Copying GOA Raster")
+        arcpy.AddMessage("Copying GOA Raster")
 
         arcpy.management.CopyRaster(goa_bathy_raster+"_Clip", goa_bathy_raster)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
@@ -218,7 +216,7 @@ def create_alasaka_bathymetry(project_folder=""):
         arcpy.management.Delete(goa_bathy_raster+"_Clip")
         arcpy.AddMessage("\tDelete: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
-        arcpy.AddMessage(f"Appending the EBS raster to the AI grid to ensure complete coverage")
+        arcpy.AddMessage("Appending the EBS raster to the AI grid to ensure complete coverage")
 
         extent = arcpy.Describe(ai_bathy_raster).extent
         X_Min, Y_Min, X_Max, Y_Max = extent.XMin, extent.YMin, extent.XMax, extent.YMax
@@ -229,19 +227,19 @@ def create_alasaka_bathymetry(project_folder=""):
         arcpy.management.Append(inputs = ebs_bathy_raster, target = ai_bathy_raster, schema_type="TEST", field_mapping="", subtype="")
         arcpy.AddMessage("\tAppend: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
-        arcpy.AddMessage(f"Cliping AI Raster")
+        arcpy.AddMessage("Cliping AI Raster")
 
         arcpy.management.Clip(ai_bathy_raster, extent, ai_bathy_raster+"_Clip")
         arcpy.AddMessage("\tClip: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
         del extent
 
-        arcpy.AddMessage(f"Copying AI Raster")
+        arcpy.AddMessage("Copying AI Raster")
 
         arcpy.management.CopyRaster(ai_bathy_raster+"_Clip", ai_bathy_raster)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
-        arcpy.management.Delete(ai_bathy_raster+"_Clip")
-        arcpy.AddMessage("\tDelete: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
+        #arcpy.management.Delete(ai_bathy_raster+"_Clip")
+        #arcpy.AddMessage("\tDelete: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
         arcpy.ClearEnvironment("extent")
 
@@ -257,7 +255,7 @@ def create_alasaka_bathymetry(project_folder=""):
         #del region_sr
         del region
 
-        arcpy.AddMessage(f"Copy AI_IDW_Bathymetry_Raster to AI_IDW_Bathymetry")
+        arcpy.AddMessage("Copy AI_IDW_Bathymetry_Raster to AI_IDW_Bathymetry")
 
         arcpy.management.CopyRaster(ai_bathy_raster, ai_bathymetry)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
@@ -272,7 +270,7 @@ def create_alasaka_bathymetry(project_folder=""):
         #del region_sr
         del region
 
-        arcpy.AddMessage(f"Copy EBS_IDW_Bathymetry_Raster to EBS_IDW_Bathymetry")
+        arcpy.AddMessage("Copy EBS_IDW_Bathymetry_Raster to EBS_IDW_Bathymetry")
 
         arcpy.management.CopyRaster(ebs_bathy_raster, ebs_bathymetry)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
@@ -287,7 +285,7 @@ def create_alasaka_bathymetry(project_folder=""):
         #del region_sr
         del region
 
-        arcpy.AddMessage(f"Copy EBS_IDW_Bathymetry_Raster to ENBS_Bathymetry")
+        arcpy.AddMessage("Copy EBS_IDW_Bathymetry_Raster to ENBS_Bathymetry")
 
         arcpy.management.CopyRaster(ebs_bathy_raster, enbs_bathymetry)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
@@ -302,7 +300,7 @@ def create_alasaka_bathymetry(project_folder=""):
         #del region_sr
         del region
 
-        arcpy.AddMessage(f"Copy EBS_IDW_Bathymetry_Raster to NBS_Bathymetry")
+        arcpy.AddMessage("Copy EBS_IDW_Bathymetry_Raster to NBS_Bathymetry")
 
         arcpy.management.CopyRaster(ebs_bathy_raster, nbs_bathymetry)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
@@ -317,7 +315,7 @@ def create_alasaka_bathymetry(project_folder=""):
         #del region_sr
         del region
 
-        arcpy.AddMessage(f"Copy GOA_IDW_Bathymetry_Raster to GOA_IDW_Bathymetry")
+        arcpy.AddMessage("Copy GOA_IDW_Bathymetry_Raster to GOA_IDW_Bathymetry")
 
         arcpy.management.CopyRaster(goa_bathy_raster, goa_bathymetry)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
@@ -329,49 +327,43 @@ def create_alasaka_bathymetry(project_folder=""):
 
         # ###--->>> Copy rasters for Base Folder to Project Folder Start
 
-        # Set Output Coordinate System
-        arcpy.env.outputCoordinateSystem = arcpy.Describe(ai_bathymetry).spatialReference
-
-        arcpy.AddMessage(f"Copy AI_IDW_Bathymetry to the Project Bathymetry GDB")
-        arcpy.management.CopyRaster(ai_bathymetry, rf"{project_folder}\Bathymetry\Bathymetry.gdb\{os.path.basename(ai_bathymetry)}")
-        arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
-
-        # Set Output Coordinate System
-        arcpy.env.outputCoordinateSystem = arcpy.Describe(ebs_bathymetry).spatialReference
-
-        arcpy.AddMessage(f"Copy EBS_IDW_Bathymetry to the Project Bathymetry GDB")
-        arcpy.management.CopyRaster(ebs_bathymetry, rf"{project_folder}\Bathymetry\Bathymetry.gdb\{os.path.basename(ebs_bathymetry)}")
-        arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
-
-        # Set Output Coordinate System
-        arcpy.env.outputCoordinateSystem = arcpy.Describe(enbs_bathymetry).spatialReference
-
-        arcpy.AddMessage(f"Copy ENBS_IDW_Bathymetry to the Project Bathymetry GDB")
-        arcpy.management.CopyRaster(enbs_bathymetry, rf"{project_folder}\Bathymetry\Bathymetry.gdb\{os.path.basename(enbs_bathymetry)}")
-        arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
-
-        # Set Output Coordinate System
-        arcpy.env.outputCoordinateSystem = arcpy.Describe(nbs_bathymetry).spatialReference
-
-        arcpy.AddMessage(f"Copy nbs_bathymetry to the Project Bathymetry GDB")
-        arcpy.management.CopyRaster(nbs_bathymetry, rf"{project_folder}\Bathymetry\Bathymetry.gdb\{os.path.basename(nbs_bathymetry)}")
-        arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
-
-        # Set Output Coordinate System
-        arcpy.env.outputCoordinateSystem = arcpy.Describe(goa_bathymetry).spatialReference
-
-        arcpy.AddMessage(f"Copy GOA_IDW_Bathymetry to the Project Bathymetry GDB")
-        arcpy.management.CopyRaster(goa_bathymetry, rf"{project_folder}\Bathymetry\Bathymetry.gdb\{os.path.basename(goa_bathymetry)}")
-        arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
-
-        gdb = rf"{project_folder}\Bathymetry\Bathymetry.gdb"
-        arcpy.AddMessage(f"Compacting the {os.path.basename(gdb)} GDB")
-        arcpy.management.Compact(gdb)
-        arcpy.AddMessage("\t"+arcpy.GetMessages(0).replace("\n", "\n\t"))
-        del gdb
+##        # Set Output Coordinate System
+##        arcpy.env.outputCoordinateSystem = arcpy.Describe(ai_bathymetry).spatialReference
+##
+##        arcpy.AddMessage("Copy AI_IDW_Bathymetry to the Project Bathymetry GDB")
+##        arcpy.management.CopyRaster(ai_bathymetry, rf"{project_folder}\Bathymetry\Bathymetry.gdb\{os.path.basename(ai_bathymetry)}")
+##        arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
+##
+##        # Set Output Coordinate System
+##        arcpy.env.outputCoordinateSystem = arcpy.Describe(ebs_bathymetry).spatialReference
+##
+##        arcpy.AddMessage("Copy EBS_IDW_Bathymetry to the Project Bathymetry GDB")
+##        arcpy.management.CopyRaster(ebs_bathymetry, rf"{project_folder}\Bathymetry\Bathymetry.gdb\{os.path.basename(ebs_bathymetry)}")
+##        arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
+##
+##        # Set Output Coordinate System
+##        arcpy.env.outputCoordinateSystem = arcpy.Describe(enbs_bathymetry).spatialReference
+##
+##        arcpy.AddMessage("Copy ENBS_IDW_Bathymetry to the Project Bathymetry GDB")
+##        arcpy.management.CopyRaster(enbs_bathymetry, rf"{project_folder}\Bathymetry\Bathymetry.gdb\{os.path.basename(enbs_bathymetry)}")
+##        arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
+##
+##        # Set Output Coordinate System
+##        arcpy.env.outputCoordinateSystem = arcpy.Describe(nbs_bathymetry).spatialReference
+##
+##        arcpy.AddMessage("Copy nbs_bathymetry to the Project Bathymetry GDB")
+##        arcpy.management.CopyRaster(nbs_bathymetry, rf"{project_folder}\Bathymetry\Bathymetry.gdb\{os.path.basename(nbs_bathymetry)}")
+##        arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
+##
+##        # Set Output Coordinate System
+##        arcpy.env.outputCoordinateSystem = arcpy.Describe(goa_bathymetry).spatialReference
+##
+##        arcpy.AddMessage("Copy GOA_IDW_Bathymetry to the Project Bathymetry GDB")
+##        arcpy.management.CopyRaster(goa_bathymetry, rf"{project_folder}\Bathymetry\Bathymetry.gdb\{os.path.basename(goa_bathymetry)}")
+##        arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
         gdb = rf"{project_folder}\Bathymetry\Bathymetry.gdb"
-        arcpy.AddMessage(f"Compacting the {os.path.basename(gdb)} GDB")
+        arcpy.AddMessage("Compacting the {os.path.basename(gdb)} GDB")
         arcpy.management.Compact(gdb)
         arcpy.AddMessage("\t"+arcpy.GetMessages(0).replace("\n", "\n\t"))
         del gdb
@@ -383,31 +375,22 @@ def create_alasaka_bathymetry(project_folder=""):
         # Function parameter
         del project_folder
 
-    except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-    except SystemExit:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-    except:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
+        return False
+    except:  # noqa: E722
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)
+        return False
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk:
-            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
-        else:
-            pass
-        del rk
         return True
-    finally:
-        pass
 
 def create_hawaii_bathymetry(project_folder=""):
     try:
@@ -437,7 +420,7 @@ def create_hawaii_bathymetry(project_folder=""):
         hi_bathy_raster = rf"{project_folder}\Bathymetry\Bathymetry.gdb\HI_IDW_Bathy_Raster"
         hi_bathymetry   = rf"{project_folder}\Bathymetry\Bathymetry.gdb\HI_IDW_Bathymetry"
 
-        arcpy.AddMessage(f"Converting Hawaii Polygon Grid to a Raster")
+        arcpy.AddMessage("Converting Hawaii Polygon Grid to a Raster")
 
         arcpy.conversion.PolygonToRaster(in_features = hi_bathy_grid, value_field = "Depth_MEDI", out_rasterdataset = hi_bathy_raster, cell_assignment="CELL_CENTER", priority_field="NONE", cellsize="500")
         arcpy.AddMessage("\tPolygon To Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
@@ -447,16 +430,16 @@ def create_hawaii_bathymetry(project_folder=""):
         tmp_grid.save(hi_bathymetry)
         del tmp_grid
 
-        arcpy.AddMessage(f"Copy Hawaii Raster to the Bathymetry GDB")
-
-        arcpy.management.CopyRaster(hi_bathymetry, rf"{project_folder}\Bathymetry\Bathymetry.gdb\HI_IDW_Bathymetry")
-        arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
-
-        gdb = rf"{project_folder}\Bathymetry\Bathymetry.gdb"
-        arcpy.AddMessage(f"Compacting the {os.path.basename(gdb)} GDB")
-        arcpy.management.Compact(gdb)
-        arcpy.AddMessage("\t"+arcpy.GetMessages(0).replace("\n", "\n\t"))
-        del gdb
+##        arcpy.AddMessage("Copy Hawaii Raster to the Bathymetry GDB")
+##
+##        arcpy.management.CopyRaster(hi_bathymetry, rf"{project_folder}\Bathymetry\Bathymetry.gdb\HI_IDW_Bathymetry")
+##        arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
+##
+##        gdb = rf"{project_folder}\Bathymetry\Bathymetry.gdb"
+##        arcpy.AddMessage(f"Compacting the {os.path.basename(gdb)} GDB")
+##        arcpy.management.Compact(gdb)
+##        arcpy.AddMessage("\t"+arcpy.GetMessages(0).replace("\n", "\n\t"))
+##        del gdb
 
         gdb = rf"{project_folder}\Bathymetry\Bathymetry.gdb"
         arcpy.AddMessage(f"Compacting the {os.path.basename(gdb)} GDB")
@@ -469,31 +452,22 @@ def create_hawaii_bathymetry(project_folder=""):
         # Function parameter
         del project_folder
 
-    except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-    except SystemExit:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-    except:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
+        return False
+    except:  # noqa: E722
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)
+        return False
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk:
-            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
-        else:
-            pass
-        del rk
         return True
-    finally:
-        pass
 
 def gebco_bathymetry(project_folder=""):
     try:
@@ -523,7 +497,7 @@ def gebco_bathymetry(project_folder=""):
 
         arcpy.env.outputCoordinateSystem = None
 
-        arcpy.AddMessage(f"Processing GEBCO Raster Grids")
+        arcpy.AddMessage("Processing GEBCO Raster Grids")
 
         #gebco_dict = get_dms_points_for_gebco(project_gdb)
         gebco_dict = {
@@ -537,7 +511,7 @@ def gebco_bathymetry(project_folder=""):
                        'WC_TRI_IDW'   : 'gebco_2022_n49.2_s36.0_w-126.6_e-121.6.asc',
                       }
 
-        arcpy.AddMessage(f"Processing Regions")
+        arcpy.AddMessage("Processing Regions")
         # Start looping over the datasets array as we go region by region.
         for table_name in gebco_dict:
             gebco_file_name = gebco_dict[table_name]
@@ -618,31 +592,22 @@ def gebco_bathymetry(project_folder=""):
         # Function parameter
         del project_folder
 
-    except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-    except SystemExit:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-    except:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
+        return False
+    except:  # noqa: E722
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)
+        return False
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk:
-            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
-        else:
-            pass
-        del rk
         return True
-    finally:
-        pass
 
 def main(project_folder=""):
     try:
@@ -651,7 +616,7 @@ def main(project_folder=""):
         start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
         arcpy.AddMessage(f"Python Script:  {os.path.basename(__file__)}")
-        arcpy.AddMessage(f"Location:       ..\Documents\ArcGIS\Projects\..\{os.path.basename(os.path.dirname(__file__))}\{os.path.basename(__file__)}")
+        arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
         arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
@@ -662,7 +627,7 @@ def main(project_folder=""):
             if not arcpy.Exists(rf"{project_folder}\Scratch"):
                 os.makedirs(rf"{project_folder}\Scratch")
             if not arcpy.Exists(rf"{project_folder}\Scratch\scratch.gdb"):
-                arcpy.management.CreateFileGDB(rf"{project_folder}\Scratch", f"scratch")
+                arcpy.management.CreateFileGDB(rf"{project_folder}\Scratch", "scratch")
 
         # Base Bathymetry Folder
         if not os.path.isdir(rf"{project_folder}\Bathymetry"):
@@ -692,7 +657,7 @@ def main(project_folder=""):
         else:
             pass
 
-        #test = True
+        test = False
         # Process base Hawaii bathymetry
         if test:
             result = create_hawaii_bathymetry(project_folder)
@@ -701,7 +666,7 @@ def main(project_folder=""):
         else:
             pass
 
-        #test = False
+        test = False
         # Process base GEBCO bathymetry
         if test:
             result = gebco_bathymetry(project_folder)
@@ -730,29 +695,29 @@ def main(project_folder=""):
         del elapse_time, end_time, start_time
         del gmtime, localtime, strftime, time
 
-    except:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
+    except arcpy.ExecuteError:
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
+        return False
+    except:  # noqa: E722
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)
+        return False
     else:
         return True
-    finally:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk:
-            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
-        else:
-            pass
-        del rk
 
 if __name__ == '__main__':
     try:
-        arcgis_folder = rf"{os.path.expanduser('~')}\Documents\ArcGIS"
-        sys.path.append(arcgis_folder)
-
         project_folder = arcpy.GetParameterAsText(0)
 
         if not project_folder:
-            project_folder = rf"{arcgis_folder}\Projects\DisMAP\ArcGIS-Analysis-Python"
+            project_folder = os.path.join(os.path.expanduser('~'), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python")
         else:
             pass
 
@@ -761,13 +726,17 @@ if __name__ == '__main__':
         del result
 
         # Declared Variables
-        del project_folder, arcgis_folder
+        del project_folder
 
-    except:
-        arcpy.AddMessage(arcpy.GetMessages(0))
-        traceback.print_exc()
-    else:
-        pass
-        #print(f"Remaining Keys: ##--> '{', '.join([key for key in locals().keys() if not key.startswith('__')])}' <--##")
-    finally:
-        pass
+    except arcpy.ExecuteError:
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
+    except:  # noqa: E722
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)

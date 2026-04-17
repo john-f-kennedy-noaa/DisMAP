@@ -9,19 +9,15 @@
 # Copyright:   (c) john.f.kennedy 2024
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-import os, sys # built-ins first
+import os
+import sys
 import traceback
-
 import inspect
 
 import arcpy # third-parties second
 
 def worker(region_gdb=""):
     try:
-        # Test if passed workspace exists, if not sys.exit()
-        if not arcpy.Exists(rf"{region_gdb}"):
-            raise SystemExist(f"{os.path.basename(region_gdb)} is missing!!")
-
         # Import the dismap_tools module to access tools
         import dismap_tools
         # Import
@@ -47,7 +43,7 @@ def worker(region_gdb=""):
         project_folder    = os.path.dirname(scratch_folder)
         csv_data_folder   = rf"{project_folder}\CSV_Data"
         process_table     = rf"{csv_data_folder}\{table_name}.csv"
-        scratch_workspace = rf"{scratch_folder}\scratch.gdb"
+        scratch_workspace = os.path.join(scratch_folder, "scratch.gdb")
         del scratch_folder
 
         # Set basic workkpace variables
@@ -142,7 +138,7 @@ def worker(region_gdb=""):
         #for column in list(df.columns): arcpy.AddMessage(column); del column # print columns
 
         # ###--->>>
-        arcpy.AddMessage(f"Inserting additional columns into the dataframe\n")
+        arcpy.AddMessage("Inserting additional columns into the dataframe\n")
 
         arcpy.AddMessage(f"\tInserting 'DatasetCode' column into: {table_name}")
         df.insert(0, "DatasetCode", datasetcode)
@@ -160,7 +156,7 @@ def worker(region_gdb=""):
         if "MapValue" not in list(df.columns):
             df.insert(df.columns.get_loc("WTCPUE")+1, "MapValue", np.nan)
             #-->> MapValue
-            arcpy.AddMessage(f"\tCalculating the MapValue values")
+            arcpy.AddMessage("\tCalculating the MapValue values")
             df["MapValue"] = df["WTCPUE"].pow((1.0/3.0))
 
         arcpy.AddMessage(f"\tInserting 'SpeciesCommonName' column into: {table_name}")
@@ -175,7 +171,7 @@ def worker(region_gdb=""):
         #if "IDW" in table_name:
         arcpy.AddMessage(f"\tInserting 'Season' {season} column into: {table_name}")
         if "Season" not in list(df.columns):
-            df.insert(df.columns.get_loc("Region")+1, "Season", season if season != None else "")
+            df.insert(df.columns.get_loc("Region")+1, "Season", season if season is not None else "")
 
         arcpy.AddMessage(f"\tInserting 'SummaryProduct' column into: {table_name}")
         if "SummaryProduct" not in list(df.columns):
@@ -220,28 +216,28 @@ def worker(region_gdb=""):
         # ###--->>>
         #arcpy.AddMessage(f"Updating and calculating new values for some columns\n")
         #-->> DistributionProjectName
-        arcpy.AddMessage(f"\tSetting 'NaN' in 'DistributionProjectName' to ''")
+        arcpy.AddMessage("\tSetting 'NaN' in 'DistributionProjectName' to ''")
         #df.loc[df['DistributionProjectName'] == 'nan', 'DistributionProjectName'] =  ""
         df["DistributionProjectName"] = df["DistributionProjectName"].fillna("")
 
         #-->> CommonName
-        arcpy.AddMessage(f"\tSetting 'NaN' in 'CommonName' to ''")
+        arcpy.AddMessage("\tSetting 'NaN' in 'CommonName' to ''")
         #df.loc[df['CommonName'] == 'nan', 'CommonName'] =  ""
         df["CommonName"] = df["CommonName"].fillna("")
 
-        arcpy.AddMessage(f"\tSetting 'CommonName' unicode'")
+        arcpy.AddMessage("\tSetting 'CommonName' unicode'")
         # Cast text as Unicode in the CommonName field
         df["CommonName"] = df["CommonName"].astype("unicode")
 
         #-->> SpeciesCommonName
-        arcpy.AddMessage(f"\tCalculating SpeciesCommonName and setting it to 'Species (CommonName)'")
+        arcpy.AddMessage("\tCalculating SpeciesCommonName and setting it to 'Species (CommonName)'")
         df["SpeciesCommonName"] = np.where(df["CommonName"] != "", df["Species"] + ' (' + df["CommonName"] + ')', "")
 
         #-->> CommonNameSpecies
-        arcpy.AddMessage(f"\tCalculating  CommonNameSpecies and setting it to 'CommonName (Species)'")
+        arcpy.AddMessage("\tCalculating  CommonNameSpecies and setting it to 'CommonName (Species)'")
         df["CommonNameSpecies"] = np.where(df["CommonName"] != "", df["CommonName"] + ' (' + df["Species"] + ')', "")
 
-        arcpy.AddMessage(f"\tReplacing Infinity values with Nulls")
+        arcpy.AddMessage("\tReplacing Infinity values with Nulls")
         # Replace Inf with Nulls
         # For some cell values in the 'WTCPUE' column, there is an Inf
         # value representing an infinit
@@ -266,10 +262,10 @@ def worker(region_gdb=""):
 
         arcpy.AddMessage(f"\nDataframe report:\n{df.head(5)}\n")
 
-        arcpy.AddMessage(f"Converting the Dataframe to an NumPy Array\n")
+        arcpy.AddMessage("Converting the Dataframe to an NumPy Array\n")
         try:
             array = np.array(np.rec.fromrecords(df.values), dtype = field_gdb_dtypes)
-        except:
+        except:  # noqa: E722
             arcpy.AddError(arcpy.GetMessages(2))
             traceback.print_exc()
             sys.exit()
@@ -293,7 +289,7 @@ def worker(region_gdb=""):
             arcpy.AddError(arcpy.GetMessages(2))
             traceback.print_exc()
             sys.exit()
-        except:
+        except:  # noqa: E722
             arcpy.AddError(arcpy.GetMessages(2))
             traceback.print_exc()
             sys.exit()
@@ -364,7 +360,7 @@ def worker(region_gdb=""):
         del gsr_wkt, psr_wkt
         del transformation
 
-        arcpy.AddMessage(f"\tMake XY Event layer for IDW datasets")
+        arcpy.AddMessage("\tMake XY Event layer for IDW datasets")
         # Set the output coordinate system to what is needed for the
         # DisMAP project
         #gsr = "GEOGCS['GCS_WGS_1984',DATUM['D_WGS_1984',SPHEROID['WGS_1984',6378137.0,298.257223563]],PRIMEM['Greenwich',0.0],UNIT['Degree',0.0174532925199433]]"
@@ -413,7 +409,8 @@ def worker(region_gdb=""):
 
             # Get the count of records for selected species
             getcount = arcpy.management.GetCount(out_features)[0]
-            arcpy.AddMessage(f"\t{os.path.basename(out_features)} has {getcount} records"); del getcount
+            arcpy.AddMessage(f"\t{os.path.basename(out_features)} has {getcount} records")
+            del getcount
         else:
             pass
 
@@ -474,14 +471,16 @@ def worker(region_gdb=""):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -494,7 +493,7 @@ def script_tool(project_gdb=""):
         start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
         arcpy.AddMessage(f"Python Script:  {os.path.basename(__file__)}")
-        arcpy.AddMessage(f"Location:       ..\Documents\ArcGIS\Projects\..\{os.path.basename(os.path.dirname(__file__))}\{os.path.basename(__file__)}")
+        arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
         arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
@@ -523,11 +522,11 @@ def script_tool(project_gdb=""):
             sys.exit()(f"{os.path.basename(project_gdb)} is missing!!")
 
         # Create project scratch workspace, if missing
-        if not arcpy.Exists(rf"{scratch_folder}\scratch.gdb"):
+        if not arcpy.Exists(os.path.join(scratch_folder, "scratch.gdb")):
             if not arcpy.Exists(scratch_folder):
-                os.makedirs(rf"{scratch_folder}")
-            if not arcpy.Exists(rf"{scratch_folder}\scratch.gdb"):
-                arcpy.management.CreateFileGDB(rf"{scratch_folder}", f"scratch")
+                os.makedirs(scratch_folder)
+            if not arcpy.Exists(os.path.join(scratch_folder, "scratch.gdb")):
+                arcpy.management.CreateFileGDB(rf"{scratch_folder}", "scratch")
 
         # Set worker parameters
         table_name = "AI_IDW"
@@ -537,28 +536,28 @@ def script_tool(project_gdb=""):
         #table_name = "GMEX_IDW"
         #table_name = "ENBS_IDW"
 
-        region_gdb        = rf"{scratch_folder}\{table_name}.gdb"
+        region_gdb        = os.path.join(scratch_folder, f"{table_name}.gdb")
         scratch_workspace = rf"{scratch_folder}\{table_name}\scratch.gdb"
 
         # Create worker scratch workspace, if missing
         if not arcpy.Exists(scratch_workspace):
-            os.makedirs(rf"{scratch_folder}\{table_name}")
+            os.makedirs(os.path.join(scratch_folder,  table_name))
             if not arcpy.Exists(scratch_workspace):
-                arcpy.management.CreateFileGDB(rf"{scratch_folder}\{table_name}", f"scratch")
+                arcpy.management.CreateFileGDB(os.path.join(scratch_folder, f"{table_name}"), "scratch")
         del scratch_workspace
 
         # Setup worker workspace and copy data
-        #datasets = [rf"{project_gdb}\Datasets", rf"{project_gdb}\{table_name}_Region"]
+        #datasets = [ros.path.join(project_gdb, "Datasets") os.path.join(project_gdb, f"{table_name}_Region")]
         #if not any(arcpy.management.GetCount(d)[0] == 0 for d in datasets):
-        if not arcpy.Exists(rf"{scratch_folder}\{table_name}.gdb"):
+        if not arcpy.Exists(os.path.join(scratch_folder, f"{table_name}.gdb")):
             arcpy.management.CreateFileGDB(rf"{scratch_folder}", f"{table_name}")
             arcpy.AddMessage("\tCreate File GDB: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
         else:
             pass
-        arcpy.management.Copy(rf"{project_gdb}\Datasets", rf"{region_gdb}\Datasets")
+        arcpy.management.Copy(os.path.join(project_gdb, "Datasets"), rf"{region_gdb}\Datasets")
         arcpy.AddMessage("\tCopy: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
-        arcpy.management.Copy(rf"{project_gdb}\{table_name}_Region", rf"{region_gdb}\{table_name}_Region")
+        arcpy.management.Copy(os.path.join(project_gdb, f"{table_name}_Region"), rf"{region_gdb}\{table_name}_Region")
         arcpy.AddMessage("\tCopy: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
         #else:
@@ -600,48 +599,43 @@ def script_tool(project_gdb=""):
         del elapse_time, end_time, start_time
         del gmtime, localtime, strftime, time
 
-    except KeyboardInterrupt:
-        sys.exit()
-    except arcpy.ExecuteWarning:
-        arcpy.AddWarning(f"Caught an arcpy.ExecuteWarning error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
-        arcpy.AddError(f"Caught an arcpy.ExecuteError error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except SystemExit as se:
-        arcpy.AddError(f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function.")
-        sys.exit()
-    except Exception as e:
-        arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
-        traceback.print_exc()
-        sys.exit()
-    except:
-        arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
-        traceback.print_exc()
-        sys.exit()
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
+        return False
+    except:  # noqa: E722
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)
+        return False
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
         return True
-    finally:
-        pass
 
 if __name__ == '__main__':
     try:
         project_gdb = arcpy.GetParameterAsText(0)
         if not project_gdb:
-            project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025\August 1 2025.gdb"
+            project_gdb = os.path.join(os.path.expanduser('~'), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb")
         else:
             pass
         script_tool(project_gdb)
         arcpy.SetParameterAsText(1, "Result")
         del project_gdb
-    except:
-        traceback.print_exc()
-    else:
-        pass
-    finally:
-        pass
+
+    except arcpy.ExecuteError:
+        #Return Geoprocessing tool specific errors
+        line, filename, err = trace()
+        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
+        for msg in range(0, arcpy.GetMessageCount()):
+            if arcpy.GetSeverity(msg) == 2:
+                arcpy.AddReturnMessage(msg)
+    except:  # noqa: E722
+        #Gets non-tool errors
+        line, filename, err = trace()
+        arcpy.AddError("Python error on " + line + " of " + filename)
+        arcpy.AddError(err)

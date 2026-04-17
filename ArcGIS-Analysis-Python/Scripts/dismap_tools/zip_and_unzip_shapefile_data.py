@@ -6,12 +6,13 @@ Script documentation
                                         arcpy.SetParameterAsText()
 """
 import traceback
+
 import arcpy
+
 def script_tool(home_folder="", source_zip_file=""):
     """Script code goes below"""
     try:
         import os
-        import copy
         from zipfile import ZipFile
         #aprx = arcpy.mp.ArcGISProject("CURRENT")
         #aprx.save()

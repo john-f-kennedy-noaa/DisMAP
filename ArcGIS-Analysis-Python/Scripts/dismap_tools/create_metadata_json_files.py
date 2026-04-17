@@ -173,7 +173,7 @@ def script_tool(project_gdb=""):
                                         "languageCode" : 0,
                                         "countryCode"  : 1,
                             "themeKeys"  :  8,
-                                "keyword"   : 0,  # noqa: F601
+                                "keyword"   : 0,
                                 "thesaName" : 1,
                                     "resTitle" : 0,
                                     "date"     : 1,

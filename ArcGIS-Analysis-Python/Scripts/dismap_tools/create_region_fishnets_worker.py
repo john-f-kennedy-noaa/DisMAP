@@ -9,9 +9,9 @@
 # Copyright:   (c) john.f.kennedy 2024
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-import os, sys # built-ins first
+import os
+import sys
 import traceback
-
 import inspect
 
 import arcpy # third-parties second
@@ -493,14 +493,16 @@ def worker(region_gdb=""):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -513,7 +515,7 @@ def script_tool(project_gdb=""):
         start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
         arcpy.AddMessage(f"Python Script:  {os.path.basename(__file__)}")
-        arcpy.AddMessage(f"Location:       ..\Documents\ArcGIS\Projects\..\{os.path.basename(os.path.dirname(__file__))}\{os.path.basename(__file__)}")
+        arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
         arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
@@ -532,11 +534,11 @@ def script_tool(project_gdb=""):
         dismap_tools.clear_folder(folder=scratch_folder)
 
         # Create project scratch workspace, if missing
-        if not arcpy.Exists(rf"{scratch_folder}\scratch.gdb"):
+        if not arcpy.Exists(os.path.join(scratch_folder, "scratch.gdb")):
             if not arcpy.Exists(scratch_folder):
-                os.makedirs(rf"{scratch_folder}")
-            if not arcpy.Exists(rf"{scratch_folder}\scratch.gdb"):
-                arcpy.management.CreateFileGDB(rf"{scratch_folder}", f"scratch")
+                os.makedirs(scratch_folder)
+            if not arcpy.Exists(os.path.join(scratch_folder, "scratch.gdb")):
+                arcpy.management.CreateFileGDB(rf"{scratch_folder}", "scratch")
 
         # Set worker parameters
         table_name = "AI_IDW"
@@ -545,28 +547,28 @@ def script_tool(project_gdb=""):
         #table_name = "SEUS_FAL_IDW"
         #table_name = "NBS_IDW"
 
-        region_gdb        = rf"{scratch_folder}\{table_name}.gdb"
+        region_gdb        = os.path.join(scratch_folder, f"{table_name}.gdb")
         scratch_workspace = rf"{scratch_folder}\{table_name}\scratch.gdb"
 
         if not arcpy.Exists(scratch_workspace):
-            os.makedirs(rf"{scratch_folder}\{table_name}")
+            os.makedirs(os.path.join(scratch_folder,  table_name))
             if not arcpy.Exists(scratch_workspace):
-                arcpy.management.CreateFileGDB(rf"{scratch_folder}\{table_name}", f"scratch")
+                arcpy.management.CreateFileGDB(os.path.join(scratch_folder, f"{table_name}"), "scratch")
         del scratch_workspace
 
         # Setup worker workspace and copy data
-        #datasets = [rf"{project_gdb}\Datasets", rf"{project_gdb}\{table_name}_Region"]
+        #datasets = [ros.path.join(project_gdb, "Datasets") os.path.join(project_gdb, f"{table_name}_Region")]
         #if not any(arcpy.management.GetCount(d)[0] == 0 for d in datasets):
 
-        if not arcpy.Exists(rf"{scratch_folder}\{table_name}.gdb"):
+        if not arcpy.Exists(os.path.join(scratch_folder, f"{table_name}.gdb")):
             arcpy.management.CreateFileGDB(rf"{scratch_folder}", f"{table_name}")
             arcpy.AddMessage("\tCreate File GDB: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
         else:
             pass
-        arcpy.management.Copy(rf"{project_gdb}\Datasets", rf"{region_gdb}\Datasets")
+        arcpy.management.Copy(os.path.join(project_gdb, "Datasets"), rf"{region_gdb}\Datasets")
         arcpy.AddMessage("\tCopy: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
-        arcpy.management.Copy(rf"{project_gdb}\{table_name}_Region", rf"{region_gdb}\{table_name}_Region")
+        arcpy.management.Copy(os.path.join(project_gdb, f"{table_name}_Region"), rf"{region_gdb}\{table_name}_Region")
         arcpy.AddMessage("\tCopy: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
         #else:
@@ -579,7 +581,7 @@ def script_tool(project_gdb=""):
 
         try:
             pass
-            #worker(region_gdb=region_gdb)
+            worker(region_gdb=region_gdb)
         except SystemExit:
             arcpy.AddError(arcpy.GetMessages(2))
             traceback.print_exc()
@@ -623,14 +625,16 @@ def script_tool(project_gdb=""):
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:
+    except:  # noqa: E722
         arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"); del rk
+        if rk:
+            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass
@@ -639,13 +643,13 @@ if __name__ == '__main__':
     try:
         project_gdb = arcpy.GetParameterAsText(0)
         if not project_gdb:
-            project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025\August 1 2025.gdb"
+            project_gdb = os.path.join(os.path.expanduser('~'), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb")
         else:
             pass
         script_tool(project_gdb)
         arcpy.SetParameterAsText(1, "Result")
         del project_gdb
-    except:
+    except:  # noqa: E722
         traceback.print_exc()
     else:
         pass
