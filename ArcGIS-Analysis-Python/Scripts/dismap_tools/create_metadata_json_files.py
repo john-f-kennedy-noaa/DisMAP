@@ -6,7 +6,10 @@ Script documentation
 - Update derived parameter values using arcpy.SetParameter() or
                                         arcpy.SetParameterAsText()
 """
-import os, sys, traceback, inspect
+import os
+import sys
+import traceback
+import inspect
 
 import arcpy
 
