@@ -7,7 +7,7 @@
 
 # Remove selected directories
 .ipynb_checkpoints
-.ipynb_checkpoints
+
 .backups
 __pycache__
 **/__pycache__
@@ -35,9 +35,11 @@ __init__.py
 !Scripts/README.md
 !src/dismap_tools/README.md
 
-# include Notebook folder and its notebooks
-#!Notebook/
-#!Notebook/**/*.ipynb
+# Notebook folder and its notebooks
+Notebook/**
+**/secure/**
+user_credentials.py
+**/user_credentials.py
 
 # explicitly exclude esri folder under dismap_tools
 src/dismap_tools/esri/
