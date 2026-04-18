@@ -6,7 +6,7 @@
 
 # Remove selected directories
 .ipynb_checkpoints
-
+**/.ipynb_checkpoints
 .backups
 __pycache__
 **/__pycache__
