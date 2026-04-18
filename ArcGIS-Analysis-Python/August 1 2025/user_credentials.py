@@ -1,5 +1,5 @@
 def main():
-    credentials={"username" : "john.f.kennedy@noaa.gov", "password" : "#FSM2014fsm$"}
+    credentials={"username
     return credentials
 
 if __name__ == '__main__':
