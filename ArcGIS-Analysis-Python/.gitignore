@@ -43,3 +43,23 @@ user_credentials.py
 
 # explicitly exclude esri folder under dismap_tools
 src/dismap_tools/esri/
+# Notebook folder and its notebooks
+Notebook/**
+*/secure/**
+**/secure/**
+user_credentials.py
+**/user_credentials.py
+
+# explicitly exclude esri folder under dismap_tools
+src/dismap_tools/esri/
+
+*.zip
+**/*.zip
+
+# For Metadta branch
+!/August 1 2025/CSV_Data/*
+!August 1 2025/Dataset_Shapefiles/*
+!August 1 2025/Layers/*
+!Bathymetry/Alaska Bathymetry/*
+!Bathymetry/GEBCO Bathymetry/*
+!Bathymetry/Hawaii Bathymetry/*
