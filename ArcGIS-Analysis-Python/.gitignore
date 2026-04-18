@@ -37,6 +37,7 @@ __init__.py
 
 # Notebook folder and its notebooks
 Notebook/**
+*/secure/**
 **/secure/**
 user_credentials.py
 **/user_credentials.py
