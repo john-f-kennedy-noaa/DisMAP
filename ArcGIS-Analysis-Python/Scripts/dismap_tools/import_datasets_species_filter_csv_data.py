@@ -370,7 +370,7 @@ def script_tool(project_folder=""):
         del datasets
         del csv_data_folder
         #
-        UpdateDatecode = True
+        UpdateDatecode = False
         if UpdateDatecode:
             # Update DateCode
             #arcpy.AddMessage(datasets_csv)
@@ -383,22 +383,22 @@ def script_tool(project_folder=""):
             worker(project_gdb=project_gdb, csv_file=datasets_csv)
         del DatasetsCSVFile
         #
-        SpeciesFilterCSVFile = True
+        SpeciesFilterCSVFile = False
         if SpeciesFilterCSVFile:
             worker(project_gdb=project_gdb, csv_file=species_filter_csv)
         del SpeciesFilterCSVFile
         #
-        DisMAPSurveyInfoFile = True
+        DisMAPSurveyInfoFile = False
         if DisMAPSurveyInfoFile:
             worker(project_gdb=project_gdb, csv_file=survey_metadata_csv)
         del DisMAPSurveyInfoFile
         #
-        SpeciesPersistenceIndicatorPercentileBinFile = True
+        SpeciesPersistenceIndicatorPercentileBinFile = False
         if SpeciesPersistenceIndicatorPercentileBinFile:
             worker(project_gdb=project_gdb, csv_file=SpeciesPersistenceIndicatorPercentileBin)
         del SpeciesPersistenceIndicatorPercentileBinFile
         #
-        SpeciesPersistenceIndicatorTrendFile = True
+        SpeciesPersistenceIndicatorTrendFile = False
         if SpeciesPersistenceIndicatorTrendFile:
             worker(project_gdb=project_gdb, csv_file=SpeciesPersistenceIndicatorTrend)
         del SpeciesPersistenceIndicatorTrendFile
