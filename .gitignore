@@ -42,9 +42,24 @@
 .vscode
 
 /code/.quarto/
-*.zip
 *.tex
 *.log
 *.markdown
 *.rmarkdown
 __init__.py
+
+# Archive files
+*.zip
+
+# Microsoft Office files
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+*.mdb
+*.accdb
+*.vsd
+*.vsdx
+*.pub
