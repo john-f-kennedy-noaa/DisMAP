@@ -40,6 +40,7 @@
 /data_processing_rcode/notforgit/
 /ArcGIS-Analysis-Python/
 .vscode
+.github
 
 /code/.quarto/
 *.zip
