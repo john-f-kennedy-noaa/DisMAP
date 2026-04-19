@@ -38,3 +38,5 @@ __init__.py
 /Notebooks/
 # explicitly exclude esri folder under dismap_tools
 /Scripts/dismap_tools/esri/
+/src/
+/Initial Data/*.csv
