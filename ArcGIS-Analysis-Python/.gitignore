@@ -35,7 +35,7 @@ __init__.py
 !Scripts/dismap_tools/README.md
 
 # Notebook folder and its notebooks
-#Notebooks
+/Notebooks/
 # explicitly exclude esri folder under dismap_tools
 /Scripts/dismap_tools/esri/
 
