@@ -32,14 +32,9 @@ __init__.py
 # include README files in root, Scripts, and dismap_tools
 !README.md
 !Scripts/README.md
-!src/dismap_tools/README.md
+!Scripts/dismap_tools/README.md
 
 # Notebook folder and its notebooks
-Notebook/**
-*/secure/**
-**/secure/**
-user_credentials.py
-**/user_credentials.py
-
+/Notebooks/
 # explicitly exclude esri folder under dismap_tools
-src/dismap_tools/esri/
+/Scripts/dismap_tools/esri/
