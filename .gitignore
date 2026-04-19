@@ -39,7 +39,7 @@
 /data_processing_rcode/output/
 /data_processing_rcode/notforgit/
 /ArcGIS-Analysis-Python/
-
+.vscode
 
 /code/.quarto/
 *.zip
