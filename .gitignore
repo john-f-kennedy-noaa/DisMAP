@@ -38,12 +38,30 @@
 /data_processing_rcode/data/
 /data_processing_rcode/output/
 /data_processing_rcode/notforgit/
-
+/ArcGIS-Analysis-Python/
+.vscode
+.github
+.pre-commit-config.yaml
 
 /code/.quarto/
-*.zip
 *.tex
 *.log
 *.markdown
 *.rmarkdown
 __init__.py
+
+# Archive files
+*.zip
+
+# Microsoft Office files
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+*.mdb
+*.accdb
+*.vsd
+*.vsdx
+*.pub
