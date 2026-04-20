@@ -9,10 +9,10 @@ repos:
       - id: check-added-large-files
       - id: check-json
       - id: detect-private-key
-#  - repo: https://github.com/psf/black
-#    rev: 24.3.0 # Use the latest version
-#    hooks:
-#      - id: black
+  - repo: https://github.com/psf/black
+    rev: 24.3.0 # Use the latest version
+    hooks:
+      - id: black
 #  - repo: https://github.com/PyCQA/flake8
 #    rev: 7.0.0 # Use the latest version
 #    hooks:
