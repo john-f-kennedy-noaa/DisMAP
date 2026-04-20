@@ -25,8 +25,7 @@ __init__.py
 **/__init__.py
 
 # include Scripts folder and its contents
-!Scripts/
-!Scripts/**
+!Scripts/dismap_tools/*.py
 
 # include README files in root, Scripts, and dismap_tools
 !README.md
@@ -46,6 +45,5 @@ __init__.py
 *.csv
 **/*.csv
 
-/Bathymetry/
 
 # End of File (EOF)
