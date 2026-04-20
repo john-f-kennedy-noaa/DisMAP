@@ -5,18 +5,21 @@ Script documentation
 - Update derived parameter values using arcpy.SetParameter() or
                                         arcpy.SetParameterAsText()
 """
+
 import traceback
 
 import arcpy
+
 
 def script_tool(home_folder="", source_zip_file=""):
     """Script code goes below"""
     try:
         import os
         from zipfile import ZipFile
-        #aprx = arcpy.mp.ArcGISProject("CURRENT")
-        #aprx.save()
-        #home_folder = aprx.homeFolder
+
+        # aprx = arcpy.mp.ArcGISProject("CURRENT")
+        # aprx.save()
+        # home_folder = aprx.homeFolder
         arcpy.AddMessage(home_folder)
         out_data_path = rf"{home_folder}\Dataset_Shapefiles"
         arcpy.AddMessage(out_data_path)
@@ -28,7 +31,9 @@ def script_tool(home_folder="", source_zip_file=""):
                 archive.extract(file, ".")
                 del file
         del archive
-        arcpy.AddMessage(f"Done Un-Zipping files from {os.path.basename(source_zip_file)}")
+        arcpy.AddMessage(
+            f"Done Un-Zipping files from {os.path.basename(source_zip_file)}"
+        )
         del home_folder
         del source_zip_file
         return out_data_path
@@ -44,7 +49,9 @@ def script_tool(home_folder="", source_zip_file=""):
         pass
     finally:
         pass
-        #del out_data_path
+        # del out_data_path
+
+
 if __name__ == "__main__":
     try:
         home_folder = arcpy.GetParameterAsText(0)

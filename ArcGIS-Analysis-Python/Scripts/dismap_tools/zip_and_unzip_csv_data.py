@@ -10,8 +10,10 @@ import sys
 
 import arcpy
 
+
 def trace():
-    import sys, traceback  # noqa: E401
+    import sys  # noqa: E401
+    import traceback
     tb = sys.exc_info()[2]
     tbinfo = traceback.format_tb(tb)[0]
     line = tbinfo.split(", ")[1]
@@ -22,10 +24,11 @@ def trace():
 def script_tool(project_folder, source_zip_file):
     """Script code goes below"""
     try:
+        from io import StringIO
         from zipfile import ZipFile
+
         from arcpy import metadata as md
         from lxml import etree
-        from io import StringIO
 
         aprx = arcpy.mp.ArcGISProject("CURRENT")
         #aprx.save()

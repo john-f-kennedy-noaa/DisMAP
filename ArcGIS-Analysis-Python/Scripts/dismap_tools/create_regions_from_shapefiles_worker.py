@@ -9,12 +9,13 @@
 # Copyright:   (c) john.f.kennedy 2024
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
+import inspect
 import os
 import sys
 import traceback
-import inspect
 
-import arcpy # third-parties second
+import arcpy  # third-parties second
+
 
 def worker(region_gdb=""):
     try:
@@ -237,9 +238,11 @@ def worker(region_gdb=""):
 def script_tool(project_gdb=""):
     try:
         # Imports
+        from time import gmtime, localtime, strftime, time
+
         import dismap_tools
         from arcpy import metadata as md
-        from time import gmtime, localtime, strftime, time
+
         # Set a start time so that we can see how log things take
         start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")

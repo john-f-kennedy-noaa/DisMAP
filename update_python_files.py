@@ -1,25 +1,28 @@
 import os
 
+
 # Function to add a comment and a newline at the end of a Python file
 def add_comment_and_newline(file_path, comment):
-    with open(file_path, 'a') as file:
+    with open(file_path, "a") as file:
         file.write(f"\n# {comment}\n")
+
 
 # Function to search and replace blocks or lines of code in a Python file
 def search_and_replace(file_path, search_text, replace_text):
-    with open(file_path, 'r') as file:
+    with open(file_path, "r") as file:
         content = file.read()
 
     updated_content = content.replace(search_text, replace_text)
 
-    with open(file_path, 'w') as file:
+    with open(file_path, "w") as file:
         file.write(updated_content)
+
 
 # Function to process all Python files in a directory
 def process_python_files(directory, comment, replacements):
     for root, _, files in os.walk(directory):
         for file in files:
-            if file.endswith('.py'):
+            if file.endswith(".py"):
                 file_path = os.path.join(root, file)
                 print(f"Processing: {file_path}")
 
@@ -29,6 +32,7 @@ def process_python_files(directory, comment, replacements):
                 # Perform search and replace
                 for search_text, replace_text in replacements.items():
                     search_and_replace(file_path, search_text, replace_text)
+
 
 if __name__ == "__main__":
     # Directory containing Python files
