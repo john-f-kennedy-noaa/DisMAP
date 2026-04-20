@@ -51,5 +51,8 @@ __init__.py
 !/Bathymetry/Alaska-Bathymetry/*
 /Bathymetry/Alaska-Bathymetry/*.zip
 !/Bathymetry/GEBCO-Bathymetry/*
+/Bathymetry/GEBCO-Bathymetry/*.zip
 !/Bathymetry/Hawaii-Bathymetry/*
+/Bathymetry/Hawaii-Bathymetry/*.zip
 
+# EOF
