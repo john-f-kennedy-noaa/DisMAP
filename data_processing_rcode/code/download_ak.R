@@ -22,7 +22,7 @@ options(scipen = 999)
 
 dat <- data.frame()
 for (i in seq(0, 500000, 10000)){
-  # print(i)
+  print(i)
   ## query the API link
   res <- httr::GET(url = paste0('https://apps-st.fisheries.noaa.gov/ods/foss/afsc_groundfish_survey_haul/',
                                 "?offset=",i,"&limit=10000"))
@@ -53,12 +53,13 @@ write.csv(x = haul,
 ## Download Species Data -------------------------------------------------------
 
 res <- httr::GET(url = paste0('https://apps-st.fisheries.noaa.gov/ods/foss/afsc_groundfish_survey_species/',
-                              "?offset=0&limit=10000")) # , '&q={"species_code":{"$lt":32000}}'))
+                              "?offset=0&limit=10000")) ## removing the  problematic command here to pull without filtering species code
 
 ## convert from JSON format
 data <- jsonlite::fromJSON(base::rawToChar(res$content))
 catch_spp <- data$items  %>%
-  dplyr::select(-links) # necessary for API accounting, but not part of the dataset
+  dplyr::select(-links) %>% # necessary for API accounting, but not part of the dataset
+  filter(species_code < 99990)
 
 catch_spp <- catch_spp %>%
   dplyr::filter(species_code < 32000) # dplyr::filter(species_code < 32000 | species_code %in% c(69323, 69322, 68580))
@@ -68,15 +69,18 @@ write.csv(x = catch_spp,
 
 ## Download Catch Data ---------------------------------------------------------
 # pull only the data in the catch_spp list (which currently includes species codes below 32000)
-
-dat <- data.frame()
-for (ii in 1:nrow(catch_spp)) {
+catch <- data.frame()
 for (i in seq(0, 1000000, 10000)){
   ## find how many iterations it takes to cycle through the data
   print(i)
   ## query the API link
   res <- httr::GET(url = paste0("https://apps-st.fisheries.noaa.gov/ods/foss/afsc_groundfish_survey_catch/",
-                                "?offset=",i,"&limit=10000", '&q={"species_code":',catch_spp$species_code[ii],'}')) # '&q={"species_code":{"$lt":32000}}'
+                                "?offset=",i,"&limit=10000"))
+  # The above code was edited to not filter for a species code. If this filter needs to be added back in, see code below:
+  #   res <- httr::GET(url = paste0("https://apps-st.fisheries.noaa.gov/ods/foss/afsc_groundfish_survey_catch/",
+  #                                 "?offset=",i,"&limit=10000", '&q={"species_code":{"$lt":32000}}'))
+
+
   ## convert from JSON format
   data <- jsonlite::fromJSON(base::rawToChar(res$content))
 
@@ -86,7 +90,7 @@ for (i in seq(0, 1000000, 10000)){
   }
 
   ## bind sub-pull to dat data.frame
-  dat <- dplyr::bind_rows(dat,
+  catch <- dplyr::bind_rows(catch,
                           data$items %>%
                             dplyr::select(-links)) # necessary for API accounting, but not part of the dataset)
 }
@@ -94,6 +98,8 @@ for (i in seq(0, 1000000, 10000)){
 catch <- unique(dat)
 
 # mostly for testing, but also nice to have it organized
+
+
 catch <- catch[order(catch$species_code), ]
 catch <- catch[order(catch$hauljoin), ]
 
