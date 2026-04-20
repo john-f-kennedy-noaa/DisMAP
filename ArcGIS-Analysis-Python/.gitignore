@@ -12,10 +12,10 @@ __pycache__
 **/__pycache__
 
 # include python files anywhere
-!*.py
-!*.pyt
-!**/*.py
-!**/*.pyt
+#!*.py
+#!*.pyt
+#!**/*.py
+#!**/*.pyt
 
 # still ignore py backup variants
 *.~py
@@ -44,6 +44,5 @@ __init__.py
 # Ignore zip files
 *.csv
 **/*.csv
-
 
 # End of File (EOF)
