@@ -46,5 +46,6 @@ __init__.py
 *.csv
 **/*.csv
 
+/Bathymetry/
 
 # End of File (EOF)
