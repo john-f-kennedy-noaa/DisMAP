@@ -95,7 +95,7 @@ def script_tool(project_gdb=""):
             "exTypeCode": 4,
             "itemLocation": 3,
             "linkage": 0,
-            "protocol": 1,
+            "protocol": 1, # noqa: E261
             "coordRef": 4,
             "type": 0,
             "geogcsn": 1,
@@ -136,7 +136,7 @@ def script_tool(project_gdb=""):
             "idCitation": 3,
             "resTitle": 0,
             "resAltTitle": 1,
-            "collTitle": 2,
+            "collTitle": 2, # noqa: E261
             "date": 3,
             "presForm": 4,
             "PresFormCd": 0,
@@ -146,7 +146,7 @@ def script_tool(project_gdb=""):
             "dataExt": 5,
             "exDesc": 0,
             "geoEle": 1,
-            "GeoBndBox": 0,
+            "GeoBndBox": 0, # noqa: E261
             "exTypeCode": 0,
             "westBL": 1,
             "eastBL": 2,
@@ -156,7 +156,7 @@ def script_tool(project_gdb=""):
             "TempExtent": 0,
             "exTemp": 0,
             "TM_Period": 0,
-            "tmBegin": 0,
+            "tmBegin": 0, # noqa: E261
             "tmEnd": 1,
             "TM_Instant": 1,
             "tmPosition": 0,
@@ -166,7 +166,7 @@ def script_tool(project_gdb=""):
             "idCredit": 4,
             "idStatus": 5,
             "resConst": 6,
-            "discKeys": 7,
+            "discKeys": 7, # noqa: E261
             "keyword": 0,
             "thesaName": 1,
             "resTitle": 0,
@@ -174,7 +174,7 @@ def script_tool(project_gdb=""):
             "createDate": 0,
             "pubDate": 1,
             "reviseDate": 2,
-            "citOnlineRes": 2,
+            "citOnlineRes": 2, # noqa: E261
             "linkage": 0,
             "orFunct": 1,
             "OnFunctCd": 0,
@@ -185,7 +185,7 @@ def script_tool(project_gdb=""):
             "keyword": 0,
             "thesaName": 1,
             "resTitle": 0,
-            "date": 1,
+            "date": 1, # noqa: E261
             "createDate": 0,
             "pubDate": 1,
             "reviseDate": 2,
@@ -200,7 +200,7 @@ def script_tool(project_gdb=""):
             "keyword": 0,
             "thesaName": 1,
             "resTitle": 0,
-            "date": 1,
+            "date": 1, # noqa: E261
             "createDate": 0,
             "pubDate": 1,
             "reviseDate": 2,
@@ -215,7 +215,7 @@ def script_tool(project_gdb=""):
             "keyword": 0,
             "thesaName": 1,
             "resTitle": 0,
-            "date": 1,
+            "date": 1, # noqa: E261
             "createDate": 0,
             "pubDate": 1,
             "reviseDate": 2,
@@ -230,7 +230,7 @@ def script_tool(project_gdb=""):
             "keyword": 0,
             "thesaName": 1,
             "resTitle": 0,
-            "date": 1,
+            "date": 1, # noqa: E261
             "createDate": 0,
             "pubDate": 1,
             "reviseDate": 2,
@@ -241,7 +241,7 @@ def script_tool(project_gdb=""):
             "thesaLang": 2,
             "languageCode": 0,
             "countryCode": 1,
-            "idPoC": 11,
+            "idPoC": 11, # noqa: E261
             "resMaint": 12,
             "tpCat": 18,
         }
@@ -266,7 +266,7 @@ def script_tool(project_gdb=""):
             "idCitation": 0,
             "resTitle": 0,
             "resAltTitle": 1,
-            "collTitle": 2,
+            "collTitle": 2, # noqa: E261
             "presForm": 3,
             "PresFormCd": 0,
             "fgdcGeoform": 1,
@@ -301,7 +301,7 @@ def script_tool(project_gdb=""):
             "rpPosName": 4,
             "rpCntInfo": 5,
             "cntAddress": 0,
-            "delPoint": 0,
+            "delPoint": 0, # noqa: E261
             "city": 1,
             "adminArea": 2,
             "postCode": 3,
@@ -310,7 +310,7 @@ def script_tool(project_gdb=""):
             "cntPhone": 1,
             "voiceNum": 0,
             "faxNum": 1,
-            "cntHours": 2,
+            "cntHours": 2, # noqa: E261
             "cntOnlineRes": 3,
             "linkage": 0,
             "protocol": 1,
@@ -323,7 +323,7 @@ def script_tool(project_gdb=""):
             "role": 8,
             "RoleCd": 0,
             "srcCitatn": 1,
-            "resTitle": 0,
+            "resTitle": 0, # noqa: E261
             "resAltTitle": 1,
             "collTitle": 2,
             "date": 10,
@@ -332,7 +332,7 @@ def script_tool(project_gdb=""):
             "reviseDate": 2,
             "presForm": 3,
             "PresFormCd": 0,
-            "fgdcGeoform": 1,
+            "fgdcGeoform": 1, # noqa: E261
             "citRespParty": 6,
             "citOnlineRes": 2,
         }
@@ -357,7 +357,7 @@ def script_tool(project_gdb=""):
             "dqScope": 0,
             "scpLvl": 0,
             "ScopeCd": 0,
-            "scpLvlDesc": 1,
+            "scpLvlDesc": 1, # noqa: E261
             "datasetSet": 0,
             "report": 1,
             "measDesc": 0,
@@ -365,7 +365,7 @@ def script_tool(project_gdb=""):
             "dataLineage": 3,
             "statement": 0,
             "dataSource": 1,
-            "srcDesc": 0,
+            "srcDesc": 0, # noqa: E261
             "srcCitatn": 1,
             "resTitle": 0,
             "resAltTitle": 1,
@@ -378,7 +378,7 @@ def script_tool(project_gdb=""):
             "orFunct": 4,
             "OnFunctCd": 0,
             "date": 3,
-            "createDate": 0,
+            "createDate": 0, # noqa: E261
             "pubDate": 1,
             "reviseDate": 2,
             "otherCitDet": 4,
@@ -393,7 +393,7 @@ def script_tool(project_gdb=""):
             "rpPosName": 4,
             "rpCntInfo": 5,
             "cntAddress": 0,
-            "delPoint": 0,
+            "delPoint": 0, # noqa: E261
             "city": 1,
             "adminArea": 2,
             "postCode": 3,
@@ -402,7 +402,7 @@ def script_tool(project_gdb=""):
             "cntPhone": 1,
             "voiceNum": 0,
             "faxNum": 1,
-            "cntHours": 2,
+            "cntHours": 2, # noqa: E261
             "cntOnlineRes": 3,
             "linkage": 0,
             "protocol": 1,
@@ -415,7 +415,7 @@ def script_tool(project_gdb=""):
             "role": 8,
             "RoleCd": 0,
             "srcMedName": 7,
-            "MedNameCd": 0,
+            "MedNameCd": 0, # noqa: E261
             "prcStep": 3,
             "stepDesc": 0,
             "stepProc": 1,
@@ -426,7 +426,7 @@ def script_tool(project_gdb=""):
             "rpPosName": 4,
             "rpCntInfo": 5,
             "cntAddress": 0,
-            "delPoint": 0,
+            "delPoint": 0, # noqa: E261
             "city": 1,
             "adminArea": 2,
             "postCode": 3,
@@ -435,7 +435,7 @@ def script_tool(project_gdb=""):
             "cntPhone": 1,
             "voiceNum": 0,
             "faxNum": 1,
-            "cntHours": 2,
+            "cntHours": 2, # noqa: E261
             "cntOnlineRes": 3,
             "linkage": 0,
             "protocol": 1,
@@ -445,7 +445,7 @@ def script_tool(project_gdb=""):
             "OnFunctCd": 0,
             "editorSave": 6,
             "displayName": 7,
-            "role": 8,
+            "role": 8, # noqa: E261
             "RoleCd": 0,
             "stepDateTm": 2,
             "cntOnlineRes": 3,
@@ -477,7 +477,7 @@ def script_tool(project_gdb=""):
             "distInfo": 0,
             "distFormat": 0,
             "formatName": 0,
-            "formatVer": 1,
+            "formatVer": 1, # noqa: E261
             "fileDecmTech": 2,
             "formatInfo": 3,
             "distributor": 1,
@@ -489,7 +489,7 @@ def script_tool(project_gdb=""):
             "rpPosName": 4,
             "rpCntInfo": 5,
             "cntAddress": 0,
-            "delPoint": 0,
+            "delPoint": 0, # noqa: E261
             "city": 1,
             "adminArea": 2,
             "postCode": 3,
@@ -498,7 +498,7 @@ def script_tool(project_gdb=""):
             "cntPhone": 1,
             "voiceNum": 0,
             "faxNum": 1,
-            "cntHours": 2,
+            "cntHours": 2, # noqa: E261
             "cntOnlineRes": 3,
             "linkage": 0,
             "orName": 1,
@@ -508,7 +508,7 @@ def script_tool(project_gdb=""):
             "editorSave": 6,
             "displayName": 7,
             "role": 8,
-            "RoleCd": 0,
+            "RoleCd": 0, # noqa: E261
             "distTranOps": 2,
             "unitsODist": 0,
             "transSize": 1,
@@ -518,7 +518,7 @@ def script_tool(project_gdb=""):
             "orName": 2,
             "orDesc": 3,
             "orFunct": 4,
-            "OnFunctCd": 0,
+            "OnFunctCd": 0, # noqa: E261
         }
 
         import json
