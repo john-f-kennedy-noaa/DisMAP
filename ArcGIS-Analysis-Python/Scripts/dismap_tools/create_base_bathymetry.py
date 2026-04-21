@@ -99,7 +99,8 @@ def raster_properties_report(dataset=""):
 def create_alasaka_bathymetry(project_folder=""):
     try:
         # Imports
-        from dismap_tools import check_transformation
+        import dismap_tools
+        from arcpy import metadata as md
 
         # Set History and Metadata logs, set serverity and message level
         arcpy.SetLogHistory(True)
@@ -108,6 +109,7 @@ def create_alasaka_bathymetry(project_folder=""):
         arcpy.SetMessageLevels(["NORMAL"])
 
         # Set basic workkpace variables
+        csv_data_folder = os.path.join(project_folder, "CSV_Data")
         arcpy.env.workspace = rf"{project_folder}\Bathymetry\Bathymetry.gdb"
         arcpy.env.scratchWorkspace = rf"{project_folder}\Scratch\scratch.gdb"
         arcpy.env.overwriteOutput = True
@@ -274,6 +276,14 @@ def create_alasaka_bathymetry(project_folder=""):
         arcpy.AddMessage("Copy AI_IDW_Bathymetry_Raster to AI_IDW_Bathymetry")
         arcpy.management.CopyRaster(ai_bathy_raster, ai_bathymetry)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
+        arcpy.AddMessage(f"Importing metadata for {os.path.basename(ai_bathymetry)}")
+        dismap_tools.import_metadata(csv_data_folder, ai_bathymetry)
+        ai_md = md.Metadata(ai_bathymetry)
+        ai_md.title = os.path.basename(ai_bathymetry).replace("_", " ")
+        ai_md.save()
+        ai_md.synchronize("ALWAYS")
+        ai_md.save()
+        del ai_md
 
         region = "EBS_IDW"
         arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(
@@ -283,6 +293,14 @@ def create_alasaka_bathymetry(project_folder=""):
         arcpy.AddMessage("Copy EBS_IDW_Bathymetry_Raster to EBS_IDW_Bathymetry")
         arcpy.management.CopyRaster(ebs_bathy_raster, ebs_bathymetry)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
+        arcpy.AddMessage(f"Importing metadata for {os.path.basename(ebs_bathymetry)}")
+        dismap_tools.import_metadata(csv_data_folder, ebs_bathymetry)
+        ebs_md = md.Metadata(ebs_bathymetry)
+        ebs_md.title = os.path.basename(ebs_bathymetry).replace("_", " ")
+        ebs_md.save()
+        ebs_md.synchronize("ALWAYS")
+        ebs_md.save()
+        del ebs_md
 
         region = "ENBS_IDW"
         arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(
@@ -292,6 +310,14 @@ def create_alasaka_bathymetry(project_folder=""):
         arcpy.AddMessage("Copy EBS_IDW_Bathymetry_Raster to ENBS_Bathymetry")
         arcpy.management.CopyRaster(ebs_bathy_raster, enbs_bathymetry)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
+        arcpy.AddMessage(f"Importing metadata for {os.path.basename(enbs_bathymetry)}")
+        dismap_tools.import_metadata(csv_data_folder, enbs_bathymetry)
+        enbs_md = md.Metadata(enbs_bathymetry)
+        enbs_md.title = os.path.basename(enbs_bathymetry).replace("_", " ")
+        enbs_md.save()
+        enbs_md.synchronize("ALWAYS")
+        enbs_md.save()
+        del enbs_md
 
         region = "NBS_IDW"
         arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(
@@ -301,6 +327,14 @@ def create_alasaka_bathymetry(project_folder=""):
         arcpy.AddMessage("Copy EBS_IDW_Bathymetry_Raster to NBS_Bathymetry")
         arcpy.management.CopyRaster(ebs_bathy_raster, nbs_bathymetry)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
+        arcpy.AddMessage(f"Importing metadata for {os.path.basename(nbs_bathymetry)}")
+        dismap_tools.import_metadata(csv_data_folder, nbs_bathymetry)
+        nbs_md = md.Metadata(nbs_bathymetry)
+        nbs_md.title = os.path.basename(nbs_bathymetry).replace("_", " ")
+        nbs_md.save()
+        nbs_md.synchronize("ALWAYS")
+        nbs_md.save()
+        del nbs_md
 
         region = "GOA_IDW"
         arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(
@@ -310,6 +344,14 @@ def create_alasaka_bathymetry(project_folder=""):
         arcpy.AddMessage("Copy GOA_IDW_Bathymetry_Raster to GOA_IDW_Bathymetry")
         arcpy.management.CopyRaster(goa_bathy_raster, goa_bathymetry)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
+        arcpy.AddMessage(f"Importing metadata for {os.path.basename(goa_bathymetry)}")
+        dismap_tools.import_metadata(csv_data_folder, goa_bathymetry)
+        goa_md = md.Metadata(goa_bathymetry)
+        goa_md.title = os.path.basename(goa_bathymetry).replace("_", " ")
+        goa_md.save()
+        goa_md.synchronize("ALWAYS")
+        goa_md.save()
+        del goa_md
 
         del ai_bathy_grid, ebs_bathy_grid, goa_bathy_grid
         del ai_bathy_raster, ebs_bathy_raster, goa_bathy_raster
@@ -320,14 +362,12 @@ def create_alasaka_bathymetry(project_folder=""):
         arcpy.AddMessage("\t" + arcpy.GetMessages(0).replace("\n", "\n\t"))
         del gdb
 
-        del check_transformation
-        del (
-            ai_bathymetry,
-            ebs_bathymetry,
-            goa_bathymetry,
-            enbs_bathymetry,
-            nbs_bathymetry,
-        )
+        # Declared Variables for this function only
+        del csv_data_folder
+        del ai_bathymetry, ebs_bathymetry, goa_bathymetry, enbs_bathymetry, nbs_bathymetry
+        # Imports
+        del md, dismap_tools
+        # Function parameter
         del project_folder
 
     except arcpy.ExecuteError:
@@ -347,6 +387,10 @@ def create_alasaka_bathymetry(project_folder=""):
 
 def create_hawaii_bathymetry(project_folder=""):
     try:
+        # Imports
+        import dismap_tools
+        from arcpy import metadata as md
+
         # Set History and Metadata logs, set serverity and message level
         arcpy.SetLogHistory(
             True
@@ -362,6 +406,7 @@ def create_hawaii_bathymetry(project_folder=""):
         )  # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
 
         # Set basic workkpace variables
+        csv_data_folder = os.path.join(project_folder, "CSV_Data")
         arcpy.env.workspace = rf"{project_folder}\Bathymetry\Bathymetry.gdb"
         arcpy.env.scratchWorkspace = rf"{project_folder}\Scratch\scratch.gdb"
         arcpy.env.overwriteOutput = True
@@ -404,6 +449,15 @@ def create_hawaii_bathymetry(project_folder=""):
         tmp_grid.save(hi_bathymetry)
         del tmp_grid
 
+        arcpy.AddMessage(f"Importing metadata for {os.path.basename(hi_bathymetry)}")
+        dismap_tools.import_metadata(csv_data_folder, hi_bathymetry)
+        hi_md = md.Metadata(hi_bathymetry)
+        hi_md.title = os.path.basename(hi_bathymetry).replace("_", " ")
+        hi_md.save()
+        hi_md.synchronize("ALWAYS")
+        hi_md.save()
+        del hi_md
+
         ##        arcpy.AddMessage("Copy Hawaii Raster to the Bathymetry GDB")
         ##
         ##        arcpy.management.CopyRaster(hi_bathymetry, rf"{project_folder}\Bathymetry\Bathymetry.gdb\HI_IDW_Bathymetry")
@@ -422,7 +476,9 @@ def create_hawaii_bathymetry(project_folder=""):
         del gdb
 
         # Declared Variables for this function only
-        del hi_bathy_grid, hi_bathy_raster, hi_bathymetry
+        del csv_data_folder, hi_bathy_grid, hi_bathy_raster, hi_bathymetry
+        # Imports
+        del md, dismap_tools
         # Function parameter
         del project_folder
 
@@ -448,7 +504,8 @@ def gebco_bathymetry(project_folder=""):
     try:
 
         # Imports
-        from dismap_tools import check_transformation
+        import dismap_tools
+        from arcpy import metadata as md
 
         # Set History and Metadata logs, set serverity and message level
         arcpy.SetLogHistory(
@@ -465,6 +522,7 @@ def gebco_bathymetry(project_folder=""):
         )  # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
 
         # Set basic workkpace variables
+        csv_data_folder = os.path.join(project_folder, "CSV_Data")
         arcpy.env.workspace = rf"{project_folder}\Bathymetry\Bathymetry.gdb"
         arcpy.env.scratchWorkspace = rf"{project_folder}\Scratch\scratch.gdb"
         arcpy.env.overwriteOutput = True
@@ -555,7 +613,7 @@ def gebco_bathymetry(project_folder=""):
 
             arcpy.env.outputCoordinateSystem = region_sr
             # arcpy.env.geographicTransformations = "WGS_1984_(ITRF08)_To_NAD_1983_2011"
-            transform = check_transformation(bathy_grid, region_sr)
+            transform = dismap_tools.check_transformation(bathy_grid, region_sr)
             arcpy.env.geographicTransformations = transform
 
             arcpy.AddMessage(f"\tOut Spatial Reference:      {region_sr.name}")
@@ -593,6 +651,15 @@ def gebco_bathymetry(project_folder=""):
                 out_raster.save(bathymetry)
                 del out_raster
 
+            arcpy.AddMessage(f"Importing metadata for {os.path.basename(bathymetry)}")
+            dismap_tools.import_metadata(csv_data_folder, bathymetry)
+            bathy_md = md.Metadata(bathymetry)
+            bathy_md.title = os.path.basename(bathymetry).replace("_", " ")
+            bathy_md.save()
+            bathy_md.synchronize("ALWAYS")
+            bathy_md.save()
+            del bathy_md
+
             del gebco_grid, bathy_grid, bathy_raster, bathymetry
             del gebco_file_name, table_name
 
@@ -605,9 +672,9 @@ def gebco_bathymetry(project_folder=""):
         del gdb
 
         # Declared Variables for this function only
-
+        del csv_data_folder
         # Imports
-        del check_transformation
+        del md, dismap_tools
         # Function parameter
         del project_folder
 
