@@ -9,42 +9,47 @@
 # Copyright:   (c) john.f.kennedy 2024
 # Licence:     <your licence>
 # -------------------------------------------------------------------------------
-import os, sys  # built-ins first
-import traceback
 import importlib
 import inspect
+import os  # built-ins first
+import sys
+import traceback
 
 import arcpy  # third-parties second
 
 sys.path.append(os.path.dirname(__file__))
+
 
 def line_info(msg):
     f = inspect.currentframe()
     i = inspect.getframeinfo(f.f_back)
     return f"Script: {os.path.basename(i.filename)}\n\tNear Line: {i.lineno}\n\tFunction: {i.function}\n\tMessage: {msg}"
 
+
 def create_basic_template_xml_files(base_project_file="", project=""):
     try:
         # Import
+        import dismap
         from arcpy import metadata as md
 
-        import dismap
         importlib.reload(dismap)
         from dismap import dataset_title_dict, pretty_format_xml_file
 
-        arcpy.env.overwriteOutput          = True
+        arcpy.env.overwriteOutput = True
         arcpy.env.parallelProcessingFactor = "100%"
         arcpy.SetLogMetadata(True)
         arcpy.SetSeverityLevel(2)
-        arcpy.SetMessageLevels(['NORMAL']) # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
+        arcpy.SetMessageLevels(
+            ["NORMAL"]
+        )  # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
 
         base_project_folder = rf"{os.path.dirname(base_project_file)}"
-        base_project_file   = rf"{base_project_folder}\DisMAP.aprx"
-        project_folder      = rf"{base_project_folder}\{project}"
-        project_gdb         = rf"{project_folder}\{project}.gdb"
-        metadata_folder     = rf"{project_folder}\Template Metadata"
-        crfs_folder         = rf"{project_folder}\CRFs"
-        scratch_folder      = rf"{project_folder}\Scratch"
+        base_project_file = rf"{base_project_folder}\DisMAP.aprx"
+        project_folder = rf"{base_project_folder}\{project}"
+        project_gdb = rf"{project_folder}\{project}.gdb"
+        metadata_folder = rf"{project_folder}\Template Metadata"
+        crfs_folder = rf"{project_folder}\CRFs"
+        scratch_folder = rf"{project_folder}\Scratch"
 
         metadata_dictionary = dataset_title_dict(project_gdb)
 
@@ -52,7 +57,7 @@ def create_basic_template_xml_files(base_project_file="", project=""):
 
         for workspace in workspaces:
 
-            arcpy.env.workspace        = workspace
+            arcpy.env.workspace = workspace
             arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
 
             datasets = list()
@@ -67,7 +72,7 @@ def create_basic_template_xml_files(base_project_file="", project=""):
             del walk
 
             for dataset_path in sorted(datasets):
-                #print(dataset_path)
+                # print(dataset_path)
                 dataset_name = os.path.basename(dataset_path)
 
                 print(f"Dataset Name: {dataset_name}")
@@ -77,23 +82,33 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                     print(f"\tDataset Table")
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     del empty_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
 
-                    datasets_table_template = rf"{metadata_folder}\datasets_table_template.xml"
-                    dataset_md.saveAsXML(datasets_table_template, "REMOVE_ALL_SENSITIVE_INFO")
+                    datasets_table_template = (
+                        rf"{metadata_folder}\datasets_table_template.xml"
+                    )
+                    dataset_md.saveAsXML(
+                        datasets_table_template, "REMOVE_ALL_SENSITIVE_INFO"
+                    )
                     pretty_format_xml_file(datasets_table_template)
                     del datasets_table_template
 
@@ -104,23 +119,33 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                     print(f"\tSpecies Filter Table")
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     del empty_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
 
-                    species_filter_table_template = rf"{metadata_folder}\species_filter_table_template.xml"
-                    dataset_md.saveAsXML(species_filter_table_template, "REMOVE_ALL_SENSITIVE_INFO")
+                    species_filter_table_template = (
+                        rf"{metadata_folder}\species_filter_table_template.xml"
+                    )
+                    dataset_md.saveAsXML(
+                        species_filter_table_template, "REMOVE_ALL_SENSITIVE_INFO"
+                    )
                     pretty_format_xml_file(species_filter_table_template)
                     del species_filter_table_template
 
@@ -136,23 +161,31 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                         pass
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     del empty_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
 
                     indicators_template = rf"{metadata_folder}\indicators_template.xml"
-                    dataset_md.saveAsXML(indicators_template, "REMOVE_ALL_SENSITIVE_INFO")
+                    dataset_md.saveAsXML(
+                        indicators_template, "REMOVE_ALL_SENSITIVE_INFO"
+                    )
                     pretty_format_xml_file(indicators_template)
                     del indicators_template
 
@@ -163,23 +196,34 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                     print(f"\tLayer Species Year Image Name")
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     del empty_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
 
-                    layer_species_year_image_name_template = rf"{metadata_folder}\layer_species_year_image_name_template.xml"
-                    dataset_md.saveAsXML(layer_species_year_image_name_template, "REMOVE_ALL_SENSITIVE_INFO")
+                    layer_species_year_image_name_template = (
+                        rf"{metadata_folder}\layer_species_year_image_name_template.xml"
+                    )
+                    dataset_md.saveAsXML(
+                        layer_species_year_image_name_template,
+                        "REMOVE_ALL_SENSITIVE_INFO",
+                    )
                     pretty_format_xml_file(layer_species_year_image_name_template)
                     del layer_species_year_image_name_template
 
@@ -190,17 +234,23 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                     print(f"\tBoundary")
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     del empty_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -217,23 +267,33 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                     print(f"\tExtent_Points")
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     del empty_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
 
-                    extent_points_template = rf"{metadata_folder}\extent_points_template.xml"
-                    dataset_md.saveAsXML(extent_points_template, "REMOVE_ALL_SENSITIVE_INFO")
+                    extent_points_template = (
+                        rf"{metadata_folder}\extent_points_template.xml"
+                    )
+                    dataset_md.saveAsXML(
+                        extent_points_template, "REMOVE_ALL_SENSITIVE_INFO"
+                    )
                     pretty_format_xml_file(extent_points_template)
                     del extent_points_template
 
@@ -244,17 +304,23 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                     print(f"\tFishnet")
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     del empty_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -271,17 +337,23 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                     print(f"\tLat_Long")
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     del empty_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -298,17 +370,23 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                     print(f"\tRegion")
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     del empty_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -325,23 +403,33 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                     print(f"\tSample_Locations")
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     del empty_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
 
-                    sample_locations_template = rf"{metadata_folder}\sample_locations_template.xml"
-                    dataset_md.saveAsXML(sample_locations_template, "REMOVE_ALL_SENSITIVE_INFO")
+                    sample_locations_template = (
+                        rf"{metadata_folder}\sample_locations_template.xml"
+                    )
+                    dataset_md.saveAsXML(
+                        sample_locations_template, "REMOVE_ALL_SENSITIVE_INFO"
+                    )
                     pretty_format_xml_file(sample_locations_template)
                     del sample_locations_template
 
@@ -352,23 +440,33 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                     print(f"\tGRID_Points")
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     del empty_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
 
-                    grid_points_template = rf"{metadata_folder}\grid_points_template.xml"
-                    dataset_md.saveAsXML(grid_points_template, "REMOVE_ALL_SENSITIVE_INFO")
+                    grid_points_template = (
+                        rf"{metadata_folder}\grid_points_template.xml"
+                    )
+                    dataset_md.saveAsXML(
+                        grid_points_template, "REMOVE_ALL_SENSITIVE_INFO"
+                    )
                     pretty_format_xml_file(grid_points_template)
                     del grid_points_template
 
@@ -377,23 +475,33 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                 elif "DisMAP_Regions" == dataset_name:
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     del empty_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
 
-                    dismap_regions_template = rf"{metadata_folder}\dismap_regions_template.xml"
-                    dataset_md.saveAsXML(dismap_regions_template, "REMOVE_ALL_SENSITIVE_INFO")
+                    dismap_regions_template = (
+                        rf"{metadata_folder}\dismap_regions_template.xml"
+                    )
+                    dataset_md.saveAsXML(
+                        dismap_regions_template, "REMOVE_ALL_SENSITIVE_INFO"
+                    )
                     pretty_format_xml_file(dismap_regions_template)
                     del dismap_regions_template
 
@@ -404,23 +512,31 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                     print(f"\tBathymetry")
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     del empty_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
 
                     bathymetry_template = rf"{metadata_folder}\bathymetry_template.xml"
-                    dataset_md.saveAsXML(bathymetry_template, "REMOVE_ALL_SENSITIVE_INFO")
+                    dataset_md.saveAsXML(
+                        bathymetry_template, "REMOVE_ALL_SENSITIVE_INFO"
+                    )
                     pretty_format_xml_file(bathymetry_template)
                     del bathymetry_template
 
@@ -431,17 +547,23 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                     print(f"\tLatitude")
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     del empty_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -458,23 +580,31 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                     print(f"\tLongitude")
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     del empty_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
 
                     longitude_template = rf"{metadata_folder}\longitude_template.xml"
-                    dataset_md.saveAsXML(longitude_template, "REMOVE_ALL_SENSITIVE_INFO")
+                    dataset_md.saveAsXML(
+                        longitude_template, "REMOVE_ALL_SENSITIVE_INFO"
+                    )
                     pretty_format_xml_file(longitude_template)
                     del longitude_template
 
@@ -485,23 +615,33 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                     print(f"\tRaster_Mask")
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     del empty_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
 
-                    raster_mask_template = rf"{metadata_folder}\raster_mask_template.xml"
-                    dataset_md.saveAsXML(raster_mask_template, "REMOVE_ALL_SENSITIVE_INFO")
+                    raster_mask_template = (
+                        rf"{metadata_folder}\raster_mask_template.xml"
+                    )
+                    dataset_md.saveAsXML(
+                        raster_mask_template, "REMOVE_ALL_SENSITIVE_INFO"
+                    )
                     pretty_format_xml_file(raster_mask_template)
                     del raster_mask_template
 
@@ -512,17 +652,23 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                     print(f"\tMosaic")
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     del empty_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -539,17 +685,29 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                     print(f"\tCRF")
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     del empty_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[
+                        dataset_name.replace(".crf", "_CRF")
+                    ]["Dataset Service Title"]
+                    dataset_md.tags = metadata_dictionary[
+                        dataset_name.replace(".crf", "_CRF")
+                    ]["Tags"]
+                    dataset_md.summary = metadata_dictionary[
+                        dataset_name.replace(".crf", "_CRF")
+                    ]["Summary"]
+                    dataset_md.description = metadata_dictionary[
+                        dataset_name.replace(".crf", "_CRF")
+                    ]["Description"]
+                    dataset_md.credits = metadata_dictionary[
+                        dataset_name.replace(".crf", "_CRF")
+                    ]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[
+                        dataset_name.replace(".crf", "_CRF")
+                    ]["Access Constraints"]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -567,23 +725,37 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                     if dataset_name.endswith("IDW"):
 
                         dataset_md = md.Metadata(dataset_path)
-                        empty_md   = md.Metadata()
+                        empty_md = md.Metadata()
                         dataset_md.copy(empty_md)
                         dataset_md.save()
                         del empty_md
 
-                        dataset_md.title             = metadata_dictionary[f"{dataset_name}"]["Dataset Service Title"]
-                        dataset_md.tags              = metadata_dictionary[f"{dataset_name}"]["Tags"]
-                        dataset_md.summary           = metadata_dictionary[f"{dataset_name}"]["Summary"]
-                        dataset_md.description       = metadata_dictionary[f"{dataset_name}"]["Description"]
-                        dataset_md.credits           = metadata_dictionary[f"{dataset_name}"]["Credits"]
-                        dataset_md.accessConstraints = metadata_dictionary[f"{dataset_name}"]["Access Constraints"]
+                        dataset_md.title = metadata_dictionary[f"{dataset_name}"][
+                            "Dataset Service Title"
+                        ]
+                        dataset_md.tags = metadata_dictionary[f"{dataset_name}"]["Tags"]
+                        dataset_md.summary = metadata_dictionary[f"{dataset_name}"][
+                            "Summary"
+                        ]
+                        dataset_md.description = metadata_dictionary[f"{dataset_name}"][
+                            "Description"
+                        ]
+                        dataset_md.credits = metadata_dictionary[f"{dataset_name}"][
+                            "Credits"
+                        ]
+                        dataset_md.accessConstraints = metadata_dictionary[
+                            f"{dataset_name}"
+                        ]["Access Constraints"]
                         dataset_md.save()
 
                         dataset_md.synchronize("ALWAYS")
 
-                        idw_region_table_template = rf"{metadata_folder}\idw_region_table_template.xml"
-                        dataset_md.saveAsXML(idw_region_table_template, "REMOVE_ALL_SENSITIVE_INFO")
+                        idw_region_table_template = (
+                            rf"{metadata_folder}\idw_region_table_template.xml"
+                        )
+                        dataset_md.saveAsXML(
+                            idw_region_table_template, "REMOVE_ALL_SENSITIVE_INFO"
+                        )
                         pretty_format_xml_file(idw_region_table_template)
                         del idw_region_table_template
 
@@ -592,23 +764,37 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                     elif dataset_name.endswith("GLMME"):
 
                         dataset_md = md.Metadata(dataset_path)
-                        empty_md   = md.Metadata()
+                        empty_md = md.Metadata()
                         dataset_md.copy(empty_md)
                         dataset_md.save()
                         del empty_md
 
-                        dataset_md.title             = metadata_dictionary[f"{dataset_name}"]["Dataset Service Title"]
-                        dataset_md.tags              = metadata_dictionary[f"{dataset_name}"]["Tags"]
-                        dataset_md.summary           = metadata_dictionary[f"{dataset_name}"]["Summary"]
-                        dataset_md.description       = metadata_dictionary[f"{dataset_name}"]["Description"]
-                        dataset_md.credits           = metadata_dictionary[f"{dataset_name}"]["Credits"]
-                        dataset_md.accessConstraints = metadata_dictionary[f"{dataset_name}"]["Access Constraints"]
+                        dataset_md.title = metadata_dictionary[f"{dataset_name}"][
+                            "Dataset Service Title"
+                        ]
+                        dataset_md.tags = metadata_dictionary[f"{dataset_name}"]["Tags"]
+                        dataset_md.summary = metadata_dictionary[f"{dataset_name}"][
+                            "Summary"
+                        ]
+                        dataset_md.description = metadata_dictionary[f"{dataset_name}"][
+                            "Description"
+                        ]
+                        dataset_md.credits = metadata_dictionary[f"{dataset_name}"][
+                            "Credits"
+                        ]
+                        dataset_md.accessConstraints = metadata_dictionary[
+                            f"{dataset_name}"
+                        ]["Access Constraints"]
                         dataset_md.save()
 
                         dataset_md.synchronize("ALWAYS")
 
-                        glmme_region_table_template = rf"{metadata_folder}\glmme_region_table_template.xml"
-                        dataset_md.saveAsXML(glmme_region_table_template, "REMOVE_ALL_SENSITIVE_INFO")
+                        glmme_region_table_template = (
+                            rf"{metadata_folder}\glmme_region_table_template.xml"
+                        )
+                        dataset_md.saveAsXML(
+                            glmme_region_table_template, "REMOVE_ALL_SENSITIVE_INFO"
+                        )
                         pretty_format_xml_file(glmme_region_table_template)
                         del glmme_region_table_template
 
@@ -620,7 +806,6 @@ def create_basic_template_xml_files(base_project_file="", project=""):
                 del dataset_name, dataset_path
 
             del workspace
-
 
         del datasets
 
@@ -649,49 +834,64 @@ def create_basic_template_xml_files(base_project_file="", project=""):
     else:
         try:
             leave_out_keys = ["leave_out_keys", "results"]
-            remaining_keys = [key for key in locals().keys() if not key.startswith('__') and key not in leave_out_keys]
+            remaining_keys = [
+                key
+                for key in locals().keys()
+                if not key.startswith("__") and key not in leave_out_keys
+            ]
             if remaining_keys:
-                arcpy.AddWarning(f"Remaining Keys in '{inspect.stack()[0][3]}': ##--> '{', '.join(remaining_keys)}' <--## Line Number: {traceback.extract_stack()[-1].lineno}")
+                arcpy.AddWarning(
+                    f"Remaining Keys in '{inspect.stack()[0][3]}': ##--> '{', '.join(remaining_keys)}' <--## Line Number: {traceback.extract_stack()[-1].lineno}"
+                )
             del leave_out_keys, remaining_keys
-            return results if "results" in locals().keys() else ["NOTE!! The 'results' variable not yet set!!"]
+            return (
+                results
+                if "results" in locals().keys()
+                else ["NOTE!! The 'results' variable not yet set!!"]
+            )
         except:
             raise Exception(traceback.print_exc())
     finally:
-        if "results" in locals().keys(): del results
+        if "results" in locals().keys():
+            del results
+
 
 def import_basic_template_xml_files(base_project_file="", project=""):
     try:
         # Import
+        import dismap
         from arcpy import metadata as md
 
-        import dismap
         importlib.reload(dismap)
-        from dismap import dataset_title_dict, pretty_format_xml_file, unique_years
+        from dismap import (dataset_title_dict, pretty_format_xml_file,
+                            unique_years)
 
-        arcpy.env.overwriteOutput          = True
+        arcpy.env.overwriteOutput = True
         arcpy.env.parallelProcessingFactor = "100%"
         arcpy.SetLogMetadata(True)
         arcpy.SetSeverityLevel(2)
-        arcpy.SetMessageLevels(['NORMAL']) # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
+        arcpy.SetMessageLevels(
+            ["NORMAL"]
+        )  # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
 
         base_project_folder = rf"{os.path.dirname(base_project_file)}"
-        project_folder      = rf"{base_project_folder}\{project}"
-        project_gdb         = rf"{project_folder}\{project}.gdb"
-        current_md_folder   = rf"{project_folder}\Current Metadata"
-        inport_md_folder    = rf"{project_folder}\InPort Metadata"
-        crfs_folder         = rf"{project_folder}\CRFs"
-        scratch_folder      = rf"{project_folder}\Scratch"
+        project_folder = rf"{base_project_folder}\{project}"
+        project_gdb = rf"{project_folder}\{project}.gdb"
+        current_md_folder = rf"{project_folder}\Current Metadata"
+        inport_md_folder = rf"{project_folder}\InPort Metadata"
+        crfs_folder = rf"{project_folder}\CRFs"
+        scratch_folder = rf"{project_folder}\Scratch"
 
-        #print("Creating the Metadata Dictionary. Please wait!!")
+        # print("Creating the Metadata Dictionary. Please wait!!")
         metadata_dictionary = dataset_title_dict(project_gdb)
-        #print("Creating the Metadata Dictionary. Completed")
+        # print("Creating the Metadata Dictionary. Completed")
 
         workspaces = [project_gdb, crfs_folder]
-        #workspaces = [crfs_folder]
+        # workspaces = [crfs_folder]
 
         for workspace in workspaces:
 
-            arcpy.env.workspace        = workspace
+            arcpy.env.workspace = workspace
             arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
 
             datasets = list()
@@ -706,7 +906,7 @@ def import_basic_template_xml_files(base_project_file="", project=""):
             del walk
 
             for dataset_path in sorted(datasets):
-                #print(dataset_path)
+                # print(dataset_path)
                 dataset_name = os.path.basename(dataset_path)
 
                 print(f"Dataset Name: {dataset_name}")
@@ -715,26 +915,34 @@ def import_basic_template_xml_files(base_project_file="", project=""):
 
                     print(f"\tDataset Table")
 
-                    datasets_table_template = rf"{current_md_folder}\Table\datasets_table_template.xml"
+                    datasets_table_template = (
+                        rf"{current_md_folder}\Table\datasets_table_template.xml"
+                    )
                     template_md = md.Metadata(datasets_table_template)
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     dataset_md.copy(template_md)
-                    #dataset_md.importMetadata(datasets_table_template)
+                    # dataset_md.importMetadata(datasets_table_template)
                     dataset_md.save()
-                    #dataset_md.synchronize("SELECTIVE")
+                    # dataset_md.synchronize("SELECTIVE")
 
                     del empty_md, template_md, datasets_table_template
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -758,23 +966,31 @@ def import_basic_template_xml_files(base_project_file="", project=""):
 
                     print(f"\tSpecies Filter Table")
 
-                    species_filter_table_template = rf"{current_md_folder}\Table\species_filter_table_template.xml"
+                    species_filter_table_template = (
+                        rf"{current_md_folder}\Table\species_filter_table_template.xml"
+                    )
                     template_md = md.Metadata(species_filter_table_template)
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     dataset_md.copy(template_md)
                     dataset_md.save()
                     del empty_md, template_md, species_filter_table_template
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -799,14 +1015,18 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     print(f"\tIndicators")
 
                     if dataset_name == "Indicators":
-                        indicators_template = rf"{current_md_folder}\Table\indicators_template.xml"
+                        indicators_template = (
+                            rf"{current_md_folder}\Table\indicators_template.xml"
+                        )
                     else:
-                        indicators_template = rf"{current_md_folder}\Table\region_indicators_template.xml"
+                        indicators_template = (
+                            rf"{current_md_folder}\Table\region_indicators_template.xml"
+                        )
 
                     template_md = md.Metadata(indicators_template)
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     dataset_md.copy(template_md)
@@ -818,20 +1038,26 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     _tags = f", {min(years_md)} to {max(years_md)}"
                     del years_md
 
-                    #print(metadata_dictionary[dataset_name]["Tags"])
-                    #print(_tags)
+                    # print(metadata_dictionary[dataset_name]["Tags"])
+                    # print(_tags)
 
                     if dataset_name == "Indicators":
                         dataset_name = f"{dataset_name}_Table"
                     else:
                         pass
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"] + _tags
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"] + _tags
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -859,7 +1085,7 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     template_md = md.Metadata(layer_species_year_image_name_template)
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     dataset_md.copy(template_md)
@@ -871,12 +1097,18 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     _tags = f", {min(years_md)} to {max(years_md)}"
                     del years_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"] + _tags
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"] + _tags
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -900,23 +1132,31 @@ def import_basic_template_xml_files(base_project_file="", project=""):
 
                     print(f"\tBoundary")
 
-                    boundary_template = rf"{current_md_folder}\Boundary\boundary_template.xml"
+                    boundary_template = (
+                        rf"{current_md_folder}\Boundary\boundary_template.xml"
+                    )
                     template_md = md.Metadata(boundary_template)
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     dataset_md.copy(template_md)
                     dataset_md.save()
                     del empty_md, template_md, boundary_template
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -926,7 +1166,9 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     pretty_format_xml_file(out_xml)
                     del out_xml
 
-                    target_file_path = rf"{inport_md_folder}\Boundary\{dataset_name}.xml"
+                    target_file_path = (
+                        rf"{inport_md_folder}\Boundary\{dataset_name}.xml"
+                    )
                     custom_xslt_path = rf"{inport_md_folder}\ArcGIS2InPort.xsl"
 
                     dataset_md.saveAsUsingCustomXSLT(target_file_path, custom_xslt_path)
@@ -940,23 +1182,31 @@ def import_basic_template_xml_files(base_project_file="", project=""):
 
                     print(f"\tExtent_Points")
 
-                    extent_points_template = rf"{current_md_folder}\Extent_Points\extent_points_template.xml"
+                    extent_points_template = (
+                        rf"{current_md_folder}\Extent_Points\extent_points_template.xml"
+                    )
                     template_md = md.Metadata(extent_points_template)
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     dataset_md.copy(template_md)
                     dataset_md.save()
                     del empty_md, template_md, extent_points_template
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -966,7 +1216,9 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     pretty_format_xml_file(out_xml)
                     del out_xml
 
-                    target_file_path = rf"{inport_md_folder}\Extent_Points\{dataset_name}.xml"
+                    target_file_path = (
+                        rf"{inport_md_folder}\Extent_Points\{dataset_name}.xml"
+                    )
                     custom_xslt_path = rf"{inport_md_folder}\ArcGIS2InPort.xsl"
 
                     dataset_md.saveAsUsingCustomXSLT(target_file_path, custom_xslt_path)
@@ -980,24 +1232,31 @@ def import_basic_template_xml_files(base_project_file="", project=""):
 
                     print(f"\tFishnet")
 
-                    fishnet_template = rf"{current_md_folder}\Fishnet\fishnet_template.xml"
+                    fishnet_template = (
+                        rf"{current_md_folder}\Fishnet\fishnet_template.xml"
+                    )
                     template_md = md.Metadata(fishnet_template)
 
-
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     dataset_md.copy(template_md)
                     dataset_md.save()
                     del empty_md, template_md, fishnet_template
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -1021,23 +1280,31 @@ def import_basic_template_xml_files(base_project_file="", project=""):
 
                     print(f"\tLat_Long")
 
-                    lat_long_template = rf"{current_md_folder}\Lat_Long\lat_long_template.xml"
+                    lat_long_template = (
+                        rf"{current_md_folder}\Lat_Long\lat_long_template.xml"
+                    )
                     template_md = md.Metadata(lat_long_template)
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     dataset_md.copy(template_md)
                     dataset_md.save()
                     del empty_md, template_md, lat_long_template
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -1047,7 +1314,9 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     pretty_format_xml_file(out_xml)
                     del out_xml
 
-                    target_file_path = rf"{inport_md_folder}\Lat_Long\{dataset_name}.xml"
+                    target_file_path = (
+                        rf"{inport_md_folder}\Lat_Long\{dataset_name}.xml"
+                    )
                     custom_xslt_path = rf"{inport_md_folder}\ArcGIS2InPort.xsl"
 
                     dataset_md.saveAsUsingCustomXSLT(target_file_path, custom_xslt_path)
@@ -1065,19 +1334,25 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     template_md = md.Metadata(region_template)
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     dataset_md.copy(template_md)
                     dataset_md.save()
                     del empty_md, template_md, region_template
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -1105,7 +1380,7 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     template_md = md.Metadata(sample_locations_template)
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     dataset_md.copy(template_md)
@@ -1117,22 +1392,32 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     _tags = f", {min(years_md)} to {max(years_md)}"
                     del years_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"] + _tags
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"] + _tags
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
 
-                    out_xml = rf"{current_md_folder}\Sample_Locations\{dataset_name}.xml"
+                    out_xml = (
+                        rf"{current_md_folder}\Sample_Locations\{dataset_name}.xml"
+                    )
                     dataset_md.saveAsXML(out_xml)
                     pretty_format_xml_file(out_xml)
                     del out_xml
 
-                    target_file_path = rf"{inport_md_folder}\Sample_Locations\{dataset_name}.xml"
+                    target_file_path = (
+                        rf"{inport_md_folder}\Sample_Locations\{dataset_name}.xml"
+                    )
                     custom_xslt_path = rf"{inport_md_folder}\ArcGIS2InPort.xsl"
 
                     dataset_md.saveAsUsingCustomXSLT(target_file_path, custom_xslt_path)
@@ -1146,11 +1431,13 @@ def import_basic_template_xml_files(base_project_file="", project=""):
 
                     print(f"\tGRID_Points")
 
-                    grid_points_template = rf"{current_md_folder}\GRID_Points\grid_points_template.xml"
+                    grid_points_template = (
+                        rf"{current_md_folder}\GRID_Points\grid_points_template.xml"
+                    )
                     template_md = md.Metadata(grid_points_template)
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     dataset_md.copy(template_md)
@@ -1162,12 +1449,18 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     _tags = f", {min(years_md)} to {max(years_md)}"
                     del years_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"] + _tags
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"] + _tags
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -1177,7 +1470,9 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     pretty_format_xml_file(out_xml)
                     del out_xml
 
-                    target_file_path = rf"{inport_md_folder}\GRID_Points\{dataset_name}.xml"
+                    target_file_path = (
+                        rf"{inport_md_folder}\GRID_Points\{dataset_name}.xml"
+                    )
                     custom_xslt_path = rf"{inport_md_folder}\ArcGIS2InPort.xsl"
 
                     dataset_md.saveAsUsingCustomXSLT(target_file_path, custom_xslt_path)
@@ -1191,23 +1486,31 @@ def import_basic_template_xml_files(base_project_file="", project=""):
 
                     print(f"\tDisMAP_Regions")
 
-                    dismap_regions_template = rf"{current_md_folder}\Region\dismap_regions_template.xml"
+                    dismap_regions_template = (
+                        rf"{current_md_folder}\Region\dismap_regions_template.xml"
+                    )
                     template_md = md.Metadata(dismap_regions_template)
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     dataset_md.copy(template_md)
                     dataset_md.save()
                     del empty_md, template_md, dismap_regions_template
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -1231,23 +1534,31 @@ def import_basic_template_xml_files(base_project_file="", project=""):
 
                     print(f"\tBathymetry")
 
-                    bathymetry_template = rf"{current_md_folder}\Bathymetry\bathymetry_template.xml"
+                    bathymetry_template = (
+                        rf"{current_md_folder}\Bathymetry\bathymetry_template.xml"
+                    )
                     template_md = md.Metadata(bathymetry_template)
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     dataset_md.copy(template_md)
                     dataset_md.save()
                     del empty_md, template_md, bathymetry_template
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -1257,7 +1568,9 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     pretty_format_xml_file(out_xml)
                     del out_xml
 
-                    target_file_path = rf"{inport_md_folder}\Bathymetry\{dataset_name}.xml"
+                    target_file_path = (
+                        rf"{inport_md_folder}\Bathymetry\{dataset_name}.xml"
+                    )
                     custom_xslt_path = rf"{inport_md_folder}\ArcGIS2InPort.xsl"
 
                     dataset_md.saveAsUsingCustomXSLT(target_file_path, custom_xslt_path)
@@ -1271,23 +1584,31 @@ def import_basic_template_xml_files(base_project_file="", project=""):
 
                     print(f"\tLatitude")
 
-                    latitude_template = rf"{current_md_folder}\Latitude\latitude_template.xml"
+                    latitude_template = (
+                        rf"{current_md_folder}\Latitude\latitude_template.xml"
+                    )
                     template_md = md.Metadata(latitude_template)
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     dataset_md.copy(template_md)
                     dataset_md.save()
                     del empty_md, template_md, latitude_template
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -1297,7 +1618,9 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     pretty_format_xml_file(out_xml)
                     del out_xml
 
-                    target_file_path = rf"{inport_md_folder}\Latitude\{dataset_name}.xml"
+                    target_file_path = (
+                        rf"{inport_md_folder}\Latitude\{dataset_name}.xml"
+                    )
                     custom_xslt_path = rf"{inport_md_folder}\ArcGIS2InPort.xsl"
 
                     dataset_md.saveAsUsingCustomXSLT(target_file_path, custom_xslt_path)
@@ -1311,23 +1634,31 @@ def import_basic_template_xml_files(base_project_file="", project=""):
 
                     print(f"\tLongitude")
 
-                    longitude_template = rf"{current_md_folder}\Longitude\longitude_template.xml"
+                    longitude_template = (
+                        rf"{current_md_folder}\Longitude\longitude_template.xml"
+                    )
                     template_md = md.Metadata(longitude_template)
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     dataset_md.copy(template_md)
                     dataset_md.save()
                     del empty_md, template_md, longitude_template
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -1337,7 +1668,9 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     pretty_format_xml_file(out_xml)
                     del out_xml
 
-                    target_file_path = rf"{inport_md_folder}\Longitude\{dataset_name}.xml"
+                    target_file_path = (
+                        rf"{inport_md_folder}\Longitude\{dataset_name}.xml"
+                    )
                     custom_xslt_path = rf"{inport_md_folder}\ArcGIS2InPort.xsl"
 
                     dataset_md.saveAsUsingCustomXSLT(target_file_path, custom_xslt_path)
@@ -1351,23 +1684,31 @@ def import_basic_template_xml_files(base_project_file="", project=""):
 
                     print(f"\tRaster_Mask")
 
-                    raster_mask_template = rf"{current_md_folder}\Raster_Mask\raster_mask_template.xml"
+                    raster_mask_template = (
+                        rf"{current_md_folder}\Raster_Mask\raster_mask_template.xml"
+                    )
                     template_md = md.Metadata(raster_mask_template)
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     dataset_md.copy(template_md)
                     dataset_md.save()
                     del empty_md, template_md, raster_mask_template
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"]
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -1377,7 +1718,9 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     pretty_format_xml_file(out_xml)
                     del out_xml
 
-                    target_file_path = rf"{inport_md_folder}\Raster_Mask\{dataset_name}.xml"
+                    target_file_path = (
+                        rf"{inport_md_folder}\Raster_Mask\{dataset_name}.xml"
+                    )
                     custom_xslt_path = rf"{inport_md_folder}\ArcGIS2InPort.xsl"
 
                     dataset_md.saveAsUsingCustomXSLT(target_file_path, custom_xslt_path)
@@ -1395,7 +1738,7 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     template_md = md.Metadata(mosaic_template)
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     dataset_md.copy(template_md)
@@ -1407,12 +1750,18 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     _tags = f", {min(years_md)} to {max(years_md)}"
                     del years_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name]["Tags"] + _tags
-                    dataset_md.summary           = metadata_dictionary[dataset_name]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[dataset_name][
+                        "Dataset Service Title"
+                    ]
+                    dataset_md.tags = metadata_dictionary[dataset_name]["Tags"] + _tags
+                    dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
+                    dataset_md.description = metadata_dictionary[dataset_name][
+                        "Description"
+                    ]
+                    dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+                        "Access Constraints"
+                    ]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -1435,16 +1784,16 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                 elif dataset_name.endswith(".crf"):
 
                     print(f"\tCRF")
-                    #print(dataset_name)
-                    #print(dataset_path)
-                    #dataset_path = dataset_path.replace(crfs_folder, project_gdb).replace(".crf", "_Mosaic")
-                    #print(dataset_path)
+                    # print(dataset_name)
+                    # print(dataset_path)
+                    # dataset_path = dataset_path.replace(crfs_folder, project_gdb).replace(".crf", "_Mosaic")
+                    # print(dataset_path)
 
                     crf_template = rf"{current_md_folder}\CRF\crf_template.xml"
                     template_md = md.Metadata(crf_template)
 
                     dataset_md = md.Metadata(dataset_path)
-                    empty_md   = md.Metadata()
+                    empty_md = md.Metadata()
                     dataset_md.copy(empty_md)
                     dataset_md.save()
                     dataset_md.copy(template_md)
@@ -1452,16 +1801,35 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     del empty_md, template_md, crf_template
 
                     # Max-Min Year range table
-                    years_md = unique_years(dataset_path.replace(crfs_folder, project_gdb).replace(".crf", "_Mosaic"))
+                    years_md = unique_years(
+                        dataset_path.replace(crfs_folder, project_gdb).replace(
+                            ".crf", "_Mosaic"
+                        )
+                    )
                     _tags = f", {min(years_md)} to {max(years_md)}"
                     del years_md
 
-                    dataset_md.title             = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Dataset Service Title"]
-                    dataset_md.tags              = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Tags"] + _tags
-                    dataset_md.summary           = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Summary"]
-                    dataset_md.description       = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Description"]
-                    dataset_md.credits           = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Credits"]
-                    dataset_md.accessConstraints = metadata_dictionary[dataset_name.replace(".crf", "_CRF")]["Access Constraints"]
+                    dataset_md.title = metadata_dictionary[
+                        dataset_name.replace(".crf", "_CRF")
+                    ]["Dataset Service Title"]
+                    dataset_md.tags = (
+                        metadata_dictionary[dataset_name.replace(".crf", "_CRF")][
+                            "Tags"
+                        ]
+                        + _tags
+                    )
+                    dataset_md.summary = metadata_dictionary[
+                        dataset_name.replace(".crf", "_CRF")
+                    ]["Summary"]
+                    dataset_md.description = metadata_dictionary[
+                        dataset_name.replace(".crf", "_CRF")
+                    ]["Description"]
+                    dataset_md.credits = metadata_dictionary[
+                        dataset_name.replace(".crf", "_CRF")
+                    ]["Credits"]
+                    dataset_md.accessConstraints = metadata_dictionary[
+                        dataset_name.replace(".crf", "_CRF")
+                    ]["Access Constraints"]
                     dataset_md.save()
 
                     dataset_md.synchronize("ALWAYS")
@@ -1486,11 +1854,13 @@ def import_basic_template_xml_files(base_project_file="", project=""):
 
                     if dataset_name.endswith("IDW"):
 
-                        idw_region_table_template = rf"{current_md_folder}\Table\idw_region_table_template.xml"
+                        idw_region_table_template = (
+                            rf"{current_md_folder}\Table\idw_region_table_template.xml"
+                        )
                         template_md = md.Metadata(idw_region_table_template)
 
                         dataset_md = md.Metadata(dataset_path)
-                        empty_md   = md.Metadata()
+                        empty_md = md.Metadata()
                         dataset_md.copy(empty_md)
                         dataset_md.save()
                         dataset_md.copy(template_md)
@@ -1502,12 +1872,24 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                         _tags = f", {min(years_md)} to {max(years_md)}"
                         del years_md
 
-                        dataset_md.title             = metadata_dictionary[f"{dataset_name}"]["Dataset Service Title"]
-                        dataset_md.tags              = metadata_dictionary[f"{dataset_name}"]["Tags"] + _tags
-                        dataset_md.summary           = metadata_dictionary[f"{dataset_name}"]["Summary"]
-                        dataset_md.description       = metadata_dictionary[f"{dataset_name}"]["Description"]
-                        dataset_md.credits           = metadata_dictionary[f"{dataset_name}"]["Credits"]
-                        dataset_md.accessConstraints = metadata_dictionary[f"{dataset_name}"]["Access Constraints"]
+                        dataset_md.title = metadata_dictionary[f"{dataset_name}"][
+                            "Dataset Service Title"
+                        ]
+                        dataset_md.tags = (
+                            metadata_dictionary[f"{dataset_name}"]["Tags"] + _tags
+                        )
+                        dataset_md.summary = metadata_dictionary[f"{dataset_name}"][
+                            "Summary"
+                        ]
+                        dataset_md.description = metadata_dictionary[f"{dataset_name}"][
+                            "Description"
+                        ]
+                        dataset_md.credits = metadata_dictionary[f"{dataset_name}"][
+                            "Credits"
+                        ]
+                        dataset_md.accessConstraints = metadata_dictionary[
+                            f"{dataset_name}"
+                        ]["Access Constraints"]
                         dataset_md.save()
 
                         dataset_md.synchronize("ALWAYS")
@@ -1517,10 +1899,14 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                         pretty_format_xml_file(out_xml)
                         del out_xml
 
-                        target_file_path = rf"{inport_md_folder}\Table\{dataset_name}.xml"
+                        target_file_path = (
+                            rf"{inport_md_folder}\Table\{dataset_name}.xml"
+                        )
                         custom_xslt_path = rf"{inport_md_folder}\ArcGIS2InPort.xsl"
 
-                        dataset_md.saveAsUsingCustomXSLT(target_file_path, custom_xslt_path)
+                        dataset_md.saveAsUsingCustomXSLT(
+                            target_file_path, custom_xslt_path
+                        )
                         pretty_format_xml_file(target_file_path)
 
                         del target_file_path, custom_xslt_path
@@ -1533,7 +1919,7 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                         template_md = md.Metadata(glmme_region_table_template)
 
                         dataset_md = md.Metadata(dataset_path)
-                        empty_md   = md.Metadata()
+                        empty_md = md.Metadata()
                         dataset_md.copy(empty_md)
                         dataset_md.save()
                         dataset_md.copy(template_md)
@@ -1545,12 +1931,24 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                         _tags = f", {min(years_md)} to {max(years_md)}"
                         del years_md
 
-                        dataset_md.title             = metadata_dictionary[f"{dataset_name}"]["Dataset Service Title"]
-                        dataset_md.tags              = metadata_dictionary[f"{dataset_name}"]["Tags"] + _tags
-                        dataset_md.summary           = metadata_dictionary[f"{dataset_name}"]["Summary"]
-                        dataset_md.description       = metadata_dictionary[f"{dataset_name}"]["Description"]
-                        dataset_md.credits           = metadata_dictionary[f"{dataset_name}"]["Credits"]
-                        dataset_md.accessConstraints = metadata_dictionary[f"{dataset_name}"]["Access Constraints"]
+                        dataset_md.title = metadata_dictionary[f"{dataset_name}"][
+                            "Dataset Service Title"
+                        ]
+                        dataset_md.tags = (
+                            metadata_dictionary[f"{dataset_name}"]["Tags"] + _tags
+                        )
+                        dataset_md.summary = metadata_dictionary[f"{dataset_name}"][
+                            "Summary"
+                        ]
+                        dataset_md.description = metadata_dictionary[f"{dataset_name}"][
+                            "Description"
+                        ]
+                        dataset_md.credits = metadata_dictionary[f"{dataset_name}"][
+                            "Credits"
+                        ]
+                        dataset_md.accessConstraints = metadata_dictionary[
+                            f"{dataset_name}"
+                        ]["Access Constraints"]
                         dataset_md.save()
 
                         dataset_md.synchronize("ALWAYS")
@@ -1560,10 +1958,14 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                         pretty_format_xml_file(out_xml)
                         del out_xml
 
-                        target_file_path = rf"{inport_md_folder}\Table\{dataset_name}.xml"
+                        target_file_path = (
+                            rf"{inport_md_folder}\Table\{dataset_name}.xml"
+                        )
                         custom_xslt_path = rf"{inport_md_folder}\ArcGIS2InPort.xsl"
 
-                        dataset_md.saveAsUsingCustomXSLT(target_file_path, custom_xslt_path)
+                        dataset_md.saveAsUsingCustomXSLT(
+                            target_file_path, custom_xslt_path
+                        )
                         pretty_format_xml_file(target_file_path)
 
                         del target_file_path, custom_xslt_path
@@ -1605,40 +2007,54 @@ def import_basic_template_xml_files(base_project_file="", project=""):
     else:
         try:
             leave_out_keys = ["leave_out_keys", "results"]
-            remaining_keys = [key for key in locals().keys() if not key.startswith('__') and key not in leave_out_keys]
+            remaining_keys = [
+                key
+                for key in locals().keys()
+                if not key.startswith("__") and key not in leave_out_keys
+            ]
             if remaining_keys:
-                arcpy.AddWarning(f"Remaining Keys in '{inspect.stack()[0][3]}': ##--> '{', '.join(remaining_keys)}' <--## Line Number: {traceback.extract_stack()[-1].lineno}")
+                arcpy.AddWarning(
+                    f"Remaining Keys in '{inspect.stack()[0][3]}': ##--> '{', '.join(remaining_keys)}' <--## Line Number: {traceback.extract_stack()[-1].lineno}"
+                )
             del leave_out_keys, remaining_keys
-            return results if "results" in locals().keys() else ["NOTE!! The 'results' variable not yet set!!"]
+            return (
+                results
+                if "results" in locals().keys()
+                else ["NOTE!! The 'results' variable not yet set!!"]
+            )
         except:
             raise Exception(traceback.print_exc())
     finally:
-        if "results" in locals().keys(): del results
+        if "results" in locals().keys():
+            del results
+
 
 def create_thumbnails(base_project_file="", project=""):
     try:
         # Import
+        import dismap
         from arcpy import metadata as md
 
-        import dismap
         importlib.reload(dismap)
         from dismap import pretty_format_xml_file
 
-        arcpy.env.overwriteOutput          = True
+        arcpy.env.overwriteOutput = True
         arcpy.env.parallelProcessingFactor = "100%"
         arcpy.SetLogMetadata(True)
         arcpy.SetSeverityLevel(2)
-        arcpy.SetMessageLevels(['NORMAL']) # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
+        arcpy.SetMessageLevels(
+            ["NORMAL"]
+        )  # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
 
         base_project_folder = rf"{os.path.dirname(base_project_file)}"
-        base_project_file   = rf"{base_project_folder}\DisMAP.aprx"
-        project_folder      = rf"{base_project_folder}\{project}"
-        project_gdb         = rf"{project_folder}\{project}.gdb"
-        metadata_folder     = rf"{project_folder}\Export Metadata"
-        crfs_folder         = rf"{project_folder}\CRFs"
-        scratch_folder      = rf"{project_folder}\Scratch"
+        base_project_file = rf"{base_project_folder}\DisMAP.aprx"
+        project_folder = rf"{base_project_folder}\{project}"
+        project_gdb = rf"{project_folder}\{project}.gdb"
+        metadata_folder = rf"{project_folder}\Export Metadata"
+        crfs_folder = rf"{project_folder}\CRFs"
+        scratch_folder = rf"{project_folder}\Scratch"
 
-        arcpy.env.workspace        = project_gdb
+        arcpy.env.workspace = project_gdb
         arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
 
         aprx = arcpy.mp.ArcGISProject(base_project_file)
@@ -1648,7 +2064,7 @@ def create_thumbnails(base_project_file="", project=""):
 
         for workspace in workspaces:
 
-            arcpy.env.workspace        = workspace
+            arcpy.env.workspace = workspace
             arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
 
             datasets = list()
@@ -1663,7 +2079,7 @@ def create_thumbnails(base_project_file="", project=""):
             del walk
 
             for dataset_path in sorted(datasets):
-                #print(dataset_path)
+                # print(dataset_path)
                 dataset_name = os.path.basename(dataset_path)
 
                 print(f"Dataset Name: {dataset_name}")
@@ -1967,44 +2383,66 @@ def create_thumbnails(base_project_file="", project=""):
     else:
         try:
             leave_out_keys = ["leave_out_keys", "results"]
-            remaining_keys = [key for key in locals().keys() if not key.startswith('__') and key not in leave_out_keys]
+            remaining_keys = [
+                key
+                for key in locals().keys()
+                if not key.startswith("__") and key not in leave_out_keys
+            ]
             if remaining_keys:
-                arcpy.AddWarning(f"Remaining Keys in '{inspect.stack()[0][3]}': ##--> '{', '.join(remaining_keys)}' <--## Line Number: {traceback.extract_stack()[-1].lineno}")
+                arcpy.AddWarning(
+                    f"Remaining Keys in '{inspect.stack()[0][3]}': ##--> '{', '.join(remaining_keys)}' <--## Line Number: {traceback.extract_stack()[-1].lineno}"
+                )
             del leave_out_keys, remaining_keys
-            return results if "results" in locals().keys() else ["NOTE!! The 'results' variable not yet set!!"]
+            return (
+                results
+                if "results" in locals().keys()
+                else ["NOTE!! The 'results' variable not yet set!!"]
+            )
         except:
             raise Exception(traceback.print_exc())
     finally:
-        if "results" in locals().keys(): del results
+        if "results" in locals().keys():
+            del results
+
 
 def export_to_inport_xml_files(base_project_file="", project=""):
     try:
-        if not base_project_file or not project: raise SystemExit("parameters are missing")
+        if not base_project_file or not project:
+            raise SystemExit("parameters are missing")
 
         # Import
+        import dismap
         from arcpy import metadata as md
 
-        import dismap
         importlib.reload(dismap)
         from dismap import pretty_format_xml_file
 
-        arcpy.env.overwriteOutput          = True
+        arcpy.env.overwriteOutput = True
         arcpy.env.parallelProcessingFactor = "100%"
         arcpy.SetLogMetadata(True)
         arcpy.SetSeverityLevel(2)
-        arcpy.SetMessageLevels(['NORMAL']) # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
+        arcpy.SetMessageLevels(
+            ["NORMAL"]
+        )  # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
 
         base_project_folder = rf"{os.path.dirname(base_project_file)}"
-        project_folder      = rf"{base_project_folder}\{project}"
-        project_gdb         = rf"{project_folder}\{project}.gdb"
-        metadata_folder     = rf"{project_folder}\InPort Metadata"
-        crfs_folder         = rf"{project_folder}\CRFs"
-        scratch_folder      = rf"{project_folder}\Scratch"
+        project_folder = rf"{base_project_folder}\{project}"
+        project_gdb = rf"{project_folder}\{project}.gdb"
+        metadata_folder = rf"{project_folder}\InPort Metadata"
+        crfs_folder = rf"{project_folder}\CRFs"
+        scratch_folder = rf"{project_folder}\Scratch"
 
-        arcpy.env.workspace        = project_gdb
+        arcpy.env.workspace = project_gdb
         arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
 
-        datasets = [rf"{project_gdb}\Species_Filter", rf"{project_gdb}\Indicators", rf"{project_gdb}\DisMAP_Regions", rf"{project_gdb}\GMEX_IDW_Sample_Locations", rf"{project_gdb}\GMEX_IDW_Mosaic", rf"{crfs_folder}\GMEX_IDW.crf"]
+        datasets = [
+            rf"{project_gdb}\Species_Filter",
+            rf"{project_gdb}\Indicators",
+            rf"{project_gdb}\DisMAP_Regions",
+            rf"{project_gdb}\GMEX_IDW_Sample_Locations",
+            rf"{project_gdb}\GMEX_IDW_Mosaic",
+            rf"{crfs_folder}\GMEX_IDW.crf",
+        ]
 
         for dataset_path in sorted(datasets):
             print(dataset_path)
@@ -2058,40 +2496,54 @@ def export_to_inport_xml_files(base_project_file="", project=""):
     else:
         try:
             leave_out_keys = ["leave_out_keys", "results"]
-            remaining_keys = [key for key in locals().keys() if not key.startswith('__') and key not in leave_out_keys]
+            remaining_keys = [
+                key
+                for key in locals().keys()
+                if not key.startswith("__") and key not in leave_out_keys
+            ]
             if remaining_keys:
-                arcpy.AddWarning(f"Remaining Keys in '{inspect.stack()[0][3]}': ##--> '{', '.join(remaining_keys)}' <--## Line Number: {traceback.extract_stack()[-1].lineno}")
+                arcpy.AddWarning(
+                    f"Remaining Keys in '{inspect.stack()[0][3]}': ##--> '{', '.join(remaining_keys)}' <--## Line Number: {traceback.extract_stack()[-1].lineno}"
+                )
             del leave_out_keys, remaining_keys
-            return results if "results" in locals().keys() else ["NOTE!! The 'results' variable not yet set!!"]
+            return (
+                results
+                if "results" in locals().keys()
+                else ["NOTE!! The 'results' variable not yet set!!"]
+            )
         except:
             raise Exception(traceback.print_exc())
     finally:
-        if "results" in locals().keys(): del results
+        if "results" in locals().keys():
+            del results
+
 
 def create_maps(base_project_file="", project="", dataset=""):
     try:
         # Import
+        import dismap
         from arcpy import metadata as md
 
-        import dismap
         importlib.reload(dismap)
         from dismap import pretty_format_xml_file
 
-        arcpy.env.overwriteOutput          = True
+        arcpy.env.overwriteOutput = True
         arcpy.env.parallelProcessingFactor = "100%"
         arcpy.SetLogMetadata(True)
         arcpy.SetSeverityLevel(2)
-        arcpy.SetMessageLevels(['NORMAL']) # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
+        arcpy.SetMessageLevels(
+            ["NORMAL"]
+        )  # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
 
         base_project_folder = rf"{os.path.dirname(base_project_file)}"
-        base_project_file   = rf"{base_project_folder}\DisMAP.aprx"
-        project_folder      = rf"{base_project_folder}\{project}"
-        project_gdb         = rf"{project_folder}\{project}.gdb"
-        metadata_folder     = rf"{project_folder}\Export Metadata"
-        crfs_folder         = rf"{project_folder}\CRFs"
-        scratch_folder      = rf"{project_folder}\Scratch"
+        base_project_file = rf"{base_project_folder}\DisMAP.aprx"
+        project_folder = rf"{base_project_folder}\{project}"
+        project_gdb = rf"{project_folder}\{project}.gdb"
+        metadata_folder = rf"{project_folder}\Export Metadata"
+        crfs_folder = rf"{project_folder}\CRFs"
+        scratch_folder = rf"{project_folder}\Scratch"
 
-        arcpy.env.workspace        = project_gdb
+        arcpy.env.workspace = project_gdb
         arcpy.env.scratchWorkspace = rf"{scratch_folder}\scratch.gdb"
 
         aprx = arcpy.mp.ArcGISProject(base_project_file)
@@ -2110,18 +2562,24 @@ def create_maps(base_project_file="", project="", dataset=""):
         current_map = aprx.listMaps(f"{dataset_name}")[0]
         print(f"Current Map:  {current_map.name}")
 
-        if dataset_name not in [lyr.name for lyr in current_map.listLayers(f"{dataset_name}")]:
+        if dataset_name not in [
+            lyr.name for lyr in current_map.listLayers(f"{dataset_name}")
+        ]:
             print(f"Adding {dataset_name} to Map")
 
             map_layer = arcpy.management.MakeFeatureLayer(dataset, f"{dataset_name}")
 
-            #arcpy.management.Delete(rf"{project_folder}\Layers\{dataset_name}.lyrx")
-            #os.remove(rf"{project_folder}\Layers\{dataset_name}.lyrx")
+            # arcpy.management.Delete(rf"{project_folder}\Layers\{dataset_name}.lyrx")
+            # os.remove(rf"{project_folder}\Layers\{dataset_name}.lyrx")
 
-            map_layer_file = arcpy.management.SaveToLayerFile(map_layer, rf"{project_folder}\Layers\{dataset_name}.lyrx")
+            map_layer_file = arcpy.management.SaveToLayerFile(
+                map_layer, rf"{project_folder}\Layers\{dataset_name}.lyrx"
+            )
             del map_layer_file
 
-            map_layer_file = arcpy.mp.LayerFile(rf"{project_folder}\Layers\{dataset_name}.lyrx")
+            map_layer_file = arcpy.mp.LayerFile(
+                rf"{project_folder}\Layers\{dataset_name}.lyrx"
+            )
 
             arcpy.management.Delete(map_layer)
             del map_layer
@@ -2133,8 +2591,8 @@ def create_maps(base_project_file="", project="", dataset=""):
         else:
             pass
 
-        #aprx_basemaps = aprx.listBasemaps()
-        #basemap = 'GEBCO Basemap/Contours (NOAA NCEI Visualization)'
+        # aprx_basemaps = aprx.listBasemaps()
+        # basemap = 'GEBCO Basemap/Contours (NOAA NCEI Visualization)'
         basemap = "Terrain with Labels"
 
         current_map.addBasemap(basemap)
@@ -2146,12 +2604,12 @@ def create_maps(base_project_file="", project="", dataset=""):
         # Clear Selection
         current_map.clearSelection()
 
-        current_map_cim = current_map.getDefinition('V3')
+        current_map_cim = current_map.getDefinition("V3")
         current_map_cim.enableWraparound = True
         current_map.setDefinition(current_map_cim)
 
         # Return the layer's CIM definition
-        cim_lyr = lyr.getDefinition('V3')
+        cim_lyr = lyr.getDefinition("V3")
 
         # Modify the color, width and dash template for the SolidStroke layer
         symLvl1 = cim_lyr.renderer.symbol.symbol.symbolLayers[0]
@@ -2164,18 +2622,25 @@ def create_maps(base_project_file="", project="", dataset=""):
 
         aprx.save()
 
-        height = arcpy.Describe(dataset).extent.YMax - arcpy.Describe(dataset).extent.YMin
-        width  = arcpy.Describe(dataset).extent.XMax - arcpy.Describe(dataset).extent.XMin
+        height = (
+            arcpy.Describe(dataset).extent.YMax - arcpy.Describe(dataset).extent.YMin
+        )
+        width = (
+            arcpy.Describe(dataset).extent.XMax - arcpy.Describe(dataset).extent.XMin
+        )
 
         # map_width, map_height
         map_width, map_height = 8.5, 11
 
         if height > width:
-            page_height = map_height; page_width = map_width
+            page_height = map_height
+            page_width = map_width
         elif height < width:
-            page_height = map_width; page_width = map_height
+            page_height = map_width
+            page_width = map_height
         else:
-            page_width = map_width; page_height = map_height
+            page_width = map_width
+            page_height = map_height
 
         del map_width, map_height
         del height, width
@@ -2187,118 +2652,132 @@ def create_maps(base_project_file="", project="", dataset=""):
         else:
             print(f"Layout: {dataset_name} exists")
 
-        #Set the default map camera to the extent of the park boundary before opening the new view
-        #default camera only affects newly opened views
+        # Set the default map camera to the extent of the park boundary before opening the new view
+        # default camera only affects newly opened views
         lyr = current_map.listLayers(f"{dataset_name}")[-1]
 
         #
-        arcpy.management.SelectLayerByAttribute(lyr, 'NEW_SELECTION', "DatasetCode in ('ENBS', 'HI', 'NEUS_SPR')")
+        arcpy.management.SelectLayerByAttribute(
+            lyr, "NEW_SELECTION", "DatasetCode in ('ENBS', 'HI', 'NEUS_SPR')"
+        )
 
         mv = current_map.openView()
         mv.panToExtent(mv.getLayerExtent(lyr, True, True))
         mv.zoomToAllLayers()
         del mv
 
-        arcpy.management.SelectLayerByAttribute(lyr, 'CLEAR_SELECTION')
+        arcpy.management.SelectLayerByAttribute(lyr, "CLEAR_SELECTION")
 
         av = aprx.activeView
-        av.exportToPNG(rf"{project_folder}\Layers\{dataset_name}.png", width=288, height=192, resolution = 96, color_mode="24-BIT_TRUE_COLOR", embed_color_profile=True)
-        av.exportToJPEG(rf"{project_folder}\Layers\{dataset_name}.jpg", width=288, height=192, resolution = 96, jpeg_color_mode="24-BIT_TRUE_COLOR", embed_color_profile=True)
+        av.exportToPNG(
+            rf"{project_folder}\Layers\{dataset_name}.png",
+            width=288,
+            height=192,
+            resolution=96,
+            color_mode="24-BIT_TRUE_COLOR",
+            embed_color_profile=True,
+        )
+        av.exportToJPEG(
+            rf"{project_folder}\Layers\{dataset_name}.jpg",
+            width=288,
+            height=192,
+            resolution=96,
+            jpeg_color_mode="24-BIT_TRUE_COLOR",
+            embed_color_profile=True,
+        )
         del av
 
-        #print(current_map.referenceScale)
+        # print(current_map.referenceScale)
 
-        #export the newly opened active view to PDF, then delete the new map
-        #mv = aprx.activeView
-        #mv.exportToPDF(r"C:\Temp\RangerStations.pdf", width=700, height=500, resolution=96)
-        #aprx.deleteItem(current_map)
+        # export the newly opened active view to PDF, then delete the new map
+        # mv = aprx.activeView
+        # mv.exportToPDF(r"C:\Temp\RangerStations.pdf", width=700, height=500, resolution=96)
+        # aprx.deleteItem(current_map)
 
-        #mv = aprx.activeView
-        #mv = current_map.defaultView
-        #mv.zoomToAllLayers()
-        #print(mv.camera.getExtent())
-        #arcpy.management.Delete(rf"{project_folder}\Layers\{dataset_name}.png")
-        #arcpy.management.Delete(rf"{project_folder}\Layers\{dataset_name}.jpg")
+        # mv = aprx.activeView
+        # mv = current_map.defaultView
+        # mv.zoomToAllLayers()
+        # print(mv.camera.getExtent())
+        # arcpy.management.Delete(rf"{project_folder}\Layers\{dataset_name}.png")
+        # arcpy.management.Delete(rf"{project_folder}\Layers\{dataset_name}.jpg")
 
-        #os.remove(rf"{project_folder}\Layers\{dataset_name}.png")
-        #os.remove(rf"{project_folder}\Layers\{dataset_name}.jpg")
+        # os.remove(rf"{project_folder}\Layers\{dataset_name}.png")
+        # os.remove(rf"{project_folder}\Layers\{dataset_name}.jpg")
 
+        # mv.exportToPNG(rf"{project_folder}\Layers\{dataset_name}.png", width=288, height=192, resolution = 96, color_mode="24-BIT_TRUE_COLOR", embed_color_profile=True)
+        # mv.exportToJPEG(rf"{project_folder}\Layers\{dataset_name}.jpg", width=288, height=192, resolution = 96, jpeg_color_mode="24-BIT_TRUE_COLOR", embed_color_profile=True)
+        # del mv
 
-        #mv.exportToPNG(rf"{project_folder}\Layers\{dataset_name}.png", width=288, height=192, resolution = 96, color_mode="24-BIT_TRUE_COLOR", embed_color_profile=True)
-        #mv.exportToJPEG(rf"{project_folder}\Layers\{dataset_name}.jpg", width=288, height=192, resolution = 96, jpeg_color_mode="24-BIT_TRUE_COLOR", embed_color_profile=True)
-        #del mv
+        # Export the resulting imported layout and changes to JPEG
+        # print(f"Exporting '{current_layout.name}'")
+        # current_map.exportToJPEG(rf"{project_folder}\Layouts\{current_layout.name}.jpg", page_width, page_height)
+        # current_map.exportToPNG(rf"{project_folder}\Layouts\{current_layout.name}.png", page_width, page_height)
 
-        #Export the resulting imported layout and changes to JPEG
-        #print(f"Exporting '{current_layout.name}'")
-        #current_map.exportToJPEG(rf"{project_folder}\Layouts\{current_layout.name}.jpg", page_width, page_height)
-        #current_map.exportToPNG(rf"{project_folder}\Layouts\{current_layout.name}.png", page_width, page_height)
-
-        #fc_md = md.Metadata(dataset)
-        #fc_md.thumbnailUri = rf"{project_folder}\Layouts\{dataset_name}.png"
-        #fc_md.thumbnailUri = rf"{project_folder}\Layouts\{dataset_name}.jpg"
-        #fc_md.save()
-        #del fc_md
+        # fc_md = md.Metadata(dataset)
+        # fc_md.thumbnailUri = rf"{project_folder}\Layouts\{dataset_name}.png"
+        # fc_md.thumbnailUri = rf"{project_folder}\Layouts\{dataset_name}.jpg"
+        # fc_md.save()
+        # del fc_md
 
         aprx.save()
 
+        # #            from arcpy import metadata as md
+        # #
+        # #            fc_md = md.Metadata(dataset)
+        # #            fc_md.thumbnailUri = rf"{project_folder}\Layers\{dataset_name}.png"
+        # #            fc_md.save()
+        # #            del fc_md
+        # #            del md
 
-    # #            from arcpy import metadata as md
-    # #
-    # #            fc_md = md.Metadata(dataset)
-    # #            fc_md.thumbnailUri = rf"{project_folder}\Layers\{dataset_name}.png"
-    # #            fc_md.save()
-    # #            del fc_md
-    # #            del md
+        ##        aprx.save()
+        ##
+        ##        current_layout = [cl for cl in aprx.listLayouts() if cl.name == dataset_name][0]
+        ##        print(f"Current Layout: {current_layout.name}")
+        ##
+        ##        current_layout.openView()
+        ##
+        ##        # Remove all map frames
+        ##        for mf in current_layout.listElements("MapFrame_Element"): current_layout.deleteElement(mf); del mf
+        ##
+        ##        # print(f'Layout Name: {current_layout.name}')
+        ##        # print(f'    Width x height: {current_layout.pageWidth} x {current_layout.pageHeight} units are {current_layout.pageUnits}')
+        ##        # print(f'    MapFrame count: {str(len(current_layout.listElements("MapFrame_Element")))}')
+        ##        # for mf in current_layout.listElements("MapFrame_Element"):
+        ##        #     if len(current_layout.listElements("MapFrame_Element")) > 0:
+        ##        #         print(f'        MapFrame name: {mf.name}')
+        ##        # print(f'    Total element count: {str(len(current_layout.listElements()))} \n')
+        ##
+        ##
+        ##        print(f"Create a new map frame using a point geometry")
+        ##        #Create a new map frame using a point geometry
+        ##        #mf1 = current_layout.createMapFrame(arcpy.Point(0.01,0.01), current_map, 'New MF - Point')
+        ##        mf1 = current_layout.createMapFrame(arcpy.Point(0.0,0.0), current_map, 'New MF - Point')
+        ##        #mf1.elementWidth = 10
+        ##        #mf1.elementHeight = 7.5
+        ##        #mf1.elementWidth  = page_width  - 0.01
+        ##        #mf1.elementHeight = page_height - 0.01
+        ##        mf1.elementWidth  = page_width
+        ##        mf1.elementHeight = page_height
 
-##        aprx.save()
-##
-##        current_layout = [cl for cl in aprx.listLayouts() if cl.name == dataset_name][0]
-##        print(f"Current Layout: {current_layout.name}")
-##
-##        current_layout.openView()
-##
-##        # Remove all map frames
-##        for mf in current_layout.listElements("MapFrame_Element"): current_layout.deleteElement(mf); del mf
-##
-##        # print(f'Layout Name: {current_layout.name}')
-##        # print(f'    Width x height: {current_layout.pageWidth} x {current_layout.pageHeight} units are {current_layout.pageUnits}')
-##        # print(f'    MapFrame count: {str(len(current_layout.listElements("MapFrame_Element")))}')
-##        # for mf in current_layout.listElements("MapFrame_Element"):
-##        #     if len(current_layout.listElements("MapFrame_Element")) > 0:
-##        #         print(f'        MapFrame name: {mf.name}')
-##        # print(f'    Total element count: {str(len(current_layout.listElements()))} \n')
-##
-##
-##        print(f"Create a new map frame using a point geometry")
-##        #Create a new map frame using a point geometry
-##        #mf1 = current_layout.createMapFrame(arcpy.Point(0.01,0.01), current_map, 'New MF - Point')
-##        mf1 = current_layout.createMapFrame(arcpy.Point(0.0,0.0), current_map, 'New MF - Point')
-##        #mf1.elementWidth = 10
-##        #mf1.elementHeight = 7.5
-##        #mf1.elementWidth  = page_width  - 0.01
-##        #mf1.elementHeight = page_height - 0.01
-##        mf1.elementWidth  = page_width
-##        mf1.elementHeight = page_height
+        ##        lyr = current_map.listLayers(f"{dataset_name}")[0]
+        ##
+        ##        #Zoom to ALL selected features and export to PDF
+        ##        #arcpy.SelectLayerByAttribute_management(lyr, 'NEW_SELECTION')
+        ##        #mf1.zoomToAllLayers(True)
+        ##        #arcpy.SelectLayerByAttribute_management(lyr, 'CLEAR_SELECTION')
+        ##
+        ##        #Set the map frame extent to the extent of a layer
+        ##        #mf1.camera.setExtent(mf1.getLayerExtent(lyr, False, True))
+        ##        #mf1.camera.scale = mf1.camera.scale * 1.1 #add a slight buffer
+        ##
+        ##        del lyr
 
-##        lyr = current_map.listLayers(f"{dataset_name}")[0]
-##
-##        #Zoom to ALL selected features and export to PDF
-##        #arcpy.SelectLayerByAttribute_management(lyr, 'NEW_SELECTION')
-##        #mf1.zoomToAllLayers(True)
-##        #arcpy.SelectLayerByAttribute_management(lyr, 'CLEAR_SELECTION')
-##
-##        #Set the map frame extent to the extent of a layer
-##        #mf1.camera.setExtent(mf1.getLayerExtent(lyr, False, True))
-##        #mf1.camera.scale = mf1.camera.scale * 1.1 #add a slight buffer
-##
-##        del lyr
-
-##        print(f"Create a new bookmark set to the map frame's default extent")
-##        #Create a new bookmark set to the map frame's default extent
-##        bkmk = mf1.createBookmark('Default Extent', "The map's default extent")
-##        bkmk.updateThumbnail()
-##        del mf1
-##        del bkmk
+        ##        print(f"Create a new bookmark set to the map frame's default extent")
+        ##        #Create a new bookmark set to the map frame's default extent
+        ##        bkmk = mf1.createBookmark('Default Extent', "The map's default extent")
+        ##        bkmk.updateThumbnail()
+        ##        del mf1
+        ##        del bkmk
 
         # Create point text element using a system style item
         # txtStyleItem = aprx.listStyleItems('ArcGIS 2D', 'TEXT', 'Title (Serif)')[0]
@@ -2324,41 +2803,41 @@ def create_maps(base_project_file="", project="", dataset=""):
         # current_layout.setDefinition(current_layout_cim)
         # del current_layout_cim, elm, sym
 
-##        ExportLayout = True
-##        if ExportLayout:
-##            #Export the resulting imported layout and changes to JPEG
-##            print(f"Exporting '{current_layout.name}'")
-##            current_layout.exportToJPEG(rf"{project_folder}\Layouts\{current_layout.name}.jpg")
-##            current_layout.exportToPNG(rf"{project_folder}\Layouts\{current_layout.name}.png")
-##        del ExportLayout
+        ##        ExportLayout = True
+        ##        if ExportLayout:
+        ##            #Export the resulting imported layout and changes to JPEG
+        ##            print(f"Exporting '{current_layout.name}'")
+        ##            current_layout.exportToJPEG(rf"{project_folder}\Layouts\{current_layout.name}.jpg")
+        ##            current_layout.exportToPNG(rf"{project_folder}\Layouts\{current_layout.name}.png")
+        ##        del ExportLayout
 
-##        #Export the resulting imported layout and changes to JPEG
-##        print(f"Exporting '{current_layout.name}'")
-##        current_map.exportToJPEG(rf"{project_folder}\Layouts\{current_layout.name}.jpg", page_width, page_height)
-##        current_map.exportToPNG(rf"{project_folder}\Layouts\{current_layout.name}.png", page_width, page_height)
-##
-##        fc_md = md.Metadata(dataset)
-##        fc_md.thumbnailUri = rf"{project_folder}\Layouts\{current_layout.name}.png"
-##        #fc_md.thumbnailUri = rf"{project_folder}\Layouts\{current_layout.name}.jpg"
-##        fc_md.save()
-##        del fc_md
-##
-##        aprx.save()
+        ##        #Export the resulting imported layout and changes to JPEG
+        ##        print(f"Exporting '{current_layout.name}'")
+        ##        current_map.exportToJPEG(rf"{project_folder}\Layouts\{current_layout.name}.jpg", page_width, page_height)
+        ##        current_map.exportToPNG(rf"{project_folder}\Layouts\{current_layout.name}.png", page_width, page_height)
+        ##
+        ##        fc_md = md.Metadata(dataset)
+        ##        fc_md.thumbnailUri = rf"{project_folder}\Layouts\{current_layout.name}.png"
+        ##        #fc_md.thumbnailUri = rf"{project_folder}\Layouts\{current_layout.name}.jpg"
+        ##        fc_md.save()
+        ##        del fc_md
+        ##
+        ##        aprx.save()
 
         # aprx.deleteItem(current_map)
-        #aprx.deleteItem(current_layout)
+        # aprx.deleteItem(current_layout)
 
         del current_map
-        #, current_layout
-        #del page_width, page_height
+        # , current_layout
+        # del page_width, page_height
         del dataset_name, dataset
 
         aprx.save()
 
         print(f"\nCurrent Maps & Layouts")
 
-        current_maps    = aprx.listMaps()
-        #current_layouts = aprx.listLayouts()
+        current_maps = aprx.listMaps()
+        # current_layouts = aprx.listLayouts()
 
         if current_maps:
             print(f"\nCurrent Maps\n")
@@ -2368,15 +2847,15 @@ def create_maps(base_project_file="", project="", dataset=""):
         else:
             arcpy.AddWarning("No maps in Project")
 
-##        if current_layouts:
-##            print(f"\nCurrent Layouts\n")
-##            for current_layout in current_layouts:
-##                print(f"\tProject Layout: {current_layout.name}")
-##                del current_layout
-##        else:
-##            arcpy.AddWarning("No layouts in Project")
+        ##        if current_layouts:
+        ##            print(f"\nCurrent Layouts\n")
+        ##            for current_layout in current_layouts:
+        ##                print(f"\tProject Layout: {current_layout.name}")
+        ##                del current_layout
+        ##        else:
+        ##            arcpy.AddWarning("No layouts in Project")
 
-        #del current_layouts
+        # del current_layouts
         del current_maps
 
         # Declared Variables set in function for aprx
@@ -2411,32 +2890,47 @@ def create_maps(base_project_file="", project="", dataset=""):
     else:
         try:
             leave_out_keys = ["leave_out_keys", "results"]
-            remaining_keys = [key for key in locals().keys() if not key.startswith('__') and key not in leave_out_keys]
+            remaining_keys = [
+                key
+                for key in locals().keys()
+                if not key.startswith("__") and key not in leave_out_keys
+            ]
             if remaining_keys:
-                arcpy.AddWarning(f"Remaining Keys in '{inspect.stack()[0][3]}': ##--> '{', '.join(remaining_keys)}' <--## Line Number: {traceback.extract_stack()[-1].lineno}")
+                arcpy.AddWarning(
+                    f"Remaining Keys in '{inspect.stack()[0][3]}': ##--> '{', '.join(remaining_keys)}' <--## Line Number: {traceback.extract_stack()[-1].lineno}"
+                )
             del leave_out_keys, remaining_keys
-            return results if "results" in locals().keys() else ["NOTE!! The 'results' variable not yet set!!"]
+            return (
+                results
+                if "results" in locals().keys()
+                else ["NOTE!! The 'results' variable not yet set!!"]
+            )
         except:
             raise Exception(traceback.print_exc())
     finally:
-        if "results" in locals().keys(): del results
+        if "results" in locals().keys():
+            del results
+
 
 def main(project=""):
     try:
         # Imports
         import dismap
+
         importlib.reload(dismap)
 
         arcpy.env.overwriteOutput = True
         arcpy.env.parallelProcessingFactor = "100%"
 
         base_project_folder = os.path.dirname(os.path.dirname(__file__))
-        base_project_file   = rf"{base_project_folder}\DisMAP.aprx"
-        project_gdb         = rf"{base_project_folder}\{project}\{project}.gdb"
+        base_project_file = rf"{base_project_folder}\DisMAP.aprx"
+        project_gdb = rf"{base_project_folder}\{project}\{project}.gdb"
 
         # Test if passed workspace exists, if not raise SystemExit
         if not arcpy.Exists(base_project_file):
-            raise SystemExit(line_info(f"{os.path.basename(base_project_file)} is missing!!"))
+            raise SystemExit(
+                line_info(f"{os.path.basename(base_project_file)} is missing!!")
+            )
 
         # Test if passed workspace exists, if not raise SystemExit
         if not arcpy.Exists(project_gdb):
@@ -2460,31 +2954,38 @@ def main(project=""):
             CreateBasicTemplateXMLFiles = True
             if CreateBasicTemplateXMLFiles:
                 result = create_basic_template_xml_files(base_project_file, project)
-                results.extend(result); del result
+                results.extend(result)
+                del result
             del CreateBasicTemplateXMLFiles
 
             ImportBasicTemplateXmlFiles = True
             if ImportBasicTemplateXmlFiles:
                 result = import_basic_template_xml_files(base_project_file, project)
-                results.extend(result); del result
+                results.extend(result)
+                del result
             del ImportBasicTemplateXmlFiles
 
             CreateThumbnails = False
             if CreateThumbnails:
-               result = create_thumbnails(base_project_file, project)
-               results.extend(result); del result
+                result = create_thumbnails(base_project_file, project)
+                results.extend(result)
+                del result
             del CreateThumbnails
 
             CreateMaps = False
             if CreateMaps:
-                result = create_maps(base_project_file, project, dataset=rf"{project_gdb}\DisMAP_Regions")
-                results.extend(result); del result
+                result = create_maps(
+                    base_project_file, project, dataset=rf"{project_gdb}\DisMAP_Regions"
+                )
+                results.extend(result)
+                del result
             del CreateMaps
 
             ExportToInportXmlFiles = False
             if ExportToInportXmlFiles:
                 result = export_to_inport_xml_files(base_project_file, project)
-                results.extend(result); del result
+                results.extend(result)
+                del result
             del ExportToInportXmlFiles
 
         except Exception as e:
@@ -2509,31 +3010,46 @@ def main(project=""):
     else:
         try:
             leave_out_keys = ["leave_out_keys", "results"]
-            remaining_keys = [key for key in locals().keys() if not key.startswith('__') and key not in leave_out_keys]
+            remaining_keys = [
+                key
+                for key in locals().keys()
+                if not key.startswith("__") and key not in leave_out_keys
+            ]
             if remaining_keys:
-                arcpy.AddWarning(f"Remaining Keys in '{inspect.stack()[0][3]}': ##--> '{', '.join(remaining_keys)}' <--## Line Number: {traceback.extract_stack()[-1].lineno}")
+                arcpy.AddWarning(
+                    f"Remaining Keys in '{inspect.stack()[0][3]}': ##--> '{', '.join(remaining_keys)}' <--## Line Number: {traceback.extract_stack()[-1].lineno}"
+                )
             del leave_out_keys, remaining_keys
-            return results if "results" in locals().keys() else ["NOTE!! The 'results' variable not yet set!!"]
+            return (
+                results
+                if "results" in locals().keys()
+                else ["NOTE!! The 'results' variable not yet set!!"]
+            )
         except:
             raise Exception(traceback.print_exc())
     finally:
-        if "results" in locals().keys(): del results
+        if "results" in locals().keys():
+            del results
+
 
 if __name__ == "__main__":
     try:
         # Import this Python module
         import dismap_metadata_processing
+
         importlib.reload(dismap_metadata_processing)
 
         print(f"{'-' * 90}")
         print(f"Python Script:  {os.path.basename(__file__)}")
         print(f"Location:       {os.path.dirname(__file__)}")
-        print(f"Python Version: {sys.version} Environment: {os.path.basename(sys.exec_prefix)}")
+        print(
+            f"Python Version: {sys.version} Environment: {os.path.basename(sys.exec_prefix)}"
+        )
         print(f"{'-' * 90}\n")
 
-        #project = "May 1 2024"
-        #project = "July 1 2024"
-        #project = "December 1 2024"
+        # project = "May 1 2024"
+        # project = "July 1 2024"
+        # project = "December 1 2024"
         project = "April 1 2023"
 
         # Tested on 8/1/2024 -- PASSED
@@ -2544,17 +3060,34 @@ if __name__ == "__main__":
         from time import localtime, strftime
 
         print(f"\n{'-' * 90}")
-        print(f"Python script: {os.path.basename(__file__)} successfully completed {strftime('%a %b %d %I:%M %p', localtime())}")
+        print(
+            f"Python script: {os.path.basename(__file__)} successfully completed {strftime('%a %b %d %I:%M %p', localtime())}"
+        )
         print(f"{'-' * 90}")
         del localtime, strftime
 
     except:
         traceback.print_exc()
     else:
-        leave_out_keys = ["leave_out_keys" ]
-        leave_out_keys.extend([name for name, obj in inspect.getmembers(sys.modules[__name__]) if inspect.isfunction(obj) or inspect.ismodule(obj)])
-        remaining_keys = [key for key in locals().keys() if not key.startswith("__") and key not in leave_out_keys]
-        if remaining_keys: arcpy.AddWarning(f"Remaining Keys: ##--> '{', '.join(remaining_keys)}' <--##")
+        leave_out_keys = ["leave_out_keys"]
+        leave_out_keys.extend(
+            [
+                name
+                for name, obj in inspect.getmembers(sys.modules[__name__])
+                if inspect.isfunction(obj) or inspect.ismodule(obj)
+            ]
+        )
+        remaining_keys = [
+            key
+            for key in locals().keys()
+            if not key.startswith("__") and key not in leave_out_keys
+        ]
+        if remaining_keys:
+            arcpy.AddWarning(
+                f"Remaining Keys: ##--> '{', '.join(remaining_keys)}' <--##"
+            )
         del leave_out_keys, remaining_keys
     finally:
         pass
+
+# This is an autogenerated comment.

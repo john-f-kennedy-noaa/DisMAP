@@ -11,12 +11,11 @@
 __pycache__
 **/__pycache__
 
-
 # include python files anywhere
-!*.py
-!*.pyt
-!**/*.py
-!**/*.pyt
+#!*.py
+#!*.pyt
+#!**/*.py
+#!**/*.pyt
 
 # still ignore py backup variants
 *.~py
@@ -26,8 +25,7 @@ __init__.py
 **/__init__.py
 
 # include Scripts folder and its contents
-!Scripts/
-!Scripts/**
+!Scripts/dismap_tools/*.py
 
 # include README files in root, Scripts, and dismap_tools
 !README.md
@@ -43,13 +41,8 @@ __init__.py
 *.zip
 **/*.zip
 
-# For Metadta branch
-!/August-1-2025/CSV_Data/*.csv
-!/August-1-2025/Dataset_Shapefiles/*
-/August-1-2025/Dataset_Shapefiles/*.zip
-!/August-1-2025/Layers/*
-!/Bathymetry/Alaska-Bathymetry/*
-/Bathymetry/Alaska-Bathymetry/*.zip
-!/Bathymetry/GEBCO-Bathymetry/*
-!/Bathymetry/Hawaii-Bathymetry/*
+# Ignore zip files
+*.csv
+**/*.csv
 
+# End of File (EOF)
