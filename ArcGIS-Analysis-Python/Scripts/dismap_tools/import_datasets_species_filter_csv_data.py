@@ -76,7 +76,6 @@ def worker(project_gdb="", csv_file=""):
             )
         # Imports
         import dismap_tools
-        from arcpy import metadata as md
 
         # Set History and Metadata logs, set serverity and message level
         arcpy.SetLogHistory(
@@ -194,14 +193,138 @@ def worker(project_gdb="", csv_file=""):
         )
         # Remove the temporary table
         arcpy.management.Delete(tmp_table)
-        del tmp_table
-        # arcpy.conversion.ExportTable(in_table = dataset_path, out_table  = rf"{csv_data_folder}\_{table_name}.csv", where_clause="", use_field_alias_as_name = "NOT_USE_ALIAS")
-        # arcpy.AddMessage("Export Table:\t{0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
+
         # Alter Fields
         dismap_tools.alter_fields(csv_data_folder, dataset_path)
-        dismap_tools.import_metadata(
-            csv_data_folder=csv_data_folder, dataset=dataset_path
-        )
+
+        # --- Data-Driven Metadata Creation (Refactored) ---
+        from arcpy import metadata as md
+        from lxml import etree
+        import json
+        from datetime import date, datetime
+
+        arcpy.AddMessage(">-> Applying data-driven metadata")
+
+        try:
+            # Load contact dictionary
+            contact_dict_path = os.path.join(
+                project_folder, "CSV_Data", "contact_dict.json"
+            )
+            with open(contact_dict_path, 'r') as f:
+                contact_data = json.load(f)
+
+            # Load the XML template
+            template_xml_path = os.path.join(
+                project_folder, "Layers", "metadata_templates", "csv_metadata_template.xml"
+            )
+            parser = etree.XMLParser(encoding='UTF-8', remove_blank_text=True)
+            target_tree = etree.parse(template_xml_path, parser)
+            target_root = target_tree.getroot()
+
+            # Helper function to create a contact element block
+            def create_contact_element(contact_info, role_code, parent_tag):
+                contact_element = etree.Element(parent_tag)
+                etree.SubElement(contact_element, "rpIndName").text = contact_info.get(
+                    "rpIndName"
+                )
+                etree.SubElement(contact_element, "rpOrgName").text = contact_info.get(
+                    "rpOrgName"
+                )
+                etree.SubElement(contact_element, "rpPosName").text = contact_info.get(
+                    "rpPosName"
+                )
+
+                rpCntInfo = etree.SubElement(contact_element, "rpCntInfo")
+                cntAddress = etree.SubElement(rpCntInfo, "cntAddress")
+                etree.SubElement(cntAddress, "delPoint").text = contact_info[
+                    "cntInfo"
+                ].get("delPoint")
+                etree.SubElement(cntAddress, "city").text = contact_info["cntInfo"].get("city")
+                etree.SubElement(cntAddress, "adminArea").text = contact_info[
+                    "cntInfo"
+                ].get("adminArea")
+                etree.SubElement(cntAddress, "postCode").text = contact_info[
+                    "cntInfo"
+                ].get("postCode")
+                etree.SubElement(cntAddress, "country").text = contact_info[
+                    "cntInfo"
+                ].get("country")
+                etree.SubElement(cntAddress, "eMailAdd").text = contact_info[
+                    "cntInfo"
+                ].get("eMailAdd")
+
+                cntPhone = etree.SubElement(rpCntInfo, "cntPhone")
+                etree.SubElement(cntPhone, "voiceNum").text = contact_info[
+                    "cntInfo"
+                ].get("voiceNum")
+
+                cntOnlineRes = etree.SubElement(rpCntInfo, "cntOnlineRes")
+                etree.SubElement(cntOnlineRes, "linkage").text = contact_info[
+                    "cntInfo"
+                ].get("linkage")
+
+                role_element = etree.SubElement(contact_element, "role")
+                etree.SubElement(role_element, "RoleCd").set("value", role_code)
+
+                return contact_element
+
+            # Map JSON keys to their parent XML XPaths in the template
+            contact_map = {
+                "citRespParty": "./dataIdInfo/idCitation",
+                "idPoC": "./dataIdInfo",
+                "distorCont": "./distInfo/distributor",
+                "mdContact": ".",
+                "stepProc": ".//prcStep",
+            }
+
+            # Populate contacts by injecting them into the XML tree
+            for key, xpath in contact_map.items():
+                if key in contact_data:
+                    parent_element = target_root.find(xpath)
+                    if parent_element is not None:
+                        # Remove any existing contacts of the same type before adding new ones
+                        for old_contact in parent_element.findall(key):
+                            parent_element.remove(old_contact)
+                        for contact_info in contact_data[key]:
+                            contact_xml_block = create_contact_element(
+                                contact_info, contact_info["role"], key
+                            )
+                            parent_element.append(contact_xml_block)
+
+            # Populate other dynamic fields using lxml, not string replacement
+            arcpy.AddMessage(">-> Populating dynamic metadata fields using lxml")
+            today = datetime.utcnow()
+            def find_and_set(path, text):
+                element = target_root.find(path)
+                if element is not None:
+                    element.text = text
+            # Core Identification & other fields
+            find_and_set("./dataIdInfo/idCitation/resTitle", table_name.replace("_", " "))
+            find_and_set("./dataIdInfo/idAbs", f"This table, '{table_name.replace('_', ' ')}', contains ancillary data for the DisMAP project, imported from a source CSV file. It serves as a foundational dataset for geospatial analysis and data visualization within the portal.")
+            find_and_set("./dataIdInfo/idPurp", "This table is used as a lookup table for various attributes within the DisMAP project, supporting fisheries science and management.")
+            find_and_set("./dataIdInfo/idCredit", "These data were produced by the NMFS Office of Science and Technology as part of the Distribution Mapping and Analysis Portal (DisMAP) initiative.")
+            find_and_set("./dataIdInfo/resConst/Consts/useLimit", "***No Warranty*** The user assumes the entire risk related to its use of these data. NMFS is providing these data \"as is\" and NMFS disclaims any and all warranties, whether express or implied, including (without limitation) any implied warranties of merchantability or fitness for a particular purpose. No warranty expressed or implied is made regarding the accuracy or utility of the data on any other system or for general or scientific purposes, nor shall the act of distribution constitute any such warranty. It is strongly recommended that careful attention be paid to the contents of the metadata file associated with these data to evaluate dataset limitations, restrictions or intended use. In no event will NMFS be liable to you or to any third party for any direct, indirect, incidental, consequential, special or exemplary damages or lost profit resulting from any use or misuse of these data.")
+            # Dates
+            find_and_set("./Esri/CreaDate", today.strftime("%Y%m%d"))
+            find_and_set("./Esri/CreaTime", today.strftime("%H%M%S") + "00")
+            find_and_set("./mdDateSt", today.strftime("%Y-%m-%d"))
+            find_and_set("./dataIdInfo/idCitation/date/pubDate", "2025-08-01")
+            find_and_set(".//prcStep/stepDateTm", today.isoformat())
+
+            # Apply the new metadata to the geodatabase table
+            dataset_md = md.Metadata(dataset_path)
+            dataset_md.xml = etree.tostring(
+                target_root, encoding="UTF-8", xml_declaration=True, pretty_print=True
+            )
+            dataset_md.save()
+
+        except Exception as e:
+            arcpy.AddWarning(f"Could not generate or apply metadata for {table_name}. Error: {e}")
+            traceback.print_exc()
+        finally:
+            del md, etree, json, date, datetime
+        # --- End of Metadata Logic ---
+
         # Load Metadata
         # dataset_md = md.Metadata(dataset_path)
         # dataset_md.synchronize("ALWAYS")
@@ -211,10 +334,10 @@ def worker(project_gdb="", csv_file=""):
         arcpy.management.Compact(project_gdb)
         arcpy.AddMessage("\t" + arcpy.GetMessages().replace("\n", "\n\t"))
         # Basic variables
-        del dataset_path
+        del tmp_table, dataset_path
         del table_name, csv_data_folder, project_folder, scratch_workspace
         # Imports
-        del dismap_tools, md, pd, np, warnings
+        del dismap_tools, pd, np, warnings
         # Function parameters
         del project_gdb, csv_file
     except KeyboardInterrupt:
@@ -367,6 +490,7 @@ def script_tool(project_folder=""):
         project_name = rf"{os.path.basename(project_folder)}"
         project_gdb = rf"{project_folder}\{project_name}.gdb"
         home_folder = rf"{os.path.dirname(project_folder)}"
+        metadata_template_folder = rf"{project_folder}\Layers\metadata_templates"
         csv_data_folder = rf"{project_folder}\CSV_Data"
         datasets_csv = rf"{csv_data_folder}\Datasets.csv"
         species_filter_csv = rf"{csv_data_folder}\Species_Filter.csv"
@@ -399,13 +523,17 @@ def script_tool(project_folder=""):
         )
         import json
 
+        if not os.path.exists(metadata_template_folder):
+            os.makedirs(metadata_template_folder)
+
         json_path = rf"{csv_data_folder}\root_dict.json"
         with open(json_path, "r") as json_file:
             root_dict = json.load(json_file)
         del json_file
         del json_path
         del json
-        contacts = rf"{home_folder}\Datasets\DisMAP Contacts 2026 02 01.xml"
+
+        template_xml_path = rf"{metadata_template_folder}\csv_metadata_template.xml"
         datasets = [
             datasets_csv,
             species_filter_csv,
@@ -417,10 +545,10 @@ def script_tool(project_folder=""):
             arcpy.AddMessage(rf"Metadata for: {os.path.basename(dataset)}")
             dataset_md = md.Metadata(dataset)
             dataset_md.synchronize("ALWAYS")
+            # Start with a clean slate and import the full template
+            dataset_md.copy(md.Metadata())
             dataset_md.save()
-            dataset_md.importMetadata(contacts, "ARCGIS_METADATA")
-            dataset_md.save()
-            dataset_md.synchronize("OVERWRITE")
+            dataset_md.importMetadata(template_xml_path, "ARCGIS_METADATA")
             dataset_md.save()
             dataset_md.synchronize("ALWAYS")
             dataset_md.save()
@@ -430,12 +558,15 @@ def script_tool(project_folder=""):
             )
             target_root = target_tree.getroot()
             target_root[:] = sorted(
-                target_root, key=lambda x: root_dict[x.tag]
-            )  # noqa: F821
-            new_item_name = target_root.find(
-                "Esri/DataProperties/itemProps/itemName"
-            ).text
-            # arcpy.AddMessage(new_item_name)
+                target_root, key=lambda x: root_dict.get(x.tag, 99)
+            )
+
+            # Customize Title
+            title = os.path.basename(dataset).replace(".csv", "").replace("_", " ")
+            resTitle = target_root.find("./dataIdInfo/idCitation/resTitle")
+            if resTitle is not None:
+                resTitle.text = title
+
             etree.indent(target_root, space="    ")
             dataset_md.xml = etree.tostring(
                 target_tree,
@@ -448,10 +579,10 @@ def script_tool(project_folder=""):
             dataset_md.synchronize("ALWAYS")
             dataset_md.save()
             # arcpy.AddMessage(dataset_md.xml)
-            del dataset_md
-            del dataset
+            del dataset_md, title, resTitle
+            del dataset, target_tree, target_root
         del datasets
-        del csv_data_folder
+        del csv_data_folder, metadata_template_folder
         #
         UpdateDatecode = True
         if UpdateDatecode:
@@ -543,7 +674,7 @@ if __name__ == "__main__":
         if not project_folder:
             project_folder = os.path.join(
                 os.path.expanduser("~"),
-                "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026",
+                "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\Agust 1 2025",
             )
         else:
             pass
