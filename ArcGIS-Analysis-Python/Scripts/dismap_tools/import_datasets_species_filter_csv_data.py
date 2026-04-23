@@ -10,7 +10,7 @@ import os
 import sys
 import traceback
 
-from datetime import datetime
+import datetime
 import arcpy
 
 def trace():
@@ -220,8 +220,60 @@ def worker(project_gdb="", csv_file=""):
         # --- Data-Driven Metadata Creation (Refactored) ---
         from arcpy import metadata as md
         from lxml import etree
-        import json
-        from datetime import date, datetime
+        import json # Moved here to avoid conflict with global datetime import
+
+        # Helper function to find an element by XPath and set its text
+        def find_and_set(root_element, path, text):
+            element = root_element.find(path)
+            if element is not None:
+                element.text = text
+
+        # Helper function to create a contact element block
+        def create_contact_element(contact_info, role_code, parent_tag):
+            contact_element = etree.Element(parent_tag)
+            etree.SubElement(contact_element, "rpIndName").text = contact_info.get(
+                "rpIndName"
+            )
+            etree.SubElement(contact_element, "rpOrgName").text = contact_info.get(
+                "rpOrgName"
+            )
+            etree.SubElement(contact_element, "rpPosName").text = contact_info.get(
+                "rpPosName"
+            )
+
+            rpCntInfo = etree.SubElement(contact_element, "rpCntInfo")
+            cntAddress = etree.SubElement(rpCntInfo, "cntAddress")
+            etree.SubElement(cntAddress, "delPoint").text = contact_info[
+                "cntInfo"
+            ].get("delPoint")
+            etree.SubElement(cntAddress, "city").text = contact_info["cntInfo"].get("city")
+            etree.SubElement(cntAddress, "adminArea").text = contact_info[
+                "cntInfo"
+            ].get("adminArea")
+            etree.SubElement(cntAddress, "postCode").text = contact_info[
+                "cntInfo"
+            ].get("postCode")
+            etree.SubElement(cntAddress, "country").text = contact_info[
+                "cntInfo"
+            ].get("country")
+            etree.SubElement(cntAddress, "eMailAdd").text = contact_info[
+                "cntInfo"
+            ].get("eMailAdd")
+
+            cntPhone = etree.SubElement(rpCntInfo, "cntPhone")
+            etree.SubElement(cntPhone, "voiceNum").text = contact_info[
+                "cntInfo"
+            ].get("voiceNum")
+
+            cntOnlineRes = etree.SubElement(rpCntInfo, "cntOnlineRes")
+            etree.SubElement(cntOnlineRes, "linkage").text = contact_info[
+                "cntInfo"
+            ].get("linkage")
+
+            role_element = etree.SubElement(contact_element, "role")
+            etree.SubElement(role_element, "RoleCd").set("value", role_code)
+
+            return contact_element
 
         arcpy.AddMessage(">-> Applying data-driven metadata")
 
@@ -232,61 +284,19 @@ def worker(project_gdb="", csv_file=""):
             )
             with open(contact_dict_path, 'r') as f:
                 contact_data = json.load(f)
+            del contact_dict_path
 
             # Load the XML template
             template_xml_path = os.path.join(
                 project_folder, "Layers", "metadata_templates", "csv_metadata_template.xml"
             )
+            if not os.path.exists(template_xml_path):
+                _create_csv_metadata_template(template_xml_path)
+
             parser = etree.XMLParser(encoding='UTF-8', remove_blank_text=True)
             target_tree = etree.parse(template_xml_path, parser)
             target_root = target_tree.getroot()
-
-            # Helper function to create a contact element block
-            def create_contact_element(contact_info, role_code, parent_tag):
-                contact_element = etree.Element(parent_tag)
-                etree.SubElement(contact_element, "rpIndName").text = contact_info.get(
-                    "rpIndName"
-                )
-                etree.SubElement(contact_element, "rpOrgName").text = contact_info.get(
-                    "rpOrgName"
-                )
-                etree.SubElement(contact_element, "rpPosName").text = contact_info.get(
-                    "rpPosName"
-                )
-
-                rpCntInfo = etree.SubElement(contact_element, "rpCntInfo")
-                cntAddress = etree.SubElement(rpCntInfo, "cntAddress")
-                etree.SubElement(cntAddress, "delPoint").text = contact_info[
-                    "cntInfo"
-                ].get("delPoint")
-                etree.SubElement(cntAddress, "city").text = contact_info["cntInfo"].get("city")
-                etree.SubElement(cntAddress, "adminArea").text = contact_info[
-                    "cntInfo"
-                ].get("adminArea")
-                etree.SubElement(cntAddress, "postCode").text = contact_info[
-                    "cntInfo"
-                ].get("postCode")
-                etree.SubElement(cntAddress, "country").text = contact_info[
-                    "cntInfo"
-                ].get("country")
-                etree.SubElement(cntAddress, "eMailAdd").text = contact_info[
-                    "cntInfo"
-                ].get("eMailAdd")
-
-                cntPhone = etree.SubElement(rpCntInfo, "cntPhone")
-                etree.SubElement(cntPhone, "voiceNum").text = contact_info[
-                    "cntInfo"
-                ].get("voiceNum")
-
-                cntOnlineRes = etree.SubElement(rpCntInfo, "cntOnlineRes")
-                etree.SubElement(cntOnlineRes, "linkage").text = contact_info[
-                    "cntInfo"
-                ].get("linkage")
-
-                role_element = etree.SubElement(contact_element, "role")
-                etree.SubElement(role_element, "RoleCd").set("value", role_code)
-
-                return contact_element
+            del template_xml_path, parser
 
             # Map JSON keys to their parent XML XPaths in the template
             contact_map = {
@@ -313,23 +323,20 @@ def worker(project_gdb="", csv_file=""):
 
             # Populate other dynamic fields using lxml, not string replacement
             arcpy.AddMessage(">-> Populating dynamic metadata fields using lxml")
-            today = datetime.utcnow()
-            def find_and_set(path, text):
-                element = target_root.find(path)
-                if element is not None:
-                    element.text = text
+            current_time = datetime.datetime.now()
+
             # Core Identification & other fields
-            find_and_set("./dataIdInfo/idCitation/resTitle", table_name.replace("_", " "))
-            find_and_set("./dataIdInfo/idAbs", f"This table, '{table_name.replace('_', ' ')}', contains ancillary data for the DisMAP project, imported from a source CSV file. It serves as a foundational dataset for geospatial analysis and data visualization within the portal.")
-            find_and_set("./dataIdInfo/idPurp", "This table is used as a lookup table for various attributes within the DisMAP project, supporting fisheries science and management.")
-            find_and_set("./dataIdInfo/idCredit", "These data were produced by the NMFS Office of Science and Technology as part of the Distribution Mapping and Analysis Portal (DisMAP) initiative.")
-            find_and_set("./dataIdInfo/resConst/Consts/useLimit", "***No Warranty*** The user assumes the entire risk related to its use of these data. NMFS is providing these data \"as is\" and NMFS disclaims any and all warranties, whether express or implied, including (without limitation) any implied warranties of merchantability or fitness for a particular purpose. No warranty expressed or implied is made regarding the accuracy or utility of the data on any other system or for general or scientific purposes, nor shall the act of distribution constitute any such warranty. It is strongly recommended that careful attention be paid to the contents of the metadata file associated with these data to evaluate dataset limitations, restrictions or intended use. In no event will NMFS be liable to you or to any third party for any direct, indirect, incidental, consequential, special or exemplary damages or lost profit resulting from any use or misuse of these data.")
+            find_and_set(target_root, "./dataIdInfo/idCitation/resTitle", table_name.replace("_", " "))
+            find_and_set(target_root, "./dataIdInfo/idAbs", f"This table, '{table_name.replace('_', ' ')}', contains ancillary data for the DisMAP project, imported from a source CSV file. It serves as a foundational dataset for geospatial analysis and data visualization within the portal.")
+            find_and_set(target_root, "./dataIdInfo/idPurp", "This table is used as a lookup table for various attributes within the DisMAP project, supporting fisheries science and management.")
+            find_and_set(target_root, "./dataIdInfo/idCredit", "These data were produced by the NMFS Office of Science and Technology as part of the Distribution Mapping and Analysis Portal (DisMAP) initiative.")
+            find_and_set(target_root, "./dataIdInfo/resConst/Consts/useLimit", "***No Warranty*** The user assumes the entire risk related to its use of these data. NMFS is providing these data \"as is\" and NMFS disclaims any and all warranties, whether express or implied, including (without limitation) any implied warranties of merchantability or fitness for a particular purpose. No warranty expressed or implied is made regarding the accuracy or utility of the data on any other system or for general or scientific purposes, nor shall the act of distribution constitute any such warranty. It is strongly recommended that careful attention be paid to the contents of the metadata file associated with these data to evaluate dataset limitations, restrictions or intended use. In no event will NMFS be liable to you or to any third party for any direct, indirect, incidental, consequential, special or exemplary damages or lost profit resulting from any use or misuse of these data.")
             # Dates
-            find_and_set("./Esri/CreaDate", today.strftime("%Y%m%d"))
-            find_and_set("./Esri/CreaTime", today.strftime("%H%M%S") + "00")
-            find_and_set("./mdDateSt", today.strftime("%Y-%m-%d"))
-            find_and_set("./dataIdInfo/idCitation/date/pubDate", "2025-08-01")
-            find_and_set(".//prcStep/stepDateTm", today.isoformat())
+            find_and_set(target_root, "./Esri/CreaDate", current_time.strftime("%Y%m%d"))
+            find_and_set(target_root, "./Esri/CreaTime", current_time.strftime("%H%M%S") + "00")
+            find_and_set(target_root, "./mdDateSt", current_time.strftime("%Y%m%d"))
+            find_and_set(target_root, "./dataIdInfo/idCitation/date/pubDate", "2025-08-01") # This seems like a fixed date, keep as is.
+            find_and_set(target_root, ".//prcStep/stepDateTm", current_time.isoformat())
 
             # Apply the new metadata to the geodatabase table
             dataset_md = md.Metadata(dataset_path)
@@ -338,7 +345,7 @@ def worker(project_gdb="", csv_file=""):
             )
             dataset_md.save()
 
-        except Exception as e:
+        except Exception as e: # Catch specific exceptions for clarity
             arcpy.AddWarning(f"Could not generate or apply metadata for {table_name}. Error: {e}")
             traceback.print_exc()
         finally:
@@ -470,15 +477,16 @@ def update_datecode(csv_file="", project_name=""):
         #arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
-def _create_csv_metadata_template(template_path):
+def _create_csv_metadata_template(template_path): # Moved outside worker for better structure
     """
     Creates a basic XML metadata template file for CSV data.
     """
     try:
         if not os.path.exists(os.path.dirname(template_path)):
             os.makedirs(os.path.dirname(template_path))
-
-        current_datetime = datetime.datetime.now()
+            os.makedirs(os.path.dirname(template_path), exist_ok=True)
+        
+        current_datetime = datetime.datetime.now() # Use datetime.datetime
         crea_date = current_datetime.strftime("%Y%m%d")
         crea_time = current_datetime.strftime("%H%M%S") + "00"
 
@@ -510,7 +518,7 @@ def _create_csv_metadata_template(template_path):
         arcpy.AddMessage(f"Created missing CSV metadata template: {os.path.basename(template_path)}")
     except Exception as e:
         arcpy.AddError(f"Error creating CSV metadata template: {e}")
-        traceback.print_exc()
+        traceback.print_exc() # Added traceback for debugging
         raise
 
 
@@ -524,7 +532,7 @@ def script_tool(project_gdb=""):
         import dismap_tools
         from arcpy import metadata as md
         from lxml import etree
-
+        import datetime # Added for current_time
         # Set a start time so that we can see how log things take
         start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
@@ -608,7 +616,7 @@ def script_tool(project_gdb=""):
             dataset_md.copy(md.Metadata())
             dataset_md.save()
             dataset_md.importMetadata(template_xml_path, "ARCGIS_METADATA")
-            dataset_md.save()
+            dataset_md.save() # Save after import
             dataset_md.synchronize("ALWAYS")
             dataset_md.save()
             target_tree = etree.parse(
@@ -618,19 +626,19 @@ def script_tool(project_gdb=""):
             target_root = target_tree.getroot()
             target_root[:] = sorted(
                 target_root, key=lambda x: root_dict.get(x.tag, 99)
-            )
+            ) # Sort elements based on root_dict
 
             # Customize Title
             title = os.path.basename(dataset).replace(".csv", "").replace("_", " ")
             resTitle = target_root.find("./dataIdInfo/idCitation/resTitle")
             if resTitle is not None:
                 resTitle.text = title
-
+            
             etree.indent(target_root, space="    ")
             dataset_md.xml = etree.tostring(
                 target_tree,
                 encoding="UTF-8",
-                method="xml",
+                method="xml", # Specify method for consistency
                 xml_declaration=True,
                 pretty_print=True,
             )
