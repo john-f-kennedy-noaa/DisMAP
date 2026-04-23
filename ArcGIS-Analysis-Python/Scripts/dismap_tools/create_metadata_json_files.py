@@ -64,14 +64,14 @@ def script_tool(project_gdb=""):
 
         json_path = rf"{out_data_path}\root_dict.json"
         # Write to File
-        with open(json_path, "w") as json_file:
+        with open(json_path, "w", encoding='utf-8') as json_file:
             json.dump(root_dict, json_file, indent=4)
         del json_file
         del root_dict
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             root_dict = json.load(json_file)
         del json_file
-        arcpy.AddMessage(root_dict)
+        # arcpy.AddMessage(root_dict)
         del root_dict
         del json_path
         del json
@@ -117,14 +117,14 @@ def script_tool(project_gdb=""):
 
         json_path = rf"{out_data_path}\esri_dict.json"
         # Write to File
-        with open(json_path, "w") as json_file:
+        with open(json_path, "w", encoding='utf-8') as json_file:
             json.dump(esri_dict, json_file, indent=4)
         del json_file
         del esri_dict
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             esri_dict = json.load(json_file)
         del json_file
-        arcpy.AddMessage(esri_dict)
+        # arcpy.AddMessage(esri_dict)
         del esri_dict
         del json_path
         del json
@@ -251,14 +251,14 @@ def script_tool(project_gdb=""):
 
         json_path = rf"{out_data_path}\dataIdInfo_dict.json"
         # Write to File
-        with open(json_path, "w") as json_file:
+        with open(json_path, "w", encoding='utf-8') as json_file:
             json.dump(dataIdInfo_dict, json_file, indent=4)
         del json_file
         del dataIdInfo_dict
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             dataIdInfo_dict = json.load(json_file)
         del json_file
-        arcpy.AddMessage(dataIdInfo_dict)
+        # arcpy.AddMessage(dataIdInfo_dict)
         del dataIdInfo_dict
         del json_path
         del json
@@ -282,14 +282,14 @@ def script_tool(project_gdb=""):
 
         json_path = rf"{out_data_path}\idCitation_dict.json"
         # Write to File
-        with open(json_path, "w") as json_file:
+        with open(json_path, "w", encoding='utf-8') as json_file:
             json.dump(idCitation_dict, json_file, indent=4)
         del json_file
         del idCitation_dict
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             idCitation_dict = json.load(json_file)
         del json_file
-        arcpy.AddMessage(idCitation_dict)
+        # arcpy.AddMessage(idCitation_dict)
         del idCitation_dict
         del json_path
         del json
@@ -342,14 +342,14 @@ def script_tool(project_gdb=""):
 
         json_path = rf"{out_data_path}\contact_element_order_dict.json"
         # Write to File
-        with open(json_path, "w") as json_file:
+        with open(json_path, "w", encoding='utf-8') as json_file:
             json.dump(contact_element_order_dict, json_file, indent=4)
         del json_file
         del contact_element_order_dict
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             contact_element_order_dict = json.load(json_file)
         del json_file
-        arcpy.AddMessage(contact_element_order_dict)
+        # arcpy.AddMessage(contact_element_order_dict)
         del contact_element_order_dict
         del json_path
         del json
@@ -462,14 +462,14 @@ def script_tool(project_gdb=""):
 
         json_path = rf"{out_data_path}\dqInfo_dict.json"
         # Write to File
-        with open(json_path, "w") as json_file:
+        with open(json_path, "w", encoding='utf-8') as json_file:
             json.dump(dqInfo_dict, json_file, indent=4)
         del json_file
         del dqInfo_dict
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             dqInfo_dict = json.load(json_file)
         del json_file
-        arcpy.AddMessage(dqInfo_dict)
+        # arcpy.AddMessage(dqInfo_dict)
         del dqInfo_dict
         del json_path
         del json
@@ -526,14 +526,14 @@ def script_tool(project_gdb=""):
 
         json_path = rf"{out_data_path}\distInfo_dict.json"
         # Write to File
-        with open(json_path, "w") as json_file:
+        with open(json_path, "w", encoding='utf-8') as json_file:
             json.dump(distInfo_dict, json_file, indent=4)
         del json_file
         del distInfo_dict
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             distInfo_dict = json.load(json_file)
         del json_file
-        arcpy.AddMessage(distInfo_dict)
+        # arcpy.AddMessage(distInfo_dict)
         del distInfo_dict
         del json_path
         del json
@@ -560,7 +560,7 @@ def script_tool(project_gdb=""):
 
         json_path = rf"{out_data_path}\RoleCd_dict.json"
         # Write to File
-        with open(json_path, "w") as json_file:
+        with open(json_path, "w", encoding='utf-8') as json_file:
             json.dump(RoleCd_dict, json_file, indent=4)
 
         # role_dict = {"citRespParty"  : ,
@@ -579,14 +579,14 @@ def script_tool(project_gdb=""):
 
         json_path = rf"{out_data_path}\tpCat_dict.json"
         # Write to File
-        with open(json_path, "w") as json_file:
+        with open(json_path, "w", encoding='utf-8') as json_file:
             json.dump(tpCat_dict, json_file, indent=4)
         del json_file
         del tpCat_dict
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             tpCat_dict = json.load(json_file)
         del json_file
-        arcpy.AddMessage(tpCat_dict)
+        # arcpy.AddMessage(tpCat_dict)
         del tpCat_dict
         del json_path
         del json
@@ -665,12 +665,16 @@ def script_tool(project_gdb=""):
         json_path = rf"{out_data_path}\contact_dict.json"
         # arcpy.AddMessage(json_path)
         # Write to File
-        with open(json_path, "w") as json_file:
+        with open(json_path, "w", encoding='utf-8') as json_file:
             json.dump(contact_dict, json_file, indent=4)
 
         arcpy.AddMessage("Successfully created JSON configuration files.")
 
         # ###################### DisMAP ########################################
+
+        # Compact GDB
+        # arcpy.AddMessage(f"\nCompacting: {os.path.basename(project_gdb)}" )
+        arcpy.management.Compact(project_gdb)
 
         # Declared Varaiables
         del project_folder, out_data_path
@@ -679,69 +683,28 @@ def script_tool(project_gdb=""):
         del json
         del project_gdb
 
-        # Elapsed time
-        end_time = time()
-        elapse_time = end_time - start_time
-        hours, rem = divmod(end_time - start_time, 3600)
-        minutes, seconds = divmod(rem, 60)
-        arcpy.AddMessage(f"\n{'-' * 80}")
-        arcpy.AddMessage(f"Python script: {os.path.basename(__file__)}")
-        arcpy.AddMessage(
-            f"Start Time:    {strftime('%a %b %d %I:%M %p', localtime(start_time))}"
-        )
-        arcpy.AddMessage(
-            f"End Time:      {strftime('%a %b %d %I:%M %p', localtime(end_time))}"
-        )
-        arcpy.AddMessage(
-            f"Elapsed Time   {int(hours):0>2}:{int(minutes):0>2}:{seconds:05.2f} (H:M:S)"
-        )
-        arcpy.AddMessage(f"{'-' * 80}")
-        del hours, rem, minutes, seconds
-        del elapse_time, end_time, start_time
-        del gmtime, localtime, strftime, time
-
-    except KeyboardInterrupt:
-        sys.exit()
     except arcpy.ExecuteWarning:
         arcpy.AddWarning(
-            f"Caught an arcpy.ExecuteWarning error in the '{inspect.stack()[0][3]}' function."
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
         )
-        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
         arcpy.AddError(
-            f"Caught an arcpy.ExecuteError error in the '{inspect.stack()[0][3]}' function."
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
         )
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except SystemExit as se:
-        arcpy.AddError(
-            f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function."
-        )
-        sys.exit()
+        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
     except Exception as e:
         arcpy.AddError(
-            f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function."
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
         )
-        traceback.print_exc()
-        sys.exit()
-    except:
-        arcpy.AddError(
-            f"Caught an except error in the '{inspect.stack()[0][3]}' function."
-        )
-        traceback.print_exc()
-        sys.exit()
+        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
+        arcpy.AddMessage("\nScript finished successfully.")
         return True
     finally:
-        pass
+        arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
 if __name__ == "__main__":
@@ -749,21 +712,25 @@ if __name__ == "__main__":
 
         project_gdb = arcpy.GetParameterAsText(0)
         if not project_gdb:
-            project_gdb = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\August 1 2025\August 1 2025.gdb"
+            project_name = "August-1-2025"
+            project_gdb = os.path.join(
+                os.path.expanduser("~"),
+                f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}\\{project_name}.gdb",
+            )
+            del project_name
         else:
             pass
 
-        script_tool(project_gdb=project_gdb)
+        script_tool(project_gdb)
         arcpy.SetParameterAsText(1, "Result")
-        del project_gdb
 
     except SystemExit:
         pass
-    except:
+    except arcpy.ExecuteError:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-    else:
-        pass
-    finally:
-        sys.exit()
+    except Exception:
+        traceback.print_exc()
+
+
 # This is an autogenerated comment.

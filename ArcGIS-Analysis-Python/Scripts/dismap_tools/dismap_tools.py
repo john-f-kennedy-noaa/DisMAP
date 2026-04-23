@@ -37,7 +37,7 @@ def parse_xml_file_format_and_save(csv_data_folder="", xml_file="", sort=False):
 
         json_path = rf"{csv_data_folder}\root_dict.json"
         # print(csv_data_folder)
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             root_dict = json.load(json_file)
         del json_file
         del json_path
@@ -1784,13 +1784,16 @@ def date_code(version):
         if version.isdigit():
             # The version value is 'YYYYMMDD' format (20230501)
             # and is converted to 'Month Day and Year' (i.e. May 1 2023)
+            # print(f"Is Digit: {version}")
             _date_code = datetime.strptime(version, "%Y%m%d").strftime("%B %#d %Y")
+            # print(_date_code)
         elif not version.isdigit():
             version = version.replace("-", " ")
             # The version value is 'Month Day and Year' (i.e. May 1 2023)
             # and is converted to 'YYYYMMDD' format (20230501)
-            print(version)
+            # print(f"Is Not Digit: {version}")
             _date_code = datetime.strptime(version, "%B %d %Y").strftime("%Y%m%d")
+            # print(_date_code)
         else:
             _date_code = "error"
         # Imports
@@ -1798,38 +1801,32 @@ def date_code(version):
         del version
 
         import copy
-
         __results = copy.deepcopy(_date_code)
         del _date_code, copy
 
-    except KeyboardInterrupt:
-        sys.exit()
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except:  # noqa: E722
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
+        #arcpy.AddMessage("\nScript finished successfully.")
         return __results
     finally:
-        if "__results" in locals().keys():
-            del __results
+        pass
+        #arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
 def dTypesCSV(csv_data_folder="", table=""):
@@ -3258,33 +3255,28 @@ def test_bed_1(project_gdb=""):
         # Function parameters
         del project_gdb
 
-    except KeyboardInterrupt:
-        sys.exit()
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except:  # noqa: E722
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
+        arcpy.AddMessage("\nScript finished successfully.")
         return True
     finally:
-        pass
+        arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
 def test_bed_2(project=""):
@@ -3589,35 +3581,28 @@ def test_bed_2(project=""):
         del project_gdb
         del project
 
-    except KeyboardInterrupt:
-        sys.exit()
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
-        traceback.print_exc()
-        sys.exit()
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except Exception:
-        # arcpy.AddError(arcpy.GetMessages(2))
-        # traceback.print_exc()
-        sys.exit()
-    except:  # noqa: E722
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
+        arcpy.AddMessage("\nScript finished successfully.")
         return True
     finally:
-        pass
+        arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
 def script_tool(project_gdb=""):
@@ -3745,35 +3730,29 @@ def script_tool(project_gdb=""):
         arcpy.AddMessage(f"{'-' * 80}")
         del elapse_time, end_time, start_time
         del gmtime, localtime, strftime, time
-    except KeyboardInterrupt:
-        sys.exit()
+
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
-        traceback.print_exc()
-        sys.exit()
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except:  # noqa: E722
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
+        arcpy.AddMessage("\nScript finished successfully.")
         return True
     finally:
-        pass
+        arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
 if __name__ == "__main__":
@@ -3784,7 +3763,6 @@ if __name__ == "__main__":
             project_name = "August-1-2025"
             project_gdb = os.path.join(
                 os.path.expanduser("~"),
-                #"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February-1-2026\\February-1-2026.gdb",
                 f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}\\{project_name}.gdb",
             )
             del project_name
@@ -3802,12 +3780,11 @@ if __name__ == "__main__":
 
     except SystemExit:
         pass
-    except:  # noqa: E722
+    except arcpy.ExecuteError:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-    else:
-        pass
-    finally:
-        sys.exit()
+    except Exception:
+        traceback.print_exc()
+
 
 # This is an autogenerated comment.

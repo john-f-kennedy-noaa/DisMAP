@@ -45,7 +45,7 @@ def script_tool(
         import json
 
         json_path = rf"{out_data_path}\root_dict.json"
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             root_dict = json.load(json_file)
         del json_file
         del json_path

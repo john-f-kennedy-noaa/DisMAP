@@ -58,21 +58,32 @@ def get_encoding_index_col(csv_file):
         del chardet, pd
         # Function Parameter
         del csv_file
+
+
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
-        raise SystemExit
-    except Exception:
-        traceback.print_exc()
-        arcpy.AddError(arcpy.GetMessages(2))
-        raise SystemExit
-    except:  # noqa: E722
-        traceback.print_exc()
-        arcpy.AddError(arcpy.GetMessages(2))
-        raise SystemExit
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
     else:
+        arcpy.AddMessage("\nScript finished successfully.")
         return __encoding, __index_column
     finally:
         pass
+        # arcpy.AddMessage(f"\n{'--End' * 10}--")
+
 
 
 def worker(project_gdb="", csv_file=""):
@@ -349,35 +360,30 @@ def worker(project_gdb="", csv_file=""):
         del dismap_tools, pd, np, warnings
         # Function parameters
         del project_gdb, csv_file
-    except KeyboardInterrupt:
-        raise SystemExit
+
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        raise SystemExit
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
     except SystemExit:
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        raise SystemExit
-    except:  # noqa: E722
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        raise SystemExit
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-        del rk
+        arcpy.AddMessage("\nScript finished successfully.")
         return True
     finally:
         pass
+        # arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
 def update_datecode(csv_file="", project_name=""):
@@ -439,37 +445,30 @@ def update_datecode(csv_file="", project_name=""):
         del dismap_tools
         # Function parameters
         del csv_file, project_name
-    except KeyboardInterrupt:
-        raise SystemExit
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        raise SystemExit
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
     except SystemExit:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        raise SystemExit
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        raise SystemExit
-    except:  # noqa: E722
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        raise SystemExit
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-        del rk
+        arcpy.AddMessage("\nScript finished successfully.")
         return True
     finally:
         pass
+        #arcpy.AddMessage(f"\n{'--End' * 10}--")
+
 
 def _create_csv_metadata_template(template_path):
     """
@@ -479,7 +478,7 @@ def _create_csv_metadata_template(template_path):
         if not os.path.exists(os.path.dirname(template_path)):
             os.makedirs(os.path.dirname(template_path))
 
-        current_datetime = datetime.now()
+        current_datetime = datetime.datetime.now()
         crea_date = current_datetime.strftime("%Y%m%d")
         crea_time = current_datetime.strftime("%H%M%S") + "00"
 
@@ -516,7 +515,7 @@ def _create_csv_metadata_template(template_path):
 
 
 
-def script_tool(project_folder=""):
+def script_tool(project_gdb=""):
     """Script code goes below"""
     try:
         from io import StringIO
@@ -539,12 +538,13 @@ def script_tool(project_folder=""):
         # Set basic arcpy.env variables
         arcpy.env.overwriteOutput = True
         arcpy.env.parallelProcessingFactor = "100%"
-        # project_folder      = rf"{os.path.dirname(project_gdb)}"
+        project_folder      = rf"{os.path.dirname(project_gdb)}"
         project_name = rf"{os.path.basename(project_folder)}"
 
         #print(project_name)
+
         #print(dismap_tools.date_code(project_name))
-        project_gdb = rf"{project_folder}\{project_name}.gdb"
+        #project_gdb = rf"{project_folder}\{project_name}.gdb"
         home_folder = rf"{os.path.dirname(project_folder)}"
         metadata_template_folder = rf"{project_folder}\Layers\metadata_templates"
         csv_data_folder = rf"{project_folder}\CSV_Data"
@@ -587,7 +587,7 @@ def script_tool(project_folder=""):
             _create_csv_metadata_template(template_xml_path)
 
         json_path = rf"{csv_data_folder}\root_dict.json"
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             root_dict = json.load(json_file)
         del json_file
         del json_path
@@ -643,7 +643,7 @@ def script_tool(project_folder=""):
         del datasets
         del csv_data_folder, metadata_template_folder
         #
-        UpdateDatecode = True
+        UpdateDatecode = False
         if UpdateDatecode:
             # Update DateCode
             # arcpy.AddMessage(datasets_csv)
@@ -656,17 +656,17 @@ def script_tool(project_folder=""):
             worker(project_gdb=project_gdb, csv_file=datasets_csv)
         del DatasetsCSVFile
         #
-        SpeciesFilterCSVFile = True
+        SpeciesFilterCSVFile = False
         if SpeciesFilterCSVFile:
             worker(project_gdb=project_gdb, csv_file=species_filter_csv)
         del SpeciesFilterCSVFile
         #
-        DisMAPSurveyInfoFile = True
+        DisMAPSurveyInfoFile = False
         if DisMAPSurveyInfoFile:
             worker(project_gdb=project_gdb, csv_file=survey_metadata_csv)
         del DisMAPSurveyInfoFile
         #
-        SpeciesPersistenceIndicatorPercentileBinFile = True
+        SpeciesPersistenceIndicatorPercentileBinFile = False
         if SpeciesPersistenceIndicatorPercentileBinFile:
             worker(
                 project_gdb=project_gdb,
@@ -674,7 +674,7 @@ def script_tool(project_folder=""):
             )
         del SpeciesPersistenceIndicatorPercentileBinFile
         #
-        SpeciesPersistenceIndicatorTrendFile = True
+        SpeciesPersistenceIndicatorTrendFile = False
         if SpeciesPersistenceIndicatorTrendFile:
             worker(project_gdb=project_gdb, csv_file=SpeciesPersistenceIndicatorTrend)
         del SpeciesPersistenceIndicatorTrendFile
@@ -708,55 +708,58 @@ def script_tool(project_folder=""):
         del elapse_time, end_time, start_time
         del gmtime, localtime, strftime, time
 
+        # Compact GDB
+        # arcpy.AddMessage(f"\nCompacting: {os.path.basename(project_gdb)}" )
+        arcpy.management.Compact(project_gdb)
+
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
     else:
+        arcpy.AddMessage("\nScript finished successfully.")
         return True
+    finally:
+        arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
 if __name__ == "__main__":
-
     try:
 
-        project_folder = arcpy.GetParameterAsText(0)
-        if not project_folder:
+        project_gdb = arcpy.GetParameterAsText(0)
+        if not project_gdb:
             project_name = "August-1-2025"
-            project_folder = os.path.join(
+            project_gdb = os.path.join(
                 os.path.expanduser("~"),
-                f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}",
+                f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}\\{project_name}.gdb",
             )
             del project_name
         else:
             pass
 
-        script_tool(project_folder)
-
+        script_tool(project_gdb)
         arcpy.SetParameterAsText(1, "Result")
 
-        del project_folder
-
+    except SystemExit:
+        pass
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
+        arcpy.AddError(arcpy.GetMessages(2))
+        traceback.print_exc()
+    except Exception:
+        traceback.print_exc()
+
+
 # This is an autogenerated comment.

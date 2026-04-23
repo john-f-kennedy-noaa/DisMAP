@@ -991,7 +991,7 @@ def import_basic_template_xml(dataset_path=""):
         import json
 
         json_path = rf"{project_folder}\root_dict.json"
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             root_dict = json.load(json_file)
         del json_file
         del json_path
@@ -1338,7 +1338,7 @@ def update_eainfo_xml_elements(dataset_path=""):
         import json
 
         json_path = rf"{project_folder}\root_dict.json"
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             root_dict = json.load(json_file)
         del json_file
         del json_path
@@ -1529,28 +1529,28 @@ def insert_missing_elements(dataset_path):
         import json
 
         json_path = rf"{project_folder}\root_dict.json"
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             root_dict = json.load(json_file)
         json_path = rf"{project_folder}\esri_dict.json"
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             esri_dict = json.load(json_file)
         json_path = rf"{project_folder}\dataIdInfo_dict.json"
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             dataIdInfo_dict = json.load(json_file)
         json_path = rf"{project_folder}\contact_dict.json"
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             contact_dict = json.load(json_file)
         json_path = rf"{project_folder}\dqInfo_dict.json"
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             dqInfo_dict = json.load(json_file)
         json_path = rf"{project_folder}\distInfo_dict.json"
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             distInfo_dict = json.load(json_file)
         # json_path = rf"{project_folder}\RoleCd_dict.json"
-        # with open(json_path, "r") as json_file:
+        # with open(json_path, "r", encoding='utf-8') as json_file:
         #    RoleCd_dict = json.load(json_file)
         # json_path = rf"{project_folder}\tpCat_dict.json"
-        # with open(json_path, "r") as json_file:
+        # with open(json_path, "r", encoding='utf-8') as json_file:
         #    tpCat_dict = json.load(json_file)
         del json_file
         del json_path
@@ -3512,12 +3512,12 @@ def metadata_dataidinfo_report(dataset_path=""):
         import json
 
         json_path = rf"{project_folder}\dataIdInfo_dict.json"
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             dataIdInfo_dict = json.load(json_file)
         del json_file
         del json_path
         json_path = rf"{project_folder}\root_dict.json"
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             root_dict = json.load(json_file)
         del json_file
         del json_path
@@ -4026,7 +4026,7 @@ def metadata_dq_info_report(dataset_path=""):
         import json
 
         json_path = rf"{project_folder}\dqInfo_dict.json"
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             dqInfo_dict = json.load(json_file)
         del json_file
         del json_path
@@ -4239,7 +4239,7 @@ def metadata_dist_info_report(dataset_path=""):
         import json
 
         json_path = rf"{project_folder}\distInfo_dict.json"
-        with open(json_path, "r") as json_file:
+        with open(json_path, "r", encoding='utf-8') as json_file:
             distInfo_dict = json.load(json_file)
         del json_file
         del json_path
