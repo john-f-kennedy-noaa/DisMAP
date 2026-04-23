@@ -12,9 +12,7 @@
 import os
 import sys
 import traceback
-
 import arcpy  # third-parties second
-
 
 def trace():
     import sys  # noqa: E401

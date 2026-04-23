@@ -5,14 +5,22 @@ Script documentation
 - Update derived parameter values using arcpy.SetParameter() or
                                         arcpy.SetParameterAsText()
 """
-
 import inspect
 import os
-import sys  # built-ins first
+import sys
 import traceback
 
+from datetime import datetime
 import arcpy
 
+def trace():
+    tb = sys.exc_info()[2]
+    tbinfo = traceback.format_tb(tb)[0]
+    line = tbinfo.split(", ")[1]
+    # filename = sys.path[0] + os.sep + f"{os.path.basename(__file__)}"
+    filename = os.path.basename(__file__)
+    synerror = traceback.format_exc().splitlines()[-1]
+    return line, filename, synerror
 
 def get_encoding_index_col(csv_file):
     try:
@@ -76,10 +84,7 @@ def worker(project_gdb="", csv_file=""):
             )
         # Imports
         import dismap_tools
-<<<<<<< HEAD
-=======
         from arcpy import metadata as md
->>>>>>> 1eba7bb172817cf5defb8bfcc41333f20aca4b47
 
         # Set History and Metadata logs, set serverity and message level
         arcpy.SetLogHistory(
@@ -197,7 +202,6 @@ def worker(project_gdb="", csv_file=""):
         )
         # Remove the temporary table
         arcpy.management.Delete(tmp_table)
-<<<<<<< HEAD
 
         # Alter Fields
         dismap_tools.alter_fields(csv_data_folder, dataset_path)
@@ -330,16 +334,6 @@ def worker(project_gdb="", csv_file=""):
             del md, etree, json, date, datetime
         # --- End of Metadata Logic ---
 
-=======
-        del tmp_table
-        # arcpy.conversion.ExportTable(in_table = dataset_path, out_table  = rf"{csv_data_folder}\_{table_name}.csv", where_clause="", use_field_alias_as_name = "NOT_USE_ALIAS")
-        # arcpy.AddMessage("Export Table:\t{0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
-        # Alter Fields
-        dismap_tools.alter_fields(csv_data_folder, dataset_path)
-        dismap_tools.import_metadata(
-            csv_data_folder=csv_data_folder, dataset=dataset_path
-        )
->>>>>>> 1eba7bb172817cf5defb8bfcc41333f20aca4b47
         # Load Metadata
         # dataset_md = md.Metadata(dataset_path)
         # dataset_md.synchronize("ALWAYS")
@@ -477,6 +471,50 @@ def update_datecode(csv_file="", project_name=""):
     finally:
         pass
 
+def _create_csv_metadata_template(template_path):
+    """
+    Creates a basic XML metadata template file for CSV data.
+    """
+    try:
+        if not os.path.exists(os.path.dirname(template_path)):
+            os.makedirs(os.path.dirname(template_path))
+
+        current_datetime = datetime.now()
+        crea_date = current_datetime.strftime("%Y%m%d")
+        crea_time = current_datetime.strftime("%H%M%S") + "00"
+
+        template_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<metadata xml:lang="en">
+  <Esri>
+    <CreaDate>{crea_date}</CreaDate>
+    <CreaTime>{crea_time}</CreaTime>
+    <ArcGISFormat>1.0</ArcGISFormat>
+    <SyncOnce>TRUE</SyncOnce>
+  </Esri>
+  <dataIdInfo>
+    <idCitation>
+      <resTitle>CSV Data Table</resTitle>
+    </idCitation>
+    <idAbs>This is a generic metadata template for CSV data tables used in the DisMAP project.</idAbs>
+    <idPurp>This template provides a basic structure for metadata associated with CSV files, ensuring consistency and discoverability within the DisMAP project.</idPurp>
+    <idCredit>NMFS Office of Science and Technology</idCredit>
+    <resConst>
+      <Consts>
+        <useLimit>***No Warranty*** The user assumes the entire risk related to its use of these data. NMFS is providing these data "as is" and NMFS disclaims any and all warranties, whether express or implied, including (without limitation) any implied warranties of merchantability or fitness for a particular purpose. No warranty expressed or implied is made regarding the accuracy or utility of the data on any other system or for a particular purpose. No warranty expressed or implied is made regarding the accuracy or utility of the data on any other system or for general or scientific purposes, nor shall the act of distribution constitute any such warranty. It is strongly recommended that careful attention be paid to the contents of the metadata file associated with these data to evaluate dataset limitations, restrictions or intended use. In no event will NMFS be liable to you or to any third party for any direct, indirect, incidental, consequential, special or exemplary damages or lost profit resulting from any use or misuse of these data.</useLimit>
+      </Consts>
+    </resConst>
+  </dataIdInfo>
+</metadata>"""
+
+        with open(template_path, "w", encoding="utf-8") as f:
+            f.write(template_content)
+        arcpy.AddMessage(f"Created missing CSV metadata template: {os.path.basename(template_path)}")
+    except Exception as e:
+        arcpy.AddError(f"Error creating CSV metadata template: {e}")
+        traceback.print_exc()
+        raise
+
+
 
 def script_tool(project_folder=""):
     """Script code goes below"""
@@ -503,12 +541,12 @@ def script_tool(project_folder=""):
         arcpy.env.parallelProcessingFactor = "100%"
         # project_folder      = rf"{os.path.dirname(project_gdb)}"
         project_name = rf"{os.path.basename(project_folder)}"
+
+        #print(project_name)
+        #print(dismap_tools.date_code(project_name))
         project_gdb = rf"{project_folder}\{project_name}.gdb"
         home_folder = rf"{os.path.dirname(project_folder)}"
-<<<<<<< HEAD
         metadata_template_folder = rf"{project_folder}\Layers\metadata_templates"
-=======
->>>>>>> 1eba7bb172817cf5defb8bfcc41333f20aca4b47
         csv_data_folder = rf"{project_folder}\CSV_Data"
         datasets_csv = rf"{csv_data_folder}\Datasets.csv"
         species_filter_csv = rf"{csv_data_folder}\Species_Filter.csv"
@@ -520,45 +558,41 @@ def script_tool(project_folder=""):
             rf"{csv_data_folder}\SpeciesPersistenceIndicatorPercentileBin.csv"
         )
         arcpy.management.Copy(
-            rf"{home_folder}\Initial Data\Datasets_{dismap_tools.date_code(project_name)}.csv",
+            rf"{home_folder}\Initial-Data\Datasets_{dismap_tools.date_code(project_name)}.csv",
             datasets_csv,
         )
         arcpy.management.Copy(
-            rf"{home_folder}\Initial Data\Species_Filter_{dismap_tools.date_code(project_name)}.csv",
+            rf"{home_folder}\Initial-Data\Species_Filter_{dismap_tools.date_code(project_name)}.csv",
             species_filter_csv,
         )
         arcpy.management.Copy(
-            rf"{home_folder}\Initial Data\DisMAP_Survey_Info_{dismap_tools.date_code(project_name)}.csv",
+            rf"{home_folder}\Initial-Data\DisMAP_Survey_Info_{dismap_tools.date_code(project_name)}.csv",
             survey_metadata_csv,
         )
         arcpy.management.Copy(
-            rf"{home_folder}\Initial Data\SpeciesPersistenceIndicatorTrend_{dismap_tools.date_code(project_name)}.csv",
+            rf"{home_folder}\Initial-Data\SpeciesPersistenceIndicatorTrend_{dismap_tools.date_code(project_name)}.csv",
             SpeciesPersistenceIndicatorTrend,
         )
         arcpy.management.Copy(
-            rf"{home_folder}\Initial Data\SpeciesPersistenceIndicatorPercentileBin_{dismap_tools.date_code(project_name)}.csv",
+            rf"{home_folder}\Initial-Data\SpeciesPersistenceIndicatorPercentileBin_{dismap_tools.date_code(project_name)}.csv",
             SpeciesPersistenceIndicatorPercentileBin,
         )
         import json
 
-<<<<<<< HEAD
         if not os.path.exists(metadata_template_folder):
             os.makedirs(metadata_template_folder)
 
-=======
->>>>>>> 1eba7bb172817cf5defb8bfcc41333f20aca4b47
+        template_xml_path = rf"{metadata_template_folder}\csv_metadata_template.xml"
+        if not os.path.exists(template_xml_path):
+            _create_csv_metadata_template(template_xml_path)
+
         json_path = rf"{csv_data_folder}\root_dict.json"
         with open(json_path, "r") as json_file:
             root_dict = json.load(json_file)
         del json_file
         del json_path
         del json
-<<<<<<< HEAD
 
-        template_xml_path = rf"{metadata_template_folder}\csv_metadata_template.xml"
-=======
-        contacts = rf"{home_folder}\Datasets\DisMAP Contacts 2026 02 01.xml"
->>>>>>> 1eba7bb172817cf5defb8bfcc41333f20aca4b47
         datasets = [
             datasets_csv,
             species_filter_csv,
@@ -583,7 +617,6 @@ def script_tool(project_folder=""):
             )
             target_root = target_tree.getroot()
             target_root[:] = sorted(
-<<<<<<< HEAD
                 target_root, key=lambda x: root_dict.get(x.tag, 99)
             )
 
@@ -593,14 +626,6 @@ def script_tool(project_folder=""):
             if resTitle is not None:
                 resTitle.text = title
 
-=======
-                target_root, key=lambda x: root_dict[x.tag]
-            )  # noqa: F821
-            new_item_name = target_root.find(
-                "Esri/DataProperties/itemProps/itemName"
-            ).text
-            # arcpy.AddMessage(new_item_name)
->>>>>>> 1eba7bb172817cf5defb8bfcc41333f20aca4b47
             etree.indent(target_root, space="    ")
             dataset_md.xml = etree.tostring(
                 target_tree,
@@ -613,13 +638,8 @@ def script_tool(project_folder=""):
             dataset_md.synchronize("ALWAYS")
             dataset_md.save()
             # arcpy.AddMessage(dataset_md.xml)
-<<<<<<< HEAD
             del dataset_md, title, resTitle
             del dataset, target_tree, target_root
-=======
-            del dataset_md
-            del dataset
->>>>>>> 1eba7bb172817cf5defb8bfcc41333f20aca4b47
         del datasets
         del csv_data_folder, metadata_template_folder
         #
@@ -669,7 +689,7 @@ def script_tool(project_folder=""):
             project_name,
         )
         # Declared Variables
-        del contacts, target_tree, target_root, new_item_name, root_dict
+        #del contacts, target_tree, target_root, new_item_name, root_dict
         # Imports
         del etree, md, StringIO, dismap_tools
         # Function Parameters
@@ -707,18 +727,17 @@ def script_tool(project_folder=""):
 
 
 if __name__ == "__main__":
+
     try:
 
         project_folder = arcpy.GetParameterAsText(0)
         if not project_folder:
+            project_name = "August-1-2025"
             project_folder = os.path.join(
                 os.path.expanduser("~"),
-<<<<<<< HEAD
-                "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\Agust 1 2025",
-=======
-                "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026",
->>>>>>> 1eba7bb172817cf5defb8bfcc41333f20aca4b47
+                f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}",
             )
+            del project_name
         else:
             pass
 

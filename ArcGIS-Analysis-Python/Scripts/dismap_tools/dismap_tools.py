@@ -1786,8 +1786,10 @@ def date_code(version):
             # and is converted to 'Month Day and Year' (i.e. May 1 2023)
             _date_code = datetime.strptime(version, "%Y%m%d").strftime("%B %#d %Y")
         elif not version.isdigit():
+            version = version.replace("-", " ")
             # The version value is 'Month Day and Year' (i.e. May 1 2023)
             # and is converted to 'YYYYMMDD' format (20230501)
+            print(version)
             _date_code = datetime.strptime(version, "%B %d %Y").strftime("%Y%m%d")
         else:
             _date_code = "error"
@@ -2676,9 +2678,11 @@ def test_bed_1(project_gdb=""):
 
         base_project_folder = os.path.dirname(os.path.dirname(__file__))
 
-        project_gdb = rf"{base_project_folder}\{project}\{project}.gdb"
+        #project_gdb = rf"{base_project_folder}\{project}\{project}.gdb"
 
         del base_project_folder
+
+        #print(project_gdb)
 
         # Test if passed workspace exists, if not raise SystemExit
         if not arcpy.Exists(rf"{project_gdb}"):
@@ -2742,10 +2746,11 @@ def test_bed_1(project_gdb=""):
         ##        del _field_definitions
         ##        del _table_definitions
 
-        ##        project_name = os.path.basename(os.path.dirname(csv_data_folder))
-        ##        arcpy.AddMessage(project_name)
-        ##        arcpy.AddMessage(date_code(date_code(project_name)))
-        ##        del project_name
+        project_name = os.path.basename(os.path.splitext(project_gdb)[0])
+        arcpy.AddMessage(project_name)
+        arcpy.AddMessage(date_code(project_name))
+        arcpy.AddMessage(date_code("20250801"))
+        del project_name
 
         # # # ###--->>>
 
@@ -3776,16 +3781,20 @@ if __name__ == "__main__":
 
         project_gdb = arcpy.GetParameterAsText(0)
         if not project_gdb:
+            project_name = "August-1-2025"
             project_gdb = os.path.join(
                 os.path.expanduser("~"),
-                "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb",
+                #"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February-1-2026\\February-1-2026.gdb",
+                f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}\\{project_name}.gdb",
             )
+            del project_name
         else:
             pass
 
         arcpy.AddMessage(f"Running Python script: {os.path.basename(__file__)}")
 
-        script_tool(project_gdb)
+        test_bed_1(project_gdb)
+        #script_tool(project_gdb)
 
         arcpy.SetParameterAsText(1, "Result")
 
