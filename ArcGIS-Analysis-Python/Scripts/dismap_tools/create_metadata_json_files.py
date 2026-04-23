@@ -62,10 +62,19 @@ def script_tool(project_gdb=""):
 
         import json
 
-        json_path = os.path.join(out_data_path, "root_dict.json")
+        json_path = rf"{out_data_path}\root_dict.json"
         # Write to File
         with open(json_path, "w") as json_file:
             json.dump(root_dict, json_file, indent=4)
+        del json_file
+        del root_dict
+        with open(json_path, "r") as json_file:
+            root_dict = json.load(json_file)
+        del json_file
+        arcpy.AddMessage(root_dict)
+        del root_dict
+        del json_path
+        del json
 
         esri_dict = {
             "CreaDate": 0,
@@ -104,10 +113,21 @@ def script_tool(project_gdb=""):
             "locales": 14,
         }
 
-        json_path = os.path.join(out_data_path, "esri_dict.json")
+        import json
+
+        json_path = rf"{out_data_path}\esri_dict.json"
         # Write to File
         with open(json_path, "w") as json_file:
             json.dump(esri_dict, json_file, indent=4)
+        del json_file
+        del esri_dict
+        with open(json_path, "r") as json_file:
+            esri_dict = json.load(json_file)
+        del json_file
+        arcpy.AddMessage(esri_dict)
+        del esri_dict
+        del json_path
+        del json
 
         dataIdInfo_dict = {
             "dataIdInfo": 0,
@@ -227,10 +247,21 @@ def script_tool(project_gdb=""):
             "tpCat": 18,
         }
 
-        json_path = os.path.join(out_data_path, "dataIdInfo_dict.json")
+        import json
+
+        json_path = rf"{out_data_path}\dataIdInfo_dict.json"
         # Write to File
         with open(json_path, "w") as json_file:
             json.dump(dataIdInfo_dict, json_file, indent=4)
+        del json_file
+        del dataIdInfo_dict
+        with open(json_path, "r") as json_file:
+            dataIdInfo_dict = json.load(json_file)
+        del json_file
+        arcpy.AddMessage(dataIdInfo_dict)
+        del dataIdInfo_dict
+        del json_path
+        del json
 
         idCitation_dict = {
             "idCitation": 0,
@@ -247,10 +278,21 @@ def script_tool(project_gdb=""):
             "citRespParty": 6,
         }
 
-        json_path = os.path.join(out_data_path, "idCitation_dict.json")
+        import json
+
+        json_path = rf"{out_data_path}\idCitation_dict.json"
         # Write to File
         with open(json_path, "w") as json_file:
             json.dump(idCitation_dict, json_file, indent=4)
+        del json_file
+        del idCitation_dict
+        with open(json_path, "r") as json_file:
+            idCitation_dict = json.load(json_file)
+        del json_file
+        arcpy.AddMessage(idCitation_dict)
+        del idCitation_dict
+        del json_path
+        del json
 
         contact_element_order_dict = {
             "editorSource": 0,
@@ -296,10 +338,21 @@ def script_tool(project_gdb=""):
             "citOnlineRes": 2,
         }
 
-        json_path = os.path.join(out_data_path, "contact_element_order_dict.json")
+        import json
+
+        json_path = rf"{out_data_path}\contact_element_order_dict.json"
         # Write to File
         with open(json_path, "w") as json_file:
             json.dump(contact_element_order_dict, json_file, indent=4)
+        del json_file
+        del contact_element_order_dict
+        with open(json_path, "r") as json_file:
+            contact_element_order_dict = json.load(json_file)
+        del json_file
+        arcpy.AddMessage(contact_element_order_dict)
+        del contact_element_order_dict
+        del json_path
+        del json
 
         dqInfo_dict = {
             "dqScope": 0,
@@ -405,10 +458,21 @@ def script_tool(project_gdb=""):
             "OnFunctCd": 0,
         }
 
-        json_path = os.path.join(out_data_path, "dqInfo_dict.json")
+        import json
+
+        json_path = rf"{out_data_path}\dqInfo_dict.json"
         # Write to File
         with open(json_path, "w") as json_file:
             json.dump(dqInfo_dict, json_file, indent=4)
+        del json_file
+        del dqInfo_dict
+        with open(json_path, "r") as json_file:
+            dqInfo_dict = json.load(json_file)
+        del json_file
+        arcpy.AddMessage(dqInfo_dict)
+        del dqInfo_dict
+        del json_path
+        del json
 
         distInfo_dict = {
             "distInfo": 0,
@@ -458,10 +522,21 @@ def script_tool(project_gdb=""):
             "OnFunctCd": 0, # noqa: E261
         }
 
-        json_path = os.path.join(out_data_path, "distInfo_dict.json")
+        import json
+
+        json_path = rf"{out_data_path}\distInfo_dict.json"
         # Write to File
         with open(json_path, "w") as json_file:
             json.dump(distInfo_dict, json_file, indent=4)
+        del json_file
+        del distInfo_dict
+        with open(json_path, "r") as json_file:
+            distInfo_dict = json.load(json_file)
+        del json_file
+        arcpy.AddMessage(distInfo_dict)
+        del distInfo_dict
+        del json_path
+        del json
 
         RoleCd_dict = {
             "001": "Resource Provider",
@@ -481,7 +556,9 @@ def script_tool(project_gdb=""):
             "015": "Rights Holder",
         }
 
-        json_path = os.path.join(out_data_path, "RoleCd_dict.json")
+        import json
+
+        json_path = rf"{out_data_path}\RoleCd_dict.json"
         # Write to File
         with open(json_path, "w") as json_file:
             json.dump(RoleCd_dict, json_file, indent=4)
@@ -498,74 +575,94 @@ def script_tool(project_gdb=""):
             "014": '<tpCat><TopicCatCd value="014"></TopicCatCd></tpCat>',
         }
 
-        json_path = os.path.join(out_data_path, "tpCat_dict.json")
+        import json
+
+        json_path = rf"{out_data_path}\tpCat_dict.json"
         # Write to File
         with open(json_path, "w") as json_file:
             json.dump(tpCat_dict, json_file, indent=4)
+        del json_file
+        del tpCat_dict
+        with open(json_path, "r") as json_file:
+            tpCat_dict = json.load(json_file)
+        del json_file
+        arcpy.AddMessage(tpCat_dict)
+        del tpCat_dict
+        del json_path
+        del json
 
-        # Define individual contacts for clarity and reuse
-        tim_haverland = {
-            "rpIndName": "Timothy J Haverland",
-            "rpOrgName": "NMFS Office of Science and Technology",
-            "rpPosName": "GIS App Developer",
-            "cntInfo": {
-                "delPoint": "1315 East West Highway", "city": "Silver Spring", "adminArea": "MD",
-                "postCode": "20910-3282", "country": "US", "eMailAdd": "tim.haverland@noaa.gov",
-                "voiceNum": "301-427-8137", "faxNum": "301-713-4137",
-                "linkage": "https://www.fisheries.noaa.gov/about/office-science-and-technology"
-            }
+        # ###################### DisMAP ########################################
+        RoleCd_dict = {
+            "001": "Resource Provider",
+            "002": "Custodian",
+            "003": "Owner",
+            "004": "User",
+            "005": "Distributor",
+            "006": "Originator",
+            "007": "Point of Contact",
+            "008": "Principal Investigator",
+            "009": "Processor",
+            "010": "Publisher",
+            "011": "Author",
+            "012": "Collaborator",
+            "013": "Editor",
+            "014": "Mediator",
+            "015": "Rights Holder",
         }
-
-        melissa_karp = {
-            "rpIndName": "Melissa Ann Karp",
-            "rpOrgName": "NMFS Office of Science and Technology",
-            "rpPosName": "Fisheries Science Coordinator",
-            "cntInfo": {
-                "delPoint": "1315 East West Hwy", "city": "Silver Spring", "adminArea": "MD",
-                "postCode": "20910-3282", "country": "US", "eMailAdd": "melissa.karp@noaa.gov",
-                "voiceNum": "301-427-8202", "faxNum": "301-713-4137",
-                "linkage": "https://www.fisheries.noaa.gov/about/office-science-and-technology"
-            }
-        }
-
-        john_f_kennedy = {
-            "rpIndName": "John F Kennedy",
-            "rpOrgName": "NMFS Office of Science and Technology",
-            "rpPosName": "GIS Specialist",
-            "cntInfo": {
-                "delPoint": "1315 East West Highway", "city": "Silver Spring", "adminArea": "MD",
-                "postCode": "20910-3282", "country": "US", "eMailAdd": "john.f.kennedy@noaa.gov",
-                "voiceNum": "301-427-8149", "faxNum": "301-713-4137",
-                "linkage": "https://www.fisheries.noaa.gov/about/office-science-and-technology"
-            }
-        }
-
-        nmfs_ost = {
-            "rpIndName": "NMFS Office of Science and Technology",
-            "rpOrgName": "NMFS Office of Science and Technology",
-            "rpPosName": "GIS App Developer",
-            "cntInfo": {
-                "delPoint": "1315 East West Highway", "city": "Silver Spring", "adminArea": "MD",
-                "postCode": "20910-3282", "country": "US", "eMailAdd": "tim.haverland@noaa.gov",
-                "voiceNum": "301-427-8137", "faxNum": "301-713-4137",
-                "linkage": "https://www.fisheries.noaa.gov/about/office-science-and-technology"
-            }
-        }
-
-        # Assemble the contact dictionary using the defined contacts and their roles
         contact_dict = {
-            "citRespParty": [{**tim_haverland, "role": "002"}],
-            "idPoC": [{**melissa_karp, "role": "007"}],
-            "distorCont": [{**nmfs_ost, "role": "005"}],
-            "mdContact": [{**john_f_kennedy, "role": "011"}],
-            "srcCitatn": [{**melissa_karp, "role": "008"}],
+            "citRespParty": [
+                {
+                    "role": "Custodian",
+                    "rpIndName": "Timothy J Haverland",
+                    "eMailAdd": "tim.haverland@noaa.gov",
+                },
+            ],
+            "idPoC": [
+                {
+                    "role": "Point of Contact",
+                    "rpIndName": "Melissa Ann Karp",
+                    "eMailAdd": "melissa.karp@noaa.gov",
+                },
+            ],
+            "distorCont": [
+                {
+                    "role": "Distributor",
+                    "rpIndName": "Timothy J Haverland",
+                    "eMailAdd": "tim.haverland@noaa.gov",
+                },
+            ],
+            "mdContact": [
+                {
+                    "role": "Author",
+                    "rpIndName": "John F Kennedy",
+                    "eMailAdd": "john.f.kennedy@noaa.gov",
+                },
+            ],
+            "srcCitatn": [
+                {
+                    "role": "Principal Investigator",
+                    "rpIndName": "Melissa Ann Karp",
+                    "eMailAdd": "melissa.karp@noaa.gov",
+                },
+            ],
             "stepProc": [
-                {**john_f_kennedy, "role": "009"},
-                {**melissa_karp, "role": "009"}
-            ]
+                {
+                    "role": "Processor",
+                    "rpIndName": "John F Kennedy",
+                    "eMailAdd": "john.f.kennedy@noaa.gov",
+                },
+                {
+                    "role": "Processor",
+                    "rpIndName": "Melissa Ann Karp",
+                    "eMailAdd": "melissa.karp@noaa.gov",
+                },
+            ],
         }
+        del RoleCd_dict
 
-        json_path = os.path.join(out_data_path, "contact_dict.json")
+        import json
+
+        json_path = rf"{out_data_path}\contact_dict.json"
         # arcpy.AddMessage(json_path)
         # Write to File
         with open(json_path, "w") as json_file:

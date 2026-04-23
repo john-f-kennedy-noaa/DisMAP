@@ -76,6 +76,10 @@ def worker(project_gdb="", csv_file=""):
             )
         # Imports
         import dismap_tools
+<<<<<<< HEAD
+=======
+        from arcpy import metadata as md
+>>>>>>> 1eba7bb172817cf5defb8bfcc41333f20aca4b47
 
         # Set History and Metadata logs, set serverity and message level
         arcpy.SetLogHistory(
@@ -193,6 +197,7 @@ def worker(project_gdb="", csv_file=""):
         )
         # Remove the temporary table
         arcpy.management.Delete(tmp_table)
+<<<<<<< HEAD
 
         # Alter Fields
         dismap_tools.alter_fields(csv_data_folder, dataset_path)
@@ -325,6 +330,16 @@ def worker(project_gdb="", csv_file=""):
             del md, etree, json, date, datetime
         # --- End of Metadata Logic ---
 
+=======
+        del tmp_table
+        # arcpy.conversion.ExportTable(in_table = dataset_path, out_table  = rf"{csv_data_folder}\_{table_name}.csv", where_clause="", use_field_alias_as_name = "NOT_USE_ALIAS")
+        # arcpy.AddMessage("Export Table:\t{0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
+        # Alter Fields
+        dismap_tools.alter_fields(csv_data_folder, dataset_path)
+        dismap_tools.import_metadata(
+            csv_data_folder=csv_data_folder, dataset=dataset_path
+        )
+>>>>>>> 1eba7bb172817cf5defb8bfcc41333f20aca4b47
         # Load Metadata
         # dataset_md = md.Metadata(dataset_path)
         # dataset_md.synchronize("ALWAYS")
@@ -490,7 +505,10 @@ def script_tool(project_folder=""):
         project_name = rf"{os.path.basename(project_folder)}"
         project_gdb = rf"{project_folder}\{project_name}.gdb"
         home_folder = rf"{os.path.dirname(project_folder)}"
+<<<<<<< HEAD
         metadata_template_folder = rf"{project_folder}\Layers\metadata_templates"
+=======
+>>>>>>> 1eba7bb172817cf5defb8bfcc41333f20aca4b47
         csv_data_folder = rf"{project_folder}\CSV_Data"
         datasets_csv = rf"{csv_data_folder}\Datasets.csv"
         species_filter_csv = rf"{csv_data_folder}\Species_Filter.csv"
@@ -523,17 +541,24 @@ def script_tool(project_folder=""):
         )
         import json
 
+<<<<<<< HEAD
         if not os.path.exists(metadata_template_folder):
             os.makedirs(metadata_template_folder)
 
+=======
+>>>>>>> 1eba7bb172817cf5defb8bfcc41333f20aca4b47
         json_path = rf"{csv_data_folder}\root_dict.json"
         with open(json_path, "r") as json_file:
             root_dict = json.load(json_file)
         del json_file
         del json_path
         del json
+<<<<<<< HEAD
 
         template_xml_path = rf"{metadata_template_folder}\csv_metadata_template.xml"
+=======
+        contacts = rf"{home_folder}\Datasets\DisMAP Contacts 2026 02 01.xml"
+>>>>>>> 1eba7bb172817cf5defb8bfcc41333f20aca4b47
         datasets = [
             datasets_csv,
             species_filter_csv,
@@ -558,6 +583,7 @@ def script_tool(project_folder=""):
             )
             target_root = target_tree.getroot()
             target_root[:] = sorted(
+<<<<<<< HEAD
                 target_root, key=lambda x: root_dict.get(x.tag, 99)
             )
 
@@ -567,6 +593,14 @@ def script_tool(project_folder=""):
             if resTitle is not None:
                 resTitle.text = title
 
+=======
+                target_root, key=lambda x: root_dict[x.tag]
+            )  # noqa: F821
+            new_item_name = target_root.find(
+                "Esri/DataProperties/itemProps/itemName"
+            ).text
+            # arcpy.AddMessage(new_item_name)
+>>>>>>> 1eba7bb172817cf5defb8bfcc41333f20aca4b47
             etree.indent(target_root, space="    ")
             dataset_md.xml = etree.tostring(
                 target_tree,
@@ -579,8 +613,13 @@ def script_tool(project_folder=""):
             dataset_md.synchronize("ALWAYS")
             dataset_md.save()
             # arcpy.AddMessage(dataset_md.xml)
+<<<<<<< HEAD
             del dataset_md, title, resTitle
             del dataset, target_tree, target_root
+=======
+            del dataset_md
+            del dataset
+>>>>>>> 1eba7bb172817cf5defb8bfcc41333f20aca4b47
         del datasets
         del csv_data_folder, metadata_template_folder
         #
@@ -674,7 +713,11 @@ if __name__ == "__main__":
         if not project_folder:
             project_folder = os.path.join(
                 os.path.expanduser("~"),
+<<<<<<< HEAD
                 "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\Agust 1 2025",
+=======
+                "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026",
+>>>>>>> 1eba7bb172817cf5defb8bfcc41333f20aca4b47
             )
         else:
             pass
