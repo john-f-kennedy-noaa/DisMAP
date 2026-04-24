@@ -24,62 +24,90 @@ def trace():
     return line, filename, synerror
 
 
+def _create_project_structure(home_folder, new_project_folder, project_folders):
+    """
+    Helper function to create the project's folder and geodatabase structure.
+    """
+    try:
+        # Create main project folder
+        project_path = rf"{home_folder}\{new_project_folder}"
+        if not arcpy.Exists(project_path):
+            arcpy.AddMessage(f"Creating Project Folder: '{new_project_folder}'")
+            arcpy.management.CreateFolder(home_folder, new_project_folder)
+            arcpy.AddMessage(arcpy.GetMessages())
+        else:
+            arcpy.AddMessage(f"Project Folder: '{new_project_folder}' Exists")
+
+        # Create project geodatabase
+        project_gdb_path = rf"{project_path}\{new_project_folder}.gdb"
+        if not arcpy.Exists(project_gdb_path):
+            arcpy.AddMessage(f"Creating Project GDB: '{new_project_folder}.gdb'")
+            arcpy.management.CreateFileGDB(project_path, new_project_folder)
+            arcpy.AddMessage(arcpy.GetMessages())
+        else:
+            arcpy.AddMessage(f"Project GDB: {new_project_folder}.gdb exists")
+
+        # Create Scratch folder
+        scratch_folder_path = rf"{project_path}\Scratch"
+        if not arcpy.Exists(scratch_folder_path):
+            arcpy.AddMessage("Creating the Scratch Folder")
+            arcpy.management.CreateFolder(project_path, "Scratch")
+            arcpy.AddMessage(arcpy.GetMessages())
+        else:
+            arcpy.AddMessage(f"Scratch Folder: {new_project_folder}\Scratch exists")
+
+        # Create Scratch geodatabase
+        scratch_gdb_path = rf"{scratch_folder_path}\scratch.gdb"
+        if not arcpy.Exists(scratch_gdb_path):
+            arcpy.AddMessage("Creating the Scratch GDB")
+            arcpy.management.CreateFileGDB(scratch_folder_path, "scratch")
+            arcpy.AddMessage(arcpy.GetMessages())
+        else:
+            arcpy.AddMessage("Scratch GDB Exists")
+
+        # Create additional project folders
+        for _project_folder in project_folders.split(";"):
+            folder_path = rf"{project_path}\{_project_folder}"
+            if not arcpy.Exists(folder_path):
+                arcpy.AddMessage(f"Creating Folder: {_project_folder}")
+                arcpy.management.CreateFolder(project_path, _project_folder)
+                arcpy.AddMessage(arcpy.GetMessages())
+            else:
+                arcpy.AddMessage(f"Folder: '{_project_folder}' Exists")
+
+        return True
+    except Exception as e:
+        arcpy.AddError(f"Error creating project structure: {e}")
+        traceback.print_exc()
+        return False
+
+
 def script_tool(base_project_folder="", new_project_folder="", project_folders=""):
     """Script code goes below"""
     try:
         arcpy.env.overwriteOutput = True
-        try:
+        aprx = None # Initialize aprx to None
+        try: # Attempt to get the current project
             aprx = arcpy.mp.ArcGISProject("CURRENT")
-        except:
+        except (RuntimeError, FileNotFoundError) as e: # If no current project, try to open a specific one
+            arcpy.AddWarning(f"Could not open current ArcGIS Project: {e}. Attempting to open default project.")
             aprx = arcpy.mp.ArcGISProject(rf"{base_project_folder}\DisMAP.aprx")
+        except Exception as e: # Catch any other unexpected errors during aprx loading
+            arcpy.AddError(f"An unexpected error occurred while loading the ArcGIS Project: {e}")
+            traceback.print_exc()
+            return False
+
+        # Check if aprx object is valid before proceeding
+        if aprx is None:
+            arcpy.AddError("Failed to load ArcGIS Project. Exiting script_tool.")
+            return False
+
         aprx.save()
         home_folder = aprx.homeFolder
-        if not arcpy.Exists(rf"{home_folder}\{new_project_folder}"):
-            arcpy.AddMessage(f"Creating Home Folder: '{os.path.basename(home_folder)}'")
-            arcpy.management.CreateFolder(home_folder, new_project_folder)
-            arcpy.AddMessage(arcpy.GetMessages())
-        else:
-            arcpy.AddMessage(f"Home Folder: '{os.path.basename(home_folder)}' Exists")
-        if not arcpy.Exists(
-            rf"{home_folder}\{new_project_folder}\{new_project_folder}.gdb"
-        ):
-            arcpy.AddMessage(
-                f"Creating Project GDB: '{os.path.basename(home_folder)}.gdb'"
-            )
-            arcpy.management.CreateFileGDB(
-                rf"{home_folder}\{new_project_folder}", f"{new_project_folder}"
-            )
-            arcpy.AddMessage(arcpy.GetMessages())
-        else:
-            arcpy.AddMessage(f"Project GDB: {new_project_folder}.gdb exists")
-        if not arcpy.Exists(rf"{home_folder}\{new_project_folder}\Scratch"):
-            arcpy.AddMessage("Creating the Scratch Folder")
-            arcpy.management.CreateFolder(
-                rf"{home_folder}\{new_project_folder}", "Scratch"
-            )
-            arcpy.AddMessage(arcpy.GetMessages())
-        else:
-            arcpy.AddMessage(f"Scratch Folder: {new_project_folder} exists")
-        if not arcpy.Exists(rf"{home_folder}\{new_project_folder}\Scratch\scratch.gdb"):
-            arcpy.AddMessage("Creating the Scratch GDB")
-            arcpy.management.CreateFileGDB(
-                rf"{home_folder}\{new_project_folder}\Scratch", "scratch"
-            )
-            arcpy.AddMessage(arcpy.GetMessages())
-        else:
-            arcpy.AddMessage("Scratch GDB Exists")
-        for _project_folder in project_folders.split(";"):
-            if not arcpy.Exists(
-                rf"{home_folder}\{new_project_folder}\{_project_folder}"
-            ):
-                arcpy.AddMessage(f"Creating Folder: {_project_folder}")
-                arcpy.management.CreateFolder(
-                    rf"{home_folder}\{new_project_folder}", _project_folder
-                )
-                arcpy.AddMessage(arcpy.GetMessages())
-            else:
-                arcpy.AddMessage(f"Folder: '{_project_folder}' Exists")
-            del _project_folder
+
+        if not _create_project_structure(home_folder, new_project_folder, project_folders):
+            return False # Exit if project structure creation failed
+
         if not arcpy.Exists(
             rf"{home_folder}\{new_project_folder}\{new_project_folder}.aprx"
         ):
@@ -153,40 +181,55 @@ def script_tool(base_project_folder="", new_project_folder="", project_folders="
     finally:
         pass
 
-
 if __name__ == "__main__":
     try:
+
         base_project_folder = arcpy.GetParameterAsText(0)
         new_project_folder = arcpy.GetParameterAsText(1)
         project_folders = arcpy.GetParameterAsText(2)
 
         if not base_project_folder:
-            base_project_folder = rf"{os.path.expanduser('~')}\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python"
+            base_project_folder = os.path.join(
+                os.path.expanduser("~"),
+                f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python",
+            )
         else:
             pass
 
         if not new_project_folder:
-            new_project_folder = "February 1 2026"
+            new_project_folder = "August-1-2025"
         else:
             pass
 
         if not project_folders:
             project_folders = (
-                "CRFs;CSV_Data;Dataset_Shapefiles;Images;Layers;Metadata_Export;Publish"
+                "CRFs;CSV_Data;Dataset_Shapefiles;Images;Layers;Metadata_Export;Gemini_Metadata_Export;Publish"
             )
         else:
             pass
 
-        script_tool(base_project_folder, new_project_folder, project_folders)
+        # Call script_tool and check its return value
+        result = script_tool(base_project_folder, new_project_folder, project_folders)
 
-        arcpy.SetParameterAsText(3, "Result")
+        if result:
+            arcpy.SetParameterAsText(3, "Success")
+        else:
+            arcpy.SetParameterAsText(3, "Failed")
 
         del base_project_folder, new_project_folder, project_folders
 
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
+    except SystemExit:
+        # SystemExit is usually raised for intentional exits, but still log it if it happens here.
+        arcpy.AddError("Script terminated by SystemExit in main block.")
+        traceback.print_exc()
+        arcpy.SetParameterAsText(3, "Failed")
+    except arcpy.ExecuteError:
+        arcpy.AddError(arcpy.GetMessages(2))
+        traceback.print_exc()
+        arcpy.SetParameterAsText(3, "Failed")
+    except Exception:
+        traceback.print_exc()
+        arcpy.AddError("An unexpected error occurred in main block.")
+        arcpy.SetParameterAsText(3, "Failed")
 
 # This is an autogenerated comment.
