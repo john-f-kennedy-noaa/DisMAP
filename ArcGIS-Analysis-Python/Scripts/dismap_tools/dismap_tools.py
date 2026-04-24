@@ -80,20 +80,20 @@ def parse_xml_file_format_and_save(csv_data_folder="", xml_file="", sort=False):
         del csv_data_folder
     except KeyboardInterrupt:
         sys.exit()
-    except arcpy.ExecuteWarning:
+    except arcpy.ExecuteWarning: # Changed to warning and removed sys.exit()
         arcpy.AddWarning(arcpy.GetMessages(1))
-        arcpy.AddError(arcpy.GetMessages(2))
+        arcpy.AddWarning(arcpy.GetMessages(1)) # Changed to AddWarning
         traceback.print_exc()
-        sys.exit()
+        # sys.exit() # Removed sys.exit() for warnings
     except arcpy.ExecuteError:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-        sys.exit()
+        sys.exit(1) # Added exit status
     except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:  # noqa: E722
+    except Exception as e:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -176,7 +176,7 @@ def print_xml_file(xml_file="", sort=False):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:  # noqa: E722
+    except Exception as e:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -268,7 +268,7 @@ def add_fields(csv_data_folder="", in_table=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:  # noqa: E722
+    except Exception as e:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -365,7 +365,7 @@ def alter_fields(csv_data_folder="", in_table=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:  # noqa: E722
+    except Exception as e:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -407,7 +407,7 @@ def backup_gdb(project_gdb=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:  # noqa: E722
+    except Exception as e:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -492,7 +492,7 @@ def basic_metadata(csv_data_folder="", in_table=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:  # noqa: E722
+    except Exception as e:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -774,7 +774,7 @@ def check_datasets(datasets=[]):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:  # noqa: E722
+    except Exception as e:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -891,7 +891,7 @@ def compare_metadata_xml(file1="", file2=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:  # noqa: E722
+    except Exception as e:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -918,8 +918,8 @@ def convertSeconds(seconds):
         _min, _sec = divmod(seconds, 60)
         _hour, _min = divmod(_min, 60)
         return f"{int(_hour)}:{int(_min)}:{_sec:.3f}"
-
-    except:  # noqa: E722
+    except Exception as e:
+        arcpy.AddError(f"Error in convertSeconds: {e}")
         traceback.print_exc()
 
 
@@ -1887,7 +1887,7 @@ def dTypesCSV(csv_data_folder="", table=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:  # noqa: E722
+    except Exception as e:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -1977,7 +1977,7 @@ def dTypesGDB(csv_data_folder="", table=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:  # noqa: E722
+    except Exception as e:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -2080,7 +2080,7 @@ def export_metadata(csv_data_folder="", in_table=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:  # noqa: E722
+    except Exception as e:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -2142,7 +2142,7 @@ def field_definitions(csv_data_folder="", field=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:  # noqa: E722
+    except Exception as e:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -2241,7 +2241,7 @@ def import_metadata(csv_data_folder="", dataset=""):
         # arcpy.AddMessage(f"{csv_data_folder}")
         # arcpy.AddMessage(f"{dataset}")
 
-        dataset_name = os.path.basename(dataset)
+        dataset_name = os.path.basename(dataset).replace(".crf", "_CRF") if dataset.endswith(".crf") else os.path.basename(dataset)
         project_gdb = os.path.dirname(dataset)
 
         # arcpy.AddMessage(f"{dataset_name}")
@@ -2289,7 +2289,7 @@ def import_metadata(csv_data_folder="", dataset=""):
             if metadata_dictionary:
                 pass
                 # for key in metadata_dictionary:
-                #    arcpy.AddMessage(f"{key}, {metadata_dictionary[key]}")
+                # arcpy.AddMessage(f"{key}, {metadata_dictionary[key]}")
                 #    del key
             elif not metadata_dictionary:
                 arcpy.AddWarning("Metadata Dictionary is empty")
@@ -2297,7 +2297,7 @@ def import_metadata(csv_data_folder="", dataset=""):
                 pass
         except:  # noqa: E722
             traceback.print_exc()
-            raise SystemExit
+            sys.exit()
 
         arcpy.AddMessage(f"Metadata for: {dataset_name} dataset")
 
@@ -2553,7 +2553,7 @@ def pretty_format_xml_files(metadata_folder=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:  # noqa: E722
+    except Exception as e:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -2623,7 +2623,7 @@ def table_definitions(csv_data_folder="", dataset_name=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except:  # noqa: E722
+    except Exception as e:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()

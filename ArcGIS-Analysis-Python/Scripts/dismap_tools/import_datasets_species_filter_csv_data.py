@@ -242,33 +242,30 @@ def worker(project_gdb="", csv_file=""):
             )
 
             rpCntInfo = etree.SubElement(contact_element, "rpCntInfo")
+            cnt_info_data = contact_info.get("cntInfo", {}) # Safely get cntInfo, default to an empty dict if not present
             cntAddress = etree.SubElement(rpCntInfo, "cntAddress")
-            etree.SubElement(cntAddress, "delPoint").text = contact_info[
-                "cntInfo"
-            ].get("delPoint")
-            etree.SubElement(cntAddress, "city").text = contact_info["cntInfo"].get("city")
-            etree.SubElement(cntAddress, "adminArea").text = contact_info[
-                "cntInfo"
-            ].get("adminArea")
-            etree.SubElement(cntAddress, "postCode").text = contact_info[
-                "cntInfo"
-            ].get("postCode")
-            etree.SubElement(cntAddress, "country").text = contact_info[
-                "cntInfo"
-            ].get("country")
-            etree.SubElement(cntAddress, "eMailAdd").text = contact_info[
-                "cntInfo"
-            ].get("eMailAdd")
+            etree.SubElement(cntAddress, "delPoint").text = cnt_info_data.get(
+                "delPoint", ""
+            )
+            etree.SubElement(cntAddress, "city").text = cnt_info_data.get("city", "")
+            etree.SubElement(cntAddress, "adminArea").text = cnt_info_data.get(
+                "adminArea", ""
+            )
+            etree.SubElement(cntAddress, "postCode").text = cnt_info_data.get(
+                "postCode", ""
+            )
+            etree.SubElement(cntAddress, "country").text = cnt_info_data.get(
+                "country", ""
+            )
+            etree.SubElement(cntAddress, "eMailAdd").text = cnt_info_data.get(
+                "eMailAdd", ""
+            )
 
             cntPhone = etree.SubElement(rpCntInfo, "cntPhone")
-            etree.SubElement(cntPhone, "voiceNum").text = contact_info[
-                "cntInfo"
-            ].get("voiceNum")
+            etree.SubElement(cntPhone, "voiceNum").text = cnt_info_data.get("voiceNum", "")
 
             cntOnlineRes = etree.SubElement(rpCntInfo, "cntOnlineRes")
-            etree.SubElement(cntOnlineRes, "linkage").text = contact_info[
-                "cntInfo"
-            ].get("linkage")
+            etree.SubElement(cntOnlineRes, "linkage").text = cnt_info_data.get("linkage", "")
 
             role_element = etree.SubElement(contact_element, "role")
             etree.SubElement(role_element, "RoleCd").set("value", role_code)
@@ -276,7 +273,7 @@ def worker(project_gdb="", csv_file=""):
             return contact_element
 
         arcpy.AddMessage(">-> Applying data-driven metadata")
-
+        metadata_applied_successfully = False
         try:
             # Load contact dictionary
             contact_dict_path = os.path.join(
@@ -284,7 +281,13 @@ def worker(project_gdb="", csv_file=""):
             )
             with open(contact_dict_path, 'r') as f:
                 contact_data = json.load(f)
-            del contact_dict_path
+        except FileNotFoundError:
+            arcpy.AddWarning(f"Metadata generation skipped: 'contact_dict.json' not found at '{contact_dict_path}'.")
+            return # Skip metadata generation if essential file is missing
+        except json.JSONDecodeError:
+            arcpy.AddWarning(f"Metadata generation skipped: 'contact_dict.json' at '{contact_dict_path}' contains invalid JSON.")
+            return # Skip metadata generation if essential file is malformed
+        finally: del contact_dict_path
 
             # Load the XML template
             template_xml_path = os.path.join(
@@ -292,10 +295,16 @@ def worker(project_gdb="", csv_file=""):
             )
             if not os.path.exists(template_xml_path):
                 _create_csv_metadata_template(template_xml_path)
-
-            parser = etree.XMLParser(encoding='UTF-8', remove_blank_text=True)
-            target_tree = etree.parse(template_xml_path, parser)
-            target_root = target_tree.getroot()
+            try:
+                parser = etree.XMLParser(encoding='UTF-8', remove_blank_text=True)
+                target_tree = etree.parse(template_xml_path, parser)
+                target_root = target_tree.getroot()
+            except FileNotFoundError:
+                arcpy.AddWarning(f"Metadata generation skipped: 'csv_metadata_template.xml' not found at '{template_xml_path}'.")
+                return # Skip metadata generation if essential file is missing
+            except etree.XMLSyntaxError:
+                arcpy.AddWarning(f"Metadata generation skipped: 'csv_metadata_template.xml' at '{template_xml_path}' contains invalid XML.")
+                return # Skip metadata generation if essential file is malformed
             del template_xml_path, parser
 
             # Map JSON keys to their parent XML XPaths in the template
@@ -310,16 +319,19 @@ def worker(project_gdb="", csv_file=""):
             # Populate contacts by injecting them into the XML tree
             for key, xpath in contact_map.items():
                 if key in contact_data:
-                    parent_element = target_root.find(xpath)
-                    if parent_element is not None:
-                        # Remove any existing contacts of the same type before adding new ones
-                        for old_contact in parent_element.findall(key):
-                            parent_element.remove(old_contact)
-                        for contact_info in contact_data[key]:
-                            contact_xml_block = create_contact_element(
-                                contact_info, contact_info["role"], key
-                            )
-                            parent_element.append(contact_xml_block)
+                    try:
+                        parent_element = target_root.find(xpath)
+                        if parent_element is not None:
+                            # Remove any existing contacts of the same type before adding new ones
+                            for old_contact in parent_element.findall(key):
+                                parent_element.remove(old_contact)
+                            for contact_info in contact_data[key]:
+                                contact_xml_block = create_contact_element(
+                                    contact_info, contact_info["role"], key
+                                )
+                                parent_element.append(contact_xml_block)
+                    except KeyError as ke:
+                        arcpy.AddWarning(f"Skipping contact '{key}' due to missing key in contact_data: {ke}.")
 
             # Populate other dynamic fields using lxml, not string replacement
             arcpy.AddMessage(">-> Populating dynamic metadata fields using lxml")
@@ -344,12 +356,21 @@ def worker(project_gdb="", csv_file=""):
                 target_root, encoding="UTF-8", xml_declaration=True, pretty_print=True
             )
             dataset_md.save()
+            metadata_applied_successfully = True
 
-        except Exception as e: # Catch specific exceptions for clarity
-            arcpy.AddWarning(f"Could not generate or apply metadata for {table_name}. Error: {e}")
+        except arcpy.ExecuteError as e:
+            arcpy.AddWarning(f"ArcPy metadata error for {table_name}: {e}.")
             traceback.print_exc()
+        except KeyError as e:
+            arcpy.AddWarning(f"Metadata generation for {table_name} failed due to missing key: {e}. Check the metadata template or contact_dict.json.")
+            traceback.print_exc()
+        except Exception as e:
+            arcpy.AddWarning(f"An unexpected error occurred during metadata generation for {table_name}: {e}.")
+            traceback.print_exc()
+        if metadata_applied_successfully:
+            arcpy.AddMessage(f">-> Metadata successfully applied to {table_name}.")
         finally:
-            del md, etree, json, date, datetime
+            del md, etree, json
         # --- End of Metadata Logic ---
 
         # Load Metadata
@@ -590,7 +611,10 @@ def script_tool(project_gdb=""):
         if not os.path.exists(metadata_template_folder):
             os.makedirs(metadata_template_folder)
 
-        template_xml_path = rf"{metadata_template_folder}\csv_metadata_template.xml"
+        template_xml_path = os.path.join(
+            metadata_template_folder, "csv_metadata_template.xml"
+        )
+
         if not os.path.exists(template_xml_path):
             _create_csv_metadata_template(template_xml_path)
 

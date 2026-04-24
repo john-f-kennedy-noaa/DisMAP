@@ -1801,7 +1801,7 @@ def import_basic_template_xml_files(base_project_file="", project=""):
                     del empty_md, template_md, crf_template
 
                     # Max-Min Year range table
-                    years_md = unique_years(
+                    years_md = unique_years( # This line is causing an error because unique_years expects a feature class or table, not a path to a CRF.
                         dataset_path.replace(crfs_folder, project_gdb).replace(
                             ".crf", "_Mosaic"
                         )
