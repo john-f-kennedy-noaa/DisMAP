@@ -10,7 +10,6 @@ import os
 import sys
 import traceback
 
-import datetime
 import arcpy
 
 def trace():
@@ -24,6 +23,7 @@ def trace():
 
 def get_encoding_index_col(csv_file):
     try:
+        import datetime
         # Imports
         import chardet
         import pandas as pd
@@ -88,6 +88,7 @@ def get_encoding_index_col(csv_file):
 
 def worker(project_gdb="", csv_file=""):
     try:
+        import datetime
         # Test if passed workspace exists, if not raise SystemExit
         if not arcpy.Exists(project_gdb) or not arcpy.Exists(csv_file):
             raise SystemExit(
@@ -281,6 +282,7 @@ def worker(project_gdb="", csv_file=""):
             )
             with open(contact_dict_path, 'r') as f:
                 contact_data = json.load(f)
+
         except FileNotFoundError:
             arcpy.AddWarning(f"Metadata generation skipped: 'contact_dict.json' not found at '{contact_dict_path}'.")
             return # Skip metadata generation if essential file is missing
@@ -289,7 +291,7 @@ def worker(project_gdb="", csv_file=""):
             return # Skip metadata generation if essential file is malformed
         finally: del contact_dict_path
 
-            # Load the XML template
+        # Load the XML template
             template_xml_path = os.path.join(
                 project_folder, "Layers", "metadata_templates", "csv_metadata_template.xml"
             )
@@ -400,7 +402,7 @@ def worker(project_gdb="", csv_file=""):
         arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
     except SystemExit:
         # This is not an error, so we allow the script to exit.
-        pass
+        raise
     except Exception as e:
         arcpy.AddError(
             f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
@@ -484,7 +486,7 @@ def update_datecode(csv_file="", project_name=""):
         arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
     except SystemExit:
         # This is not an error, so we allow the script to exit.
-        pass
+        raise
     except Exception as e:
         arcpy.AddError(
             f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
@@ -498,7 +500,7 @@ def update_datecode(csv_file="", project_name=""):
         #arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
-def _create_csv_metadata_template(template_path): # Moved outside worker for better structure
+def _create_csv_metadata_template(template_path):
     """
     Creates a basic XML metadata template file for CSV data.
     """
@@ -553,7 +555,6 @@ def script_tool(project_gdb=""):
         import dismap_tools
         from arcpy import metadata as md
         from lxml import etree
-        import datetime # Added for current_time
         # Set a start time so that we can see how log things take
         start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
@@ -755,7 +756,7 @@ def script_tool(project_gdb=""):
         arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
     except SystemExit:
         # This is not an error, so we allow the script to exit.
-        pass
+        raise
     except Exception as e:
         arcpy.AddError(
             f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"

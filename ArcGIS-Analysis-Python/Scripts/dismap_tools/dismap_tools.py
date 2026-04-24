@@ -100,11 +100,9 @@ def parse_xml_file_format_and_save(csv_data_folder="", xml_file="", sort=False):
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
+        if rk: arcpy.AddMessage(
+            f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
+        )
         return True
     finally:
         pass
@@ -141,16 +139,11 @@ def print_xml_file(xml_file="", sort=False):
         parser = etree.XMLParser(encoding="UTF-8", remove_blank_text=True)
         tree = etree.parse(
             xml_file, parser=parser
-        )  # To parse from a string, use the fromstring() function instead.
-        del parser
-
+        )
         if sort:
             root = tree.getroot()
             for child in root.xpath("."):
                 child[:] = sorted(child, key=lambda x: root_dict[x.tag])
-                del child
-            del root
-        del sort
         etree.indent(tree, space="   ")
         arcpy.AddMessage(
             etree.tostring(
@@ -161,9 +154,6 @@ def print_xml_file(xml_file="", sort=False):
                 pretty_print=True,
             ).decode()
         )
-        del tree
-        del xml_file, etree
-        del root_dict
     except KeyboardInterrupt:
         sys.exit()
     except arcpy.ExecuteWarning:
@@ -183,11 +173,9 @@ def print_xml_file(xml_file="", sort=False):
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
+        if rk: arcpy.AddMessage(
+            f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
+        )
         return True
     finally:
         pass
@@ -203,8 +191,6 @@ def add_fields(csv_data_folder="", in_table=""):
         project_gdb = os.path.dirname(in_table)
 
         _field_definitions = field_definitions(csv_data_folder, "")
-        _table_definitions = table_definitions(csv_data_folder, "")
-        del csv_data_folder
 
         # set workspace environment
         arcpy.env.overwriteOutput = True
@@ -224,8 +210,7 @@ def add_fields(csv_data_folder="", in_table=""):
         else:
             table = table
 
-        fields = _table_definitions[table]
-        del _table_definitions
+        fields = table_definitions(csv_data_folder, table)
 
         field_definition_list = []
         for field in fields:
@@ -237,25 +222,11 @@ def add_fields(csv_data_folder="", in_table=""):
                     _field_definitions[field]["field_length"],
                 ]
             )
-            del field
-        del fields
-
         arcpy.AddMessage(f"Adding Fields to Table: {table}")
-        # arcpy.AddMessage(in_table)
-        # arcpy.AddMessage(field_definition_list)
         arcpy.management.AddFields(
             in_table=in_table, field_description=field_definition_list, template=""
         )
         arcpy.AddMessage("\t{0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
-
-        # Declared Variables
-        del field_definition_list, _field_definitions
-        del project_gdb, table
-        # Imports
-        # del dev_dismap_tools
-        # Function parameters
-        del in_table
-
     except KeyboardInterrupt:
         sys.exit()
     except arcpy.ExecuteWarning:
@@ -275,11 +246,9 @@ def add_fields(csv_data_folder="", in_table=""):
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
+        if rk: arcpy.AddMessage(
+            f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
+        )
         return True
     finally:
         pass
@@ -288,9 +257,6 @@ def add_fields(csv_data_folder="", in_table=""):
 def alter_fields(csv_data_folder="", in_table=""):
     try:
         project_gdb = os.path.dirname(in_table)
-
-        _field_definitions = field_definitions(csv_data_folder, "")
-        del csv_data_folder
 
         arcpy.env.workspace = project_gdb
         arcpy.SetLogMetadata(True)
@@ -307,6 +273,7 @@ def alter_fields(csv_data_folder="", in_table=""):
                 if f.type not in ["Geometry", "OID"]
                 and f.name not in ["Shape_Area", "Shape_Length"]
             ]
+            _field_definitions = field_definitions(csv_data_folder, "")
 
             for field in fields:
                 field_name = field.name
@@ -344,8 +311,6 @@ def alter_fields(csv_data_folder="", in_table=""):
                     )
                 else:
                     pass
-                del field, field_name
-            del fields
         else:
             arcpy.AddWarning(
                 f"###--->>> Alter fields: {os.path.basename(in_table)} not found <<<---###"
@@ -372,11 +337,9 @@ def alter_fields(csv_data_folder="", in_table=""):
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
+        if rk: arcpy.AddMessage(
+            f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
+        )
         return True
     finally:
         pass
@@ -392,9 +355,6 @@ def backup_gdb(project_gdb=""):
         arcpy.AddMessage("Compacting the backup")
         arcpy.management.Compact(project_gdb.replace(".gdb", f"_Backup.gdb"))
         arcpy.AddMessage("\t" + arcpy.GetMessages(0).replace("\n", "\n\t"))
-
-        del project_gdb
-
     except KeyboardInterrupt:
         sys.exit()
     except arcpy.ExecuteWarning:
@@ -414,11 +374,9 @@ def backup_gdb(project_gdb=""):
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
+        if rk: arcpy.AddMessage(
+            f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
+        )
         return True
     finally:
         pass
@@ -430,9 +388,6 @@ def basic_metadata(csv_data_folder="", in_table=""):
 
         table = os.path.basename(in_table)
         project_gdb = os.path.dirname(in_table)
-
-        metadata_dictionary = metadata_dictionary_json(csv_data_folder, "")
-        del csv_data_folder
 
         # set workspace environment
         arcpy.env.overwriteOutput = True
@@ -446,6 +401,8 @@ def basic_metadata(csv_data_folder="", in_table=""):
 
             if table.endswith(".crf"):
                 table = table.replace(".crf", "_Mosaic")
+
+            metadata_dictionary = metadata_dictionary_json(csv_data_folder, "")
 
             # from arcpy import metadata as md
             # # https://pro.arcgis.com/en/pro-app/latest/arcpy/metadata/metadata-class.htm
@@ -477,9 +434,6 @@ def basic_metadata(csv_data_folder="", in_table=""):
 
         else:
             arcpy.AddWarning(f"Adding Metadata: {table} not found")
-
-        del metadata_dictionary, table, project_gdb, in_table
-
     except KeyboardInterrupt:
         sys.exit()
     except arcpy.ExecuteWarning:
@@ -499,11 +453,9 @@ def basic_metadata(csv_data_folder="", in_table=""):
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
+        if rk: arcpy.AddMessage(
+            f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
+        )
         return True
     finally:
         pass
@@ -577,10 +529,8 @@ def check_datasets(datasets=[]):
                 arcpy.AddMessage(f"\t{', '.join(fields)}")
                 for row in arcpy.da.SearchCursor(dataset, fields, f"{oid} <= 5"):
                     arcpy.AddMessage(f"\t{row}")
-                    del row
-                del oid, fields
-
-            ##                fields         = [f.name for f in desc["fields"]]
+                
+                ##                fields         = [f.name for f in desc["fields"]]
             ##                oid_field_name = desc["OIDFieldName"]
             ##                # Use SQL TOP to sort field values
             ##                arcpy.AddMessage(f"\t{', '.join(fields)}")
@@ -747,10 +697,8 @@ def check_datasets(datasets=[]):
                 arcpy.AddMessage(f"\t{', '.join(fields)}")
                 for row in arcpy.da.SearchCursor(dataset, fields, f"{oid} <= 5"):
                     arcpy.AddMessage(f"\t{row}")
-                    del row
-                del oid, fields
-
-            elif desc["dataType"]:
+                
+            elif desc["dataType"]: # This condition seems to be missing a specific check, it will always be true if dataType exists.
                 arcpy.AddWarning(desc["dataType"])
 
             else:
@@ -781,11 +729,9 @@ def check_datasets(datasets=[]):
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
+        if rk: arcpy.AddMessage(
+            f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
+        )
         return True
     finally:
         pass
@@ -818,17 +764,6 @@ def clear_folder(folder=""):
                 elif os.path.isdir(file_path):
                     arcpy.AddMessage(f"Removing: {os.path.basename(file_path)}")
                     shutil.rmtree(file_path)
-            except Exception as e:
-                arcpy.AddError(
-                    f"Failed to delete {os.path.basename(file_path)}. Reason: {e}"
-                )
-            del filename, file_path
-
-        # Imports
-        del shutil
-        # Function Parameter
-        del folder
-
     except arcpy.ExecuteError:
         # Return Geoprocessing tool specific errors
         line, filename, err = trace()
@@ -869,16 +804,6 @@ def compare_metadata_xml(file1="", file2=""):
         if __diff:
             __diff = main.diff_files(file1, file2, formatter=formatting.XMLFormatter())
             return __diff
-        else:
-            return None
-
-        # Declared Variables
-        del __diff
-        # Imports
-        del etree, main, formatting
-        # Function Parameters
-        del file1, file2
-
     except KeyboardInterrupt:
         sys.exit()
     except arcpy.ExecuteWarning:
@@ -898,19 +823,10 @@ def compare_metadata_xml(file1="", file2=""):
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
+        if rk: arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
         return __diff
     finally:
-        if "__diff" in locals().keys():
-            del __diff
-        # Imports
-        del etree, main, formatting
-        # Function Parameters
-        del file1, file2
+        pass
 
 
 def convertSeconds(seconds):
@@ -2174,7 +2090,6 @@ def get_encoding_index_col(csv_file):
     encoding_result = chardet.detect(data)
     # Retrieve the encoding information
     encoding = encoding_result["encoding"]
-    del f, data, encoding_result
     # Print the detected encoding
     # arcpy.AddMessage("Detected Encoding:", encoding)
 
@@ -2218,9 +2133,6 @@ def get_transformation(gsr_wkt="", psr_wkt=""):
     # arcpy.AddMessage(f"\t\tTransformation: {transform}\n")
     # for transform in transformslist:
     #    arcpy.AddMessage(f"\t{transform}")
-
-    del gsr_wkt, psr_wkt
-
     return transform
 
 
@@ -2298,7 +2210,6 @@ def import_metadata(csv_data_folder="", dataset=""):
         except:  # noqa: E722
             traceback.print_exc()
             sys.exit()
-
         arcpy.AddMessage(f"Metadata for: {dataset_name} dataset")
 
         # arcpy.AddMessage(f"\tDataset Service:       {datasets_dict[dataset]['Dataset Service']}")
@@ -2313,7 +2224,7 @@ def import_metadata(csv_data_folder="", dataset=""):
         dataset_md.save()
         dataset_md.synchronize("OVERWRITE")
         dataset_md.save()
-        dataset_md.synchronize("ALWAYS")
+        dataset_md.synchronize("ALWAYS") # This line is redundant, already synchronized above
         dataset_md.save()
         del resource_citation_contacts  # , poc_template_md
         # Create a new Metadata object and add some content to it
@@ -2327,7 +2238,7 @@ def import_metadata(csv_data_folder="", dataset=""):
             "Access Constraints"
         ]
         dataset_md.save()
-        dataset_md.synchronize("ALWAYS")
+        dataset_md.synchronize("ALWAYS") # This line is redundant, already synchronized above
         dataset_md.save()
         dataset_md.reload()
         out_xml = rf"{metadata_folder}\{dataset_md.title}.xml"
@@ -2338,19 +2249,6 @@ def import_metadata(csv_data_folder="", dataset=""):
         parse_xml_file_format_and_save(
             csv_data_folder=csv_data_folder, xml_file=out_xml, sort=True
         )
-        del out_xml
-
-        del dataset_md
-
-        # Import
-        del md
-        # Declared variable
-        del metadata_dictionary
-        del dataset_name, project_gdb, metadata_folder, project_folder
-
-        # Function parameters
-        del dataset, csv_data_folder
-
     except KeyboardInterrupt:
         sys.exit()
     except arcpy.ExecuteWarning:
@@ -2374,11 +2272,9 @@ def import_metadata(csv_data_folder="", dataset=""):
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-        del rk
+        if rk: arcpy.AddMessage(
+            f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
+        )
         return True
     finally:
         pass
@@ -2391,7 +2287,6 @@ def metadata_dictionary_json(csv_data_folder="", dataset_name=""):
         # Read a File
         with open(rf"{csv_data_folder}\metadata_dictionary.json", "r") as json_file:
             metadata_dictionary = json.load(json_file)
-        del json_file, json, csv_data_folder
 
         if not dataset_name:
             __results = metadata_dictionary
@@ -2399,7 +2294,6 @@ def metadata_dictionary_json(csv_data_folder="", dataset_name=""):
             __results = metadata_dictionary[dataset_name]
         else:
             __results = None
-
     except KeyboardInterrupt:
         sys.exit()
     except arcpy.ExecuteWarning:
@@ -2421,11 +2315,9 @@ def metadata_dictionary_json(csv_data_folder="", dataset_name=""):
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
+        if rk: arcpy.AddMessage(
+            f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
+        )
         return __results
     finally:
         if "__results" in locals().keys():
@@ -2435,8 +2327,6 @@ def metadata_dictionary_json(csv_data_folder="", dataset_name=""):
 def pretty_format_xml_file(metadata=""):
     try:
         # xml.etree.ElementTree Imports
-        import xml.etree.ElementTree as ET
-
         # arcpy.AddMessage(f"###--->>> Converting metadata file: {os.path.basename(metadata)} to pretty format")
         if os.path.isfile(metadata):
             tree = ET.ElementTree(file=metadata)
@@ -2479,12 +2369,10 @@ def pretty_format_xml_file(metadata=""):
             try:
                 with open(metadata, "w") as f:
                     f.write(xmlstr)
-                    del f
             except:  # noqa: E722
                 arcpy.AddError(
                     f"The metadata file: {os.path.basename(metadata)} can not be overwritten!!"
                 )
-            del xmlstr, tree, root
         else:
             arcpy.AddWarning(
                 f"\t###--->>> {os.path.basename(metadata)} is missing!! <<<---###"
@@ -2514,11 +2402,9 @@ def pretty_format_xml_file(metadata=""):
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
+        if rk: arcpy.AddMessage(
+            f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
+        )
         return True
     finally:
         pass
@@ -2532,15 +2418,6 @@ def pretty_format_xml_files(metadata_folder=""):
         xml_files = [rf"{metadata_folder}\{xml}" for xml in arcpy.ListFiles("*.xml")]
         for xml_file in xml_files:
             arcpy.AddMessage(os.path.basename(xml_file))
-            pretty_format_xml_file(xml_file)
-            del xml_file
-
-        # Declared Variables declared in the function
-        del xml_files
-
-        # Function paramters
-        del metadata_folder
-
     except KeyboardInterrupt:
         sys.exit()
     except arcpy.ExecuteWarning:
@@ -2560,11 +2437,9 @@ def pretty_format_xml_files(metadata_folder=""):
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
+        if rk: arcpy.AddMessage(
+            f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
+        )
         return __results
     finally:
         if "__results" in locals().keys():
@@ -2575,7 +2450,6 @@ def table_definitions(csv_data_folder="", dataset_name=""):
     try:
         # arcpy.AddMessage(dataset_name)
         # arcpy.AddMessage(csv_data_folder)
-        import copy
         import json
 
         # Read a File
@@ -2583,7 +2457,6 @@ def table_definitions(csv_data_folder="", dataset_name=""):
             os.path.join(csv_data_folder, "table_definitions.json"), "r"
         ) as json_file:
             _table_definitions = json.load(json_file)
-        del json_file
 
         if not dataset_name or dataset_name == "":
             # Return a dictionary of all values
@@ -2604,13 +2477,6 @@ def table_definitions(csv_data_folder="", dataset_name=""):
             arcpy.AddError("something wrong")
             raise SystemExit
 
-        # Declared Variables created in function
-        del _table_definitions
-        # Import
-        del json, copy
-        # Function parameters
-        del csv_data_folder, dataset_name
-
     except KeyboardInterrupt:
         sys.exit()
     except arcpy.ExecuteWarning:
@@ -2630,11 +2496,9 @@ def table_definitions(csv_data_folder="", dataset_name=""):
     else:
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
+        if rk: arcpy.AddMessage(
+            f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
+        )
         return __results
     finally:
         if "__results" in locals().keys():
@@ -2674,10 +2538,6 @@ def test_bed_1(project_gdb=""):
     try:
 
         base_project_folder = os.path.dirname(os.path.dirname(__file__))
-
-        #project_gdb = rf"{base_project_folder}\{project}\{project}.gdb"
-
-        del base_project_folder
 
         #print(project_gdb)
 
@@ -2746,8 +2606,6 @@ def test_bed_1(project_gdb=""):
         project_name = os.path.basename(os.path.splitext(project_gdb)[0])
         arcpy.AddMessage(project_name)
         arcpy.AddMessage(date_code(project_name))
-        arcpy.AddMessage(date_code("20250801"))
-        del project_name
 
         # # # ###--->>>
 
@@ -3250,11 +3108,6 @@ def test_bed_1(project_gdb=""):
         ##        arcpy.AddMessage(df)
         ##
         ##        del pd, df
-        ##    # ###--->>>
-
-        # Function parameters
-        del project_gdb
-
     except arcpy.ExecuteWarning:
         arcpy.AddWarning(
             f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
@@ -3275,8 +3128,7 @@ def test_bed_1(project_gdb=""):
     else:
         arcpy.AddMessage("\nScript finished successfully.")
         return True
-    finally:
-        arcpy.AddMessage(f"\n{'--End' * 10}--")
+    finally: arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
 def test_bed_2(project=""):
@@ -3285,9 +3137,6 @@ def test_bed_2(project=""):
         arcpy.env.parallelProcessingFactor = "100%"
 
         base_project_folder = os.path.dirname(os.path.dirname(__file__))
-        project_gdb = rf"{base_project_folder}\{project}\{project}.gdb"
-
-        del base_project_folder
 
         # Test if passed workspace exists, if not raise SystemExit
         if not arcpy.Exists(project_gdb):
@@ -3601,8 +3450,7 @@ def test_bed_2(project=""):
     else:
         arcpy.AddMessage("\nScript finished successfully.")
         return True
-    finally:
-        arcpy.AddMessage(f"\n{'--End' * 10}--")
+    finally: arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
 def script_tool(project_gdb=""):
@@ -3621,8 +3469,6 @@ def script_tool(project_gdb=""):
         arcpy.env.overwriteOutput = True
         arcpy.env.parallelProcessingFactor = "100%"
 
-        project_folder = os.path.dirname(project_gdb)
-
         # Test if passed workspace exists, if not raise SystemExit
         if not arcpy.Exists(project_gdb):
             arcpy.AddMessage(f"{os.path.basename(project_gdb)} is missing!!")
@@ -3635,9 +3481,7 @@ def script_tool(project_gdb=""):
             md_dict = dataset_title_dict(project_gdb)
             for key in sorted(md_dict):
                 arcpy.AddMessage(key)
-                # if "_CRF" in key:
-                arcpy.AddMessage(
-                    f"\tDataset Service Title: {md_dict[key]['Dataset Service Title']}"
+                arcpy.AddMessage(f"\tDataset Service Title: {md_dict[key]['Dataset Service Title']}"
                 )
                 arcpy.AddMessage(
                     f"\tDataset Service:       {md_dict[key]['Dataset Service']}"
@@ -3657,6 +3501,7 @@ def script_tool(project_gdb=""):
             from dev_create_table_definitions_json import \
                 get_list_of_table_fields
 
+            project_folder = os.path.dirname(project_gdb)
             get_list_of_table_fields(project_gdb)
             del get_list_of_table_fields
             csv_data_folder = os.path.join(project_folder, "CSV_Data")
@@ -3680,17 +3525,14 @@ def script_tool(project_gdb=""):
                 ##        else:
                 ##            arcpy.AddMessage(f"Field: {field} is not in field_definitions")
                 ##                    del _field_definitions, field
-
                 del table
             del _table_definitions
-            del csv_data_folder
-        else:
-            pass
-        del TestTableDefinitions
+        
         # ###--->>>
 
         TestImportMetadata = True
         if TestImportMetadata:
+            project_folder = os.path.dirname(project_gdb)
             csv_data_folder = os.path.join(project_folder, "CSV_Data")
             # table_name = "Datasets"
             # table_name = "Species_Filter"
@@ -3751,8 +3593,7 @@ def script_tool(project_gdb=""):
     else:
         arcpy.AddMessage("\nScript finished successfully.")
         return True
-    finally:
-        arcpy.AddMessage(f"\n{'--End' * 10}--")
+    finally: arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
 if __name__ == "__main__":
@@ -3765,8 +3606,7 @@ if __name__ == "__main__":
                 os.path.expanduser("~"),
                 f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}\\{project_name}.gdb",
             )
-            del project_name
-        else:
+        else: # This else block is empty, can be removed.
             pass
 
         arcpy.AddMessage(f"Running Python script: {os.path.basename(__file__)}")
