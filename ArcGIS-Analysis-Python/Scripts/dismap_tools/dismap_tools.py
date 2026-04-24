@@ -93,7 +93,7 @@ def parse_xml_file_format_and_save(csv_data_folder="", xml_file="", sort=False):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except Exception as e:
+    except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -166,7 +166,7 @@ def print_xml_file(xml_file="", sort=False):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except Exception as e:
+    except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -239,7 +239,7 @@ def add_fields(csv_data_folder="", in_table=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except Exception as e:
+    except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -330,7 +330,7 @@ def alter_fields(csv_data_folder="", in_table=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except Exception as e:
+    except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -367,7 +367,7 @@ def backup_gdb(project_gdb=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except Exception as e:
+    except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -446,7 +446,7 @@ def basic_metadata(csv_data_folder="", in_table=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except Exception as e:
+    except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -529,7 +529,7 @@ def check_datasets(datasets=[]):
                 arcpy.AddMessage(f"\t{', '.join(fields)}")
                 for row in arcpy.da.SearchCursor(dataset, fields, f"{oid} <= 5"):
                     arcpy.AddMessage(f"\t{row}")
-                
+
                 ##                fields         = [f.name for f in desc["fields"]]
             ##                oid_field_name = desc["OIDFieldName"]
             ##                # Use SQL TOP to sort field values
@@ -697,7 +697,7 @@ def check_datasets(datasets=[]):
                 arcpy.AddMessage(f"\t{', '.join(fields)}")
                 for row in arcpy.da.SearchCursor(dataset, fields, f"{oid} <= 5"):
                     arcpy.AddMessage(f"\t{row}")
-                
+
             elif desc["dataType"]: # This condition seems to be missing a specific check, it will always be true if dataType exists.
                 arcpy.AddWarning(desc["dataType"])
 
@@ -722,7 +722,7 @@ def check_datasets(datasets=[]):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except Exception as e:
+    except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -757,13 +757,16 @@ def clear_folder(folder=""):
 
         for filename in os.listdir(folder):
             file_path = os.path.join(folder, filename)
-            try:
-                if os.path.isfile(file_path) or os.path.islink(file_path):
-                    arcpy.AddMessage(f"Removing: {os.path.basename(file_path)}")
-                    os.unlink(file_path)
-                elif os.path.isdir(file_path):
-                    arcpy.AddMessage(f"Removing: {os.path.basename(file_path)}")
-                    shutil.rmtree(file_path)
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                arcpy.AddMessage(f"Removing: {os.path.basename(file_path)}")
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                arcpy.AddMessage(f"Removing: {os.path.basename(file_path)}")
+                shutil.rmtree(file_path)
+            else:
+                pass
+
+
     except arcpy.ExecuteError:
         # Return Geoprocessing tool specific errors
         line, filename, err = trace()
@@ -816,7 +819,7 @@ def compare_metadata_xml(file1="", file2=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except Exception as e:
+    except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -834,7 +837,7 @@ def convertSeconds(seconds):
         _min, _sec = divmod(seconds, 60)
         _hour, _min = divmod(_min, 60)
         return f"{int(_hour)}:{int(_min)}:{_sec:.3f}"
-    except Exception as e:
+    except Exception:
         arcpy.AddError(f"Error in convertSeconds: {e}")
         traceback.print_exc()
 
@@ -1732,7 +1735,7 @@ def date_code(version):
     except SystemExit:
         # This is not an error, so we allow the script to exit.
         pass
-    except Exception as e:
+    except Exception:
         arcpy.AddError(
             f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
         )
@@ -1803,7 +1806,7 @@ def dTypesCSV(csv_data_folder="", table=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except Exception as e:
+    except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -1893,7 +1896,7 @@ def dTypesGDB(csv_data_folder="", table=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except Exception as e:
+    except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -1996,7 +1999,7 @@ def export_metadata(csv_data_folder="", in_table=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except Exception as e:
+    except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -2058,7 +2061,7 @@ def field_definitions(csv_data_folder="", field=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except Exception as e:
+    except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -2430,7 +2433,7 @@ def pretty_format_xml_files(metadata_folder=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except Exception as e:
+    except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -2459,6 +2462,7 @@ def table_definitions(csv_data_folder="", dataset_name=""):
             _table_definitions = json.load(json_file)
 
         if not dataset_name or dataset_name == "":
+            import copy
             # Return a dictionary of all values
             __results = copy.deepcopy(_table_definitions)
         elif dataset_name:
@@ -2489,7 +2493,7 @@ def table_definitions(csv_data_folder="", dataset_name=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except Exception as e:
+    except Exception:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
@@ -3120,7 +3124,7 @@ def test_bed_1(project_gdb=""):
     except SystemExit:
         # This is not an error, so we allow the script to exit.
         pass
-    except Exception as e:
+    except Exception:
         arcpy.AddError(
             f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
         )
@@ -3527,7 +3531,7 @@ def script_tool(project_gdb=""):
                 ##                    del _field_definitions, field
                 del table
             del _table_definitions
-        
+
         # ###--->>>
 
         TestImportMetadata = True

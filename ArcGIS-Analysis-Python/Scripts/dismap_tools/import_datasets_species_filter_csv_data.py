@@ -85,6 +85,56 @@ def get_encoding_index_col(csv_file):
         # arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
+# Helper function to find an element by XPath and set its text
+def find_and_set(root_element, path, text):
+    element = root_element.find(path)
+    if element is not None:
+        element.text = text
+
+# Helper function to create a contact element block
+def create_contact_element(contact_info, role_code, parent_tag):
+    contact_element = etree.Element(parent_tag)
+    etree.SubElement(contact_element, "rpIndName").text = contact_info.get(
+        "rpIndName"
+    )
+    etree.SubElement(contact_element, "rpOrgName").text = contact_info.get(
+        "rpOrgName"
+    )
+    etree.SubElement(contact_element, "rpPosName").text = contact_info.get(
+        "rpPosName"
+    )
+
+    rpCntInfo = etree.SubElement(contact_element, "rpCntInfo")
+    cnt_info_data = contact_info.get("cntInfo", {}) # Safely get cntInfo, default to an empty dict if not present
+    cntAddress = etree.SubElement(rpCntInfo, "cntAddress")
+    etree.SubElement(cntAddress, "delPoint").text = cnt_info_data.get(
+        "delPoint", ""
+    )
+    etree.SubElement(cntAddress, "city").text = cnt_info_data.get("city", "")
+    etree.SubElement(cntAddress, "adminArea").text = cnt_info_data.get(
+        "adminArea", ""
+    )
+    etree.SubElement(cntAddress, "postCode").text = cnt_info_data.get(
+        "postCode", ""
+    )
+    etree.SubElement(cntAddress, "country").text = cnt_info_data.get(
+        "country", ""
+    )
+    etree.SubElement(cntAddress, "eMailAdd").text = cnt_info_data.get(
+        "eMailAdd", ""
+    )
+
+    cntPhone = etree.SubElement(rpCntInfo, "cntPhone")
+    etree.SubElement(cntPhone, "voiceNum").text = cnt_info_data.get("voiceNum", "")
+
+    cntOnlineRes = etree.SubElement(rpCntInfo, "cntOnlineRes")
+    etree.SubElement(cntOnlineRes, "linkage").text = cnt_info_data.get("linkage", "")
+
+    role_element = etree.SubElement(contact_element, "role")
+    etree.SubElement(role_element, "RoleCd").set("value", role_code)
+
+    return contact_element
+
 
 def worker(project_gdb="", csv_file=""):
     try:
@@ -134,286 +184,209 @@ def worker(project_gdb="", csv_file=""):
         arcpy.AddMessage("\t{0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
         import warnings
 
-        import numpy as np
-        import pandas as pd
+##        import numpy as np
+##        import pandas as pd
+##
+##        arcpy.AddMessage(f"> Importing {table_name} CSV Table")
+##        # csv_table = f"{table_name}.csv"
+##        # https://pandas.pydata.org/pandas-docs/stable/getting_started/intro_tutorials/09_timeseries.html?highlight=datetime
+##        # https://www.tutorialsandyou.com/python/numpy-data-types-66.html
+##        # df = pd.read_csv('my_file.tsv', sep='\t', header=0)  ## not setting the index_col
+##        # df.set_index(['0'], inplace=True)
+##        # C:\. . .\ArcGIS\Pro\bin\Python\envs\arcgispro-py3\lib\site-packages\numpy\lib\arraysetops.py:583:
+##        # FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+##        # mask |= (ar1 == a)
+##        # A fix: https://www.youtube.com/watch?v=TTeElATMpoI
+##        # TLDR: pandas are Jedi; numpy are the hutts; and python is the galatic empire
+##        # encoding, index_column = dismap_tools.get_encoding_index_col(csv_file)
+##        encoding, index_column = get_encoding_index_col(csv_file)
+##        with warnings.catch_warnings():
+##            warnings.simplefilter(action="ignore", category=FutureWarning)
+##            # DataFrame
+##            df = pd.read_csv(
+##                csv_file,
+##                index_col=index_column,
+##                encoding=encoding,
+##                delimiter=",",
+##                dtype=field_csv_dtypes,
+##            )
+##        del encoding, index_column
+##        # arcpy.AddMessage(field_csv_dtypes)
+##        # arcpy.AddMessage(field_gdb_dtypes)
+##        del field_csv_dtypes
+##        # arcpy.AddMessage(df)
+##        # Replace NaN with an empty string. When pandas reads a cell
+##        # with missing data, it asigns that cell with a Null or nan
+##        # value. So, we are changing that value to an empty string of ''.
+##        # https://community.esri.com/t5/python-blog/those-pesky-null-things/ba-p/902664
+##        # https://community.esri.com/t5/python-blog/numpy-snippets-6-much-ado-about-nothing-nan-stuff/ba-p/893702
+##        df.fillna("", inplace=True)
+##        # df.fillna(np.nan)
+##        # df = df.replace({np.nan: None})
+##        # Alternatively, apply to all columns at once
+##        df = df.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
+##        arcpy.AddMessage(f">-> Creating the {table_name} Geodatabase Table")
+##        try:
+##            array = np.array(np.rec.fromrecords(df.values), dtype=field_gdb_dtypes)
+##        except:  # noqa: E722
+##            traceback.print_exc()
+##            raise SystemExit
+##        del df
+##        del field_gdb_dtypes
+##        # Temporary table
+##        tmp_table = rf"memory\{table_name.lower()}_tmp"
+##        try:
+##            arcpy.da.NumPyArrayToTable(array, tmp_table)
+##            del array
+##        # Captures ArcPy type of error
+##        except:  # noqa: E722
+##            traceback.print_exc()
+##            raise SystemExit
+##        arcpy.AddMessage(f">-> Copying the {table_name} Table from memory to the GDB")
+##        fields = [f.name for f in arcpy.ListFields(tmp_table) if f.type == "String"]
+##        for field in fields:
+##            arcpy.management.CalculateField(
+##                tmp_table,
+##                field=field,
+##                expression=f"'' if !{field}! is None else !{field}!",
+##            )
+##            arcpy.AddMessage(
+##                "Calculate Field:\t{0}\n".format(
+##                    arcpy.GetMessages().replace("\n", "\n\t")
+##                )
+##            )
+##            del field
+##        del fields
+##        dataset_path = rf"{project_gdb}\{table_name}"
+##        arcpy.management.CopyRows(tmp_table, dataset_path, "")
+##        arcpy.AddMessage(
+##            "Copy Rows:\t{0}\n".format(arcpy.GetMessages().replace("\n", "\n\t"))
+##        )
+##        # Remove the temporary table
+##        arcpy.management.Delete(tmp_table)
+##
+##        # Alter Fields
+##        dismap_tools.alter_fields(csv_data_folder, dataset_path)
+##
+##        # --- Data-Driven Metadata Creation (Refactored) ---
+##        from arcpy import metadata as md
+##        from lxml import etree
+##        import json # Moved here to avoid conflict with global datetime import
+##
+##        arcpy.AddMessage(">-> Applying data-driven metadata")
+##        metadata_applied_successfully = False
+##        try:
+##            # Load contact dictionary
+##            contact_dict_path = os.path.join(
+##                project_folder, "CSV_Data", "contact_dict.json"
+##            )
+##            with open(contact_dict_path, 'r') as f:
+##                contact_data = json.load(f)
+##
+##        except FileNotFoundError:
+##            arcpy.AddWarning(f"Metadata generation skipped: 'contact_dict.json' not found at '{contact_dict_path}'.")
+##            return # Skip metadata generation if essential file is missing
+##        except json.JSONDecodeError:
+##            arcpy.AddWarning(f"Metadata generation skipped: 'contact_dict.json' at '{contact_dict_path}' contains invalid JSON.")
+##            return # Skip metadata generation if essential file is malformed
+##        finally: del contact_dict_path
+##
+##        # Load the XML template
+##            template_xml_path = os.path.join(
+##                project_folder, "Layers", "metadata_templates", "csv_metadata_template.xml"
+##            )
+##            if not os.path.exists(template_xml_path):
+##                _create_csv_metadata_template(template_xml_path)
+##            try:
+##                parser = etree.XMLParser(encoding='UTF-8', remove_blank_text=True)
+##                target_tree = etree.parse(template_xml_path, parser)
+##                target_root = target_tree.getroot()
+##            except FileNotFoundError:
+##                arcpy.AddWarning(f"Metadata generation skipped: 'csv_metadata_template.xml' not found at '{template_xml_path}'.")
+##                return # Skip metadata generation if essential file is missing
+##            except etree.XMLSyntaxError:
+##                arcpy.AddWarning(f"Metadata generation skipped: 'csv_metadata_template.xml' at '{template_xml_path}' contains invalid XML.")
+##                return # Skip metadata generation if essential file is malformed
+##            del template_xml_path, parser
+##
+##            # Map JSON keys to their parent XML XPaths in the template
+##            contact_map = {
+##                "citRespParty": "./dataIdInfo/idCitation",
+##                "idPoC": "./dataIdInfo",
+##                "distorCont": "./distInfo/distributor",
+##                "mdContact": ".",
+##                "stepProc": ".//prcStep",
+##            }
+##
+##            # Populate contacts by injecting them into the XML tree
+##            for key, xpath in contact_map.items():
+##                if key in contact_data:
+##                    try:
+##                        parent_element = target_root.find(xpath)
+##                        if parent_element is not None:
+##                            # Remove any existing contacts of the same type before adding new ones
+##                            for old_contact in parent_element.findall(key):
+##                                parent_element.remove(old_contact)
+##                            for contact_info in contact_data[key]:
+##                                contact_xml_block = create_contact_element(
+##                                    contact_info, contact_info["role"], key
+##                                )
+##                                parent_element.append(contact_xml_block)
+##                    except KeyError as ke:
+##                        arcpy.AddWarning(f"Skipping contact '{key}' due to missing key in contact_data: {ke}.")
+##
+##            # Populate other dynamic fields using lxml, not string replacement
+##            arcpy.AddMessage(">-> Populating dynamic metadata fields using lxml")
+##            current_time = datetime.datetime.now()
+##
+##            # Core Identification & other fields
+##            find_and_set(target_root, "./dataIdInfo/idCitation/resTitle", table_name.replace("_", " "))
+##            find_and_set(target_root, "./dataIdInfo/idAbs", f"This table, '{table_name.replace('_', ' ')}', contains ancillary data for the DisMAP project, imported from a source CSV file. It serves as a foundational dataset for geospatial analysis and data visualization within the portal.")
+##            find_and_set(target_root, "./dataIdInfo/idPurp", "This table is used as a lookup table for various attributes within the DisMAP project, supporting fisheries science and management.")
+##            find_and_set(target_root, "./dataIdInfo/idCredit", "These data were produced by the NMFS Office of Science and Technology as part of the Distribution Mapping and Analysis Portal (DisMAP) initiative.")
+##            find_and_set(target_root, "./dataIdInfo/resConst/Consts/useLimit", "***No Warranty*** The user assumes the entire risk related to its use of these data. NMFS is providing these data \"as is\" and NMFS disclaims any and all warranties, whether express or implied, including (without limitation) any implied warranties of merchantability or fitness for a particular purpose. No warranty expressed or implied is made regarding the accuracy or utility of the data on any other system or for general or scientific purposes, nor shall the act of distribution constitute any such warranty. It is strongly recommended that careful attention be paid to the contents of the metadata file associated with these data to evaluate dataset limitations, restrictions or intended use. In no event will NMFS be liable to you or to any third party for any direct, indirect, incidental, consequential, special or exemplary damages or lost profit resulting from any use or misuse of these data.")
+##            # Dates
+##            find_and_set(target_root, "./Esri/CreaDate", current_time.strftime("%Y%m%d"))
+##            find_and_set(target_root, "./Esri/CreaTime", current_time.strftime("%H%M%S") + "00")
+##            find_and_set(target_root, "./mdDateSt", current_time.strftime("%Y%m%d"))
+##            find_and_set(target_root, "./dataIdInfo/idCitation/date/pubDate", "2025-08-01") # This seems like a fixed date, keep as is.
+##            find_and_set(target_root, ".//prcStep/stepDateTm", current_time.isoformat())
+##
+##            # Apply the new metadata to the geodatabase table
+##            dataset_md = md.Metadata(dataset_path)
+##            dataset_md.xml = etree.tostring(
+##                target_root, encoding="UTF-8", xml_declaration=True, pretty_print=True
+##            )
+##            dataset_md.save()
+##            metadata_applied_successfully = True
+##
+##        # --- End of Metadata Logic ---
+##
+##        # Load Metadata
+##        # dataset_md = md.Metadata(dataset_path)
+##        # dataset_md.synchronize("ALWAYS")
+##        # dataset_md.save()
+##        # del dataset_md
+##        arcpy.AddMessage(f"Compacting the {os.path.basename(project_gdb)} GDB")
+##        arcpy.management.Compact(project_gdb)
+##        arcpy.AddMessage("\t" + arcpy.GetMessages().replace("\n", "\n\t"))
+##        # Basic variables
+##        del tmp_table, dataset_path
+##        del table_name, csv_data_folder, project_folder, scratch_workspace
+##        # Imports
+##        del dismap_tools, pd, np, warnings
+##        # Function parameters
+##        del project_gdb, csv_file
 
-        arcpy.AddMessage(f"> Importing {table_name} CSV Table")
-        # csv_table = f"{table_name}.csv"
-        # https://pandas.pydata.org/pandas-docs/stable/getting_started/intro_tutorials/09_timeseries.html?highlight=datetime
-        # https://www.tutorialsandyou.com/python/numpy-data-types-66.html
-        # df = pd.read_csv('my_file.tsv', sep='\t', header=0)  ## not setting the index_col
-        # df.set_index(['0'], inplace=True)
-        # C:\. . .\ArcGIS\Pro\bin\Python\envs\arcgispro-py3\lib\site-packages\numpy\lib\arraysetops.py:583:
-        # FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
-        # mask |= (ar1 == a)
-        # A fix: https://www.youtube.com/watch?v=TTeElATMpoI
-        # TLDR: pandas are Jedi; numpy are the hutts; and python is the galatic empire
-        # encoding, index_column = dismap_tools.get_encoding_index_col(csv_file)
-        encoding, index_column = get_encoding_index_col(csv_file)
-        with warnings.catch_warnings():
-            warnings.simplefilter(action="ignore", category=FutureWarning)
-            # DataFrame
-            df = pd.read_csv(
-                csv_file,
-                index_col=index_column,
-                encoding=encoding,
-                delimiter=",",
-                dtype=field_csv_dtypes,
-            )
-        del encoding, index_column
-        # arcpy.AddMessage(field_csv_dtypes)
-        # arcpy.AddMessage(field_gdb_dtypes)
-        del field_csv_dtypes
-        # arcpy.AddMessage(df)
-        # Replace NaN with an empty string. When pandas reads a cell
-        # with missing data, it asigns that cell with a Null or nan
-        # value. So, we are changing that value to an empty string of ''.
-        # https://community.esri.com/t5/python-blog/those-pesky-null-things/ba-p/902664
-        # https://community.esri.com/t5/python-blog/numpy-snippets-6-much-ado-about-nothing-nan-stuff/ba-p/893702
-        df.fillna("", inplace=True)
-        # df.fillna(np.nan)
-        # df = df.replace({np.nan: None})
-        # Alternatively, apply to all columns at once
-        df = df.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
-        arcpy.AddMessage(f">-> Creating the {table_name} Geodatabase Table")
-        try:
-            array = np.array(np.rec.fromrecords(df.values), dtype=field_gdb_dtypes)
-        except:  # noqa: E722
-            traceback.print_exc()
-            raise SystemExit
-        del df
-        del field_gdb_dtypes
-        # Temporary table
-        tmp_table = rf"memory\{table_name.lower()}_tmp"
-        try:
-            arcpy.da.NumPyArrayToTable(array, tmp_table)
-            del array
-        # Captures ArcPy type of error
-        except:  # noqa: E722
-            traceback.print_exc()
-            raise SystemExit
-        arcpy.AddMessage(f">-> Copying the {table_name} Table from memory to the GDB")
-        fields = [f.name for f in arcpy.ListFields(tmp_table) if f.type == "String"]
-        for field in fields:
-            arcpy.management.CalculateField(
-                tmp_table,
-                field=field,
-                expression=f"'' if !{field}! is None else !{field}!",
-            )
-            arcpy.AddMessage(
-                "Calculate Field:\t{0}\n".format(
-                    arcpy.GetMessages().replace("\n", "\n\t")
-                )
-            )
-            del field
-        del fields
-        dataset_path = rf"{project_gdb}\{table_name}"
-        arcpy.management.CopyRows(tmp_table, dataset_path, "")
-        arcpy.AddMessage(
-            "Copy Rows:\t{0}\n".format(arcpy.GetMessages().replace("\n", "\n\t"))
-        )
-        # Remove the temporary table
-        arcpy.management.Delete(tmp_table)
-
-        # Alter Fields
-        dismap_tools.alter_fields(csv_data_folder, dataset_path)
-
-        # --- Data-Driven Metadata Creation (Refactored) ---
-        from arcpy import metadata as md
-        from lxml import etree
-        import json # Moved here to avoid conflict with global datetime import
-
-        # Helper function to find an element by XPath and set its text
-        def find_and_set(root_element, path, text):
-            element = root_element.find(path)
-            if element is not None:
-                element.text = text
-
-        # Helper function to create a contact element block
-        def create_contact_element(contact_info, role_code, parent_tag):
-            contact_element = etree.Element(parent_tag)
-            etree.SubElement(contact_element, "rpIndName").text = contact_info.get(
-                "rpIndName"
-            )
-            etree.SubElement(contact_element, "rpOrgName").text = contact_info.get(
-                "rpOrgName"
-            )
-            etree.SubElement(contact_element, "rpPosName").text = contact_info.get(
-                "rpPosName"
-            )
-
-            rpCntInfo = etree.SubElement(contact_element, "rpCntInfo")
-            cnt_info_data = contact_info.get("cntInfo", {}) # Safely get cntInfo, default to an empty dict if not present
-            cntAddress = etree.SubElement(rpCntInfo, "cntAddress")
-            etree.SubElement(cntAddress, "delPoint").text = cnt_info_data.get(
-                "delPoint", ""
-            )
-            etree.SubElement(cntAddress, "city").text = cnt_info_data.get("city", "")
-            etree.SubElement(cntAddress, "adminArea").text = cnt_info_data.get(
-                "adminArea", ""
-            )
-            etree.SubElement(cntAddress, "postCode").text = cnt_info_data.get(
-                "postCode", ""
-            )
-            etree.SubElement(cntAddress, "country").text = cnt_info_data.get(
-                "country", ""
-            )
-            etree.SubElement(cntAddress, "eMailAdd").text = cnt_info_data.get(
-                "eMailAdd", ""
-            )
-
-            cntPhone = etree.SubElement(rpCntInfo, "cntPhone")
-            etree.SubElement(cntPhone, "voiceNum").text = cnt_info_data.get("voiceNum", "")
-
-            cntOnlineRes = etree.SubElement(rpCntInfo, "cntOnlineRes")
-            etree.SubElement(cntOnlineRes, "linkage").text = cnt_info_data.get("linkage", "")
-
-            role_element = etree.SubElement(contact_element, "role")
-            etree.SubElement(role_element, "RoleCd").set("value", role_code)
-
-            return contact_element
-
-        arcpy.AddMessage(">-> Applying data-driven metadata")
-        metadata_applied_successfully = False
-        try:
-            # Load contact dictionary
-            contact_dict_path = os.path.join(
-                project_folder, "CSV_Data", "contact_dict.json"
-            )
-            with open(contact_dict_path, 'r') as f:
-                contact_data = json.load(f)
-
-        except FileNotFoundError:
-            arcpy.AddWarning(f"Metadata generation skipped: 'contact_dict.json' not found at '{contact_dict_path}'.")
-            return # Skip metadata generation if essential file is missing
-        except json.JSONDecodeError:
-            arcpy.AddWarning(f"Metadata generation skipped: 'contact_dict.json' at '{contact_dict_path}' contains invalid JSON.")
-            return # Skip metadata generation if essential file is malformed
-        finally: del contact_dict_path
-
-        # Load the XML template
-            template_xml_path = os.path.join(
-                project_folder, "Layers", "metadata_templates", "csv_metadata_template.xml"
-            )
-            if not os.path.exists(template_xml_path):
-                _create_csv_metadata_template(template_xml_path)
-            try:
-                parser = etree.XMLParser(encoding='UTF-8', remove_blank_text=True)
-                target_tree = etree.parse(template_xml_path, parser)
-                target_root = target_tree.getroot()
-            except FileNotFoundError:
-                arcpy.AddWarning(f"Metadata generation skipped: 'csv_metadata_template.xml' not found at '{template_xml_path}'.")
-                return # Skip metadata generation if essential file is missing
-            except etree.XMLSyntaxError:
-                arcpy.AddWarning(f"Metadata generation skipped: 'csv_metadata_template.xml' at '{template_xml_path}' contains invalid XML.")
-                return # Skip metadata generation if essential file is malformed
-            del template_xml_path, parser
-
-            # Map JSON keys to their parent XML XPaths in the template
-            contact_map = {
-                "citRespParty": "./dataIdInfo/idCitation",
-                "idPoC": "./dataIdInfo",
-                "distorCont": "./distInfo/distributor",
-                "mdContact": ".",
-                "stepProc": ".//prcStep",
-            }
-
-            # Populate contacts by injecting them into the XML tree
-            for key, xpath in contact_map.items():
-                if key in contact_data:
-                    try:
-                        parent_element = target_root.find(xpath)
-                        if parent_element is not None:
-                            # Remove any existing contacts of the same type before adding new ones
-                            for old_contact in parent_element.findall(key):
-                                parent_element.remove(old_contact)
-                            for contact_info in contact_data[key]:
-                                contact_xml_block = create_contact_element(
-                                    contact_info, contact_info["role"], key
-                                )
-                                parent_element.append(contact_xml_block)
-                    except KeyError as ke:
-                        arcpy.AddWarning(f"Skipping contact '{key}' due to missing key in contact_data: {ke}.")
-
-            # Populate other dynamic fields using lxml, not string replacement
-            arcpy.AddMessage(">-> Populating dynamic metadata fields using lxml")
-            current_time = datetime.datetime.now()
-
-            # Core Identification & other fields
-            find_and_set(target_root, "./dataIdInfo/idCitation/resTitle", table_name.replace("_", " "))
-            find_and_set(target_root, "./dataIdInfo/idAbs", f"This table, '{table_name.replace('_', ' ')}', contains ancillary data for the DisMAP project, imported from a source CSV file. It serves as a foundational dataset for geospatial analysis and data visualization within the portal.")
-            find_and_set(target_root, "./dataIdInfo/idPurp", "This table is used as a lookup table for various attributes within the DisMAP project, supporting fisheries science and management.")
-            find_and_set(target_root, "./dataIdInfo/idCredit", "These data were produced by the NMFS Office of Science and Technology as part of the Distribution Mapping and Analysis Portal (DisMAP) initiative.")
-            find_and_set(target_root, "./dataIdInfo/resConst/Consts/useLimit", "***No Warranty*** The user assumes the entire risk related to its use of these data. NMFS is providing these data \"as is\" and NMFS disclaims any and all warranties, whether express or implied, including (without limitation) any implied warranties of merchantability or fitness for a particular purpose. No warranty expressed or implied is made regarding the accuracy or utility of the data on any other system or for general or scientific purposes, nor shall the act of distribution constitute any such warranty. It is strongly recommended that careful attention be paid to the contents of the metadata file associated with these data to evaluate dataset limitations, restrictions or intended use. In no event will NMFS be liable to you or to any third party for any direct, indirect, incidental, consequential, special or exemplary damages or lost profit resulting from any use or misuse of these data.")
-            # Dates
-            find_and_set(target_root, "./Esri/CreaDate", current_time.strftime("%Y%m%d"))
-            find_and_set(target_root, "./Esri/CreaTime", current_time.strftime("%H%M%S") + "00")
-            find_and_set(target_root, "./mdDateSt", current_time.strftime("%Y%m%d"))
-            find_and_set(target_root, "./dataIdInfo/idCitation/date/pubDate", "2025-08-01") # This seems like a fixed date, keep as is.
-            find_and_set(target_root, ".//prcStep/stepDateTm", current_time.isoformat())
-
-            # Apply the new metadata to the geodatabase table
-            dataset_md = md.Metadata(dataset_path)
-            dataset_md.xml = etree.tostring(
-                target_root, encoding="UTF-8", xml_declaration=True, pretty_print=True
-            )
-            dataset_md.save()
-            metadata_applied_successfully = True
-
-        except arcpy.ExecuteError as e:
-            arcpy.AddWarning(f"ArcPy metadata error for {table_name}: {e}.")
-            traceback.print_exc()
-        except KeyError as e:
-            arcpy.AddWarning(f"Metadata generation for {table_name} failed due to missing key: {e}. Check the metadata template or contact_dict.json.")
-            traceback.print_exc()
-        except Exception as e:
-            arcpy.AddWarning(f"An unexpected error occurred during metadata generation for {table_name}: {e}.")
-            traceback.print_exc()
-        if metadata_applied_successfully:
-            arcpy.AddMessage(f">-> Metadata successfully applied to {table_name}.")
-        finally:
-            del md, etree, json
-        # --- End of Metadata Logic ---
-
-        # Load Metadata
-        # dataset_md = md.Metadata(dataset_path)
-        # dataset_md.synchronize("ALWAYS")
-        # dataset_md.save()
-        # del dataset_md
-        arcpy.AddMessage(f"Compacting the {os.path.basename(project_gdb)} GDB")
-        arcpy.management.Compact(project_gdb)
-        arcpy.AddMessage("\t" + arcpy.GetMessages().replace("\n", "\n\t"))
-        # Basic variables
-        del tmp_table, dataset_path
-        del table_name, csv_data_folder, project_folder, scratch_workspace
-        # Imports
-        del dismap_tools, pd, np, warnings
-        # Function parameters
-        del project_gdb, csv_file
-
-    except arcpy.ExecuteWarning:
-        arcpy.AddWarning(
-            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
-        )
-    except arcpy.ExecuteError:
-        arcpy.AddError(
-            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
-        )
-        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
-    except SystemExit:
-        # This is not an error, so we allow the script to exit.
-        raise
+    except arcpy.ExecuteError as e:
+        arcpy.AddWarning(f"ArcPy metadata error for {table_name}: {e}.")
+        traceback.print_exc()
+    except KeyError as e:
+        arcpy.AddWarning(f"Metadata generation for {table_name} failed due to missing key: {e}. Check the metadata template or contact_dict.json.")
+        traceback.print_exc()
     except Exception as e:
-        arcpy.AddError(
-            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
-        )
-        arcpy.AddError(f"Traceback:\n{traceback.format_exc()}")
-    else:
-        arcpy.AddMessage("\nScript finished successfully.")
-        return True
-    finally:
-        pass
-        # arcpy.AddMessage(f"\n{'--End' * 10}--")
+        arcpy.AddWarning(f"An unexpected error occurred during metadata generation for {table_name}: {e}.")
+        traceback.print_exc()
 
 
 def update_datecode(csv_file="", project_name=""):
@@ -508,7 +481,7 @@ def _create_csv_metadata_template(template_path):
         if not os.path.exists(os.path.dirname(template_path)):
             os.makedirs(os.path.dirname(template_path))
             os.makedirs(os.path.dirname(template_path), exist_ok=True)
-        
+
         current_datetime = datetime.datetime.now() # Use datetime.datetime
         crea_date = current_datetime.strftime("%Y%m%d")
         crea_time = current_datetime.strftime("%H%M%S") + "00"
@@ -658,7 +631,7 @@ def script_tool(project_gdb=""):
             resTitle = target_root.find("./dataIdInfo/idCitation/resTitle")
             if resTitle is not None:
                 resTitle.text = title
-            
+
             etree.indent(target_root, space="    ")
             dataset_md.xml = etree.tostring(
                 target_tree,
@@ -676,7 +649,7 @@ def script_tool(project_gdb=""):
         del datasets
         del csv_data_folder, metadata_template_folder
         #
-        UpdateDatecode = False
+        UpdateDatecode = True
         if UpdateDatecode:
             # Update DateCode
             # arcpy.AddMessage(datasets_csv)
@@ -689,17 +662,17 @@ def script_tool(project_gdb=""):
             worker(project_gdb=project_gdb, csv_file=datasets_csv)
         del DatasetsCSVFile
         #
-        SpeciesFilterCSVFile = False
+        SpeciesFilterCSVFile = True
         if SpeciesFilterCSVFile:
             worker(project_gdb=project_gdb, csv_file=species_filter_csv)
         del SpeciesFilterCSVFile
         #
-        DisMAPSurveyInfoFile = False
+        DisMAPSurveyInfoFile = True
         if DisMAPSurveyInfoFile:
             worker(project_gdb=project_gdb, csv_file=survey_metadata_csv)
         del DisMAPSurveyInfoFile
         #
-        SpeciesPersistenceIndicatorPercentileBinFile = False
+        SpeciesPersistenceIndicatorPercentileBinFile = True
         if SpeciesPersistenceIndicatorPercentileBinFile:
             worker(
                 project_gdb=project_gdb,
@@ -707,7 +680,7 @@ def script_tool(project_gdb=""):
             )
         del SpeciesPersistenceIndicatorPercentileBinFile
         #
-        SpeciesPersistenceIndicatorTrendFile = False
+        SpeciesPersistenceIndicatorTrendFile = True
         if SpeciesPersistenceIndicatorTrendFile:
             worker(project_gdb=project_gdb, csv_file=SpeciesPersistenceIndicatorTrend)
         del SpeciesPersistenceIndicatorTrendFile
