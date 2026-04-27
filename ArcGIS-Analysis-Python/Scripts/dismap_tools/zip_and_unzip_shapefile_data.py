@@ -14,8 +14,7 @@ import arcpy
 def script_tool(home_folder="", source_zip_file=""):
     """Script code goes below"""
     try:
-        import os
-        from zipfile import ZipFile
+        import osfrom zipfile import ZipFile
 
         # aprx = arcpy.mp.ArcGISProject("CURRENT")
         # aprx.save()
@@ -31,6 +30,7 @@ def script_tool(home_folder="", source_zip_file=""):
                 archive.extract(file, ".")
                 del file
         del archive
+        
         arcpy.AddMessage(
             f"Done Un-Zipping files from {os.path.basename(source_zip_file)}"
         )

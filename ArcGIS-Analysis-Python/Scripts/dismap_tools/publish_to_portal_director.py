@@ -95,7 +95,7 @@ def create_feature_class_layers(project_gdb=""):
         # Set basic workkpace variables
         project_folder = os.path.dirname(project_gdb)
         project_name = os.path.basename(project_folder)
-        csv_data_folder = rf"{project_folder}\CSV_Data"
+        csv_data_folder = os.path.join(project_folder, f"CSV_Data")
         scratch_folder = os.path.join(project_folder, "Scratch")
         scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
 
@@ -450,7 +450,7 @@ def create_feature_class_services(project_gdb=""):
         # Set basic workkpace variables
         project_folder = os.path.dirname(project_gdb)
         project_name = os.path.basename(project_folder)
-        csv_data_folder = rf"{project_folder}\CSV_Data"
+        csv_data_folder = os.path.join(project_folder, f"CSV_Data")
         scratch_folder = os.path.join(project_folder, "Scratch")
         scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
 

@@ -478,9 +478,10 @@ def _create_csv_metadata_template(template_path):
     Creates a basic XML metadata template file for CSV data.
     """
     try:
-        if not os.path.exists(os.path.dirname(template_path)):
-            os.makedirs(os.path.dirname(template_path))
-            os.makedirs(os.path.dirname(template_path), exist_ok=True)
+        os.makedirs(os.path.dirname(template_path), exist_ok=True)
+##        if not os.path.exists(os.path.dirname(template_path)):
+##            os.makedirs(os.path.dirname(template_path))
+##            os.makedirs(os.path.dirname(template_path), exist_ok=True)
 
         current_datetime = datetime.datetime.now() # Use datetime.datetime
         crea_date = current_datetime.strftime("%Y%m%d")
@@ -512,6 +513,7 @@ def _create_csv_metadata_template(template_path):
         with open(template_path, "w", encoding="utf-8") as f:
             f.write(template_content)
         arcpy.AddMessage(f"Created missing CSV metadata template: {os.path.basename(template_path)}")
+
     except Exception as e:
         arcpy.AddError(f"Error creating CSV metadata template: {e}")
         traceback.print_exc() # Added traceback for debugging
@@ -519,7 +521,7 @@ def _create_csv_metadata_template(template_path):
 
 
 
-def script_tool(project_gdb=""):
+def script_tool(home_folder, project_name):
     """Script code goes below"""
     try:
         from io import StringIO
@@ -541,43 +543,37 @@ def script_tool(project_gdb=""):
         # Set basic arcpy.env variables
         arcpy.env.overwriteOutput = True
         arcpy.env.parallelProcessingFactor = "100%"
-        project_folder      = rf"{os.path.dirname(project_gdb)}"
-        project_name = rf"{os.path.basename(project_folder)}"
 
-        #print(project_name)
 
-        #print(dismap_tools.date_code(project_name))
-        #project_gdb = rf"{project_folder}\{project_name}.gdb"
-        home_folder = rf"{os.path.dirname(project_folder)}"
-        metadata_template_folder = rf"{project_folder}\Layers\metadata_templates"
-        csv_data_folder = rf"{project_folder}\CSV_Data"
-        datasets_csv = rf"{csv_data_folder}\Datasets.csv"
-        species_filter_csv = rf"{csv_data_folder}\Species_Filter.csv"
-        survey_metadata_csv = rf"{csv_data_folder}\DisMAP_Survey_Info.csv"
-        SpeciesPersistenceIndicatorTrend = (
-            rf"{csv_data_folder}\SpeciesPersistenceIndicatorTrend.csv"
-        )
-        SpeciesPersistenceIndicatorPercentileBin = (
-            rf"{csv_data_folder}\SpeciesPersistenceIndicatorPercentileBin.csv"
+        project_folder = os.path.join(home_folder, f"{project_name}")
+        project_gdb    = os.path.join(project_folder, f"{project_name}.gdb")
+
+        metadata_template_folder = os.path.join(project_folder, "Layers\\metadata_templates")
+        csv_data_folder          = os.path.join(project_folder, "CSV_Data")
+        datasets_csv             = os.path.join(project_folder, "Datasets.csv")
+        species_filter_csv       = os.path.join(csv_data_folder, "Species_Filter.csv")
+        survey_metadata_csv      = os.path.join(csv_data_folder, "DisMAP_Survey_Info.csv")
+
+        SpeciesPersistenceIndicatorTrend = os.path.join(csv_data_folder, "SpeciesPersistenceIndicatorTrend.csv")
+        SpeciesPersistenceIndicatorPercentileBin = os.path.join(csv_data_folder, "SpeciesPersistenceIndicatorPercentileBin.csv")
+
+        arcpy.management.Copy(
+            os.path.join(home_folder, f"Initial-Data\\Datasets_{dismap_tools.date_code(project_name)}.csv"), datasets_csv,
         )
         arcpy.management.Copy(
-            rf"{home_folder}\Initial-Data\Datasets_{dismap_tools.date_code(project_name)}.csv",
-            datasets_csv,
-        )
-        arcpy.management.Copy(
-            rf"{home_folder}\Initial-Data\Species_Filter_{dismap_tools.date_code(project_name)}.csv",
+            os.path.join(home_folder, f"Initial-Data\\Species_Filter_{dismap_tools.date_code(project_name)}.csv"),
             species_filter_csv,
         )
         arcpy.management.Copy(
-            rf"{home_folder}\Initial-Data\DisMAP_Survey_Info_{dismap_tools.date_code(project_name)}.csv",
+            os.path.join(home_folder, f"Initial-Data\\DisMAP_Survey_Info_{dismap_tools.date_code(project_name)}.csv"),
             survey_metadata_csv,
         )
         arcpy.management.Copy(
-            rf"{home_folder}\Initial-Data\SpeciesPersistenceIndicatorTrend_{dismap_tools.date_code(project_name)}.csv",
+            os.path.join(home_folder, f"Initial-Data\\SpeciesPersistenceIndicatorTrend_{dismap_tools.date_code(project_name)}.csv"),
             SpeciesPersistenceIndicatorTrend,
         )
         arcpy.management.Copy(
-            rf"{home_folder}\Initial-Data\SpeciesPersistenceIndicatorPercentileBin_{dismap_tools.date_code(project_name)}.csv",
+            os.path.join(home_folder, f"Initial-Data\\SpeciesPersistenceIndicatorPercentileBin_{dismap_tools.date_code(project_name)}.csv"),
             SpeciesPersistenceIndicatorPercentileBin,
         )
         import json
@@ -662,17 +658,17 @@ def script_tool(project_gdb=""):
             worker(project_gdb=project_gdb, csv_file=datasets_csv)
         del DatasetsCSVFile
         #
-        SpeciesFilterCSVFile = True
+        SpeciesFilterCSVFile = False
         if SpeciesFilterCSVFile:
             worker(project_gdb=project_gdb, csv_file=species_filter_csv)
         del SpeciesFilterCSVFile
         #
-        DisMAPSurveyInfoFile = True
+        DisMAPSurveyInfoFile = False
         if DisMAPSurveyInfoFile:
             worker(project_gdb=project_gdb, csv_file=survey_metadata_csv)
         del DisMAPSurveyInfoFile
         #
-        SpeciesPersistenceIndicatorPercentileBinFile = True
+        SpeciesPersistenceIndicatorPercentileBinFile = False
         if SpeciesPersistenceIndicatorPercentileBinFile:
             worker(
                 project_gdb=project_gdb,
@@ -680,7 +676,7 @@ def script_tool(project_gdb=""):
             )
         del SpeciesPersistenceIndicatorPercentileBinFile
         #
-        SpeciesPersistenceIndicatorTrendFile = True
+        SpeciesPersistenceIndicatorTrendFile = False
         if SpeciesPersistenceIndicatorTrendFile:
             worker(project_gdb=project_gdb, csv_file=SpeciesPersistenceIndicatorTrend)
         del SpeciesPersistenceIndicatorTrendFile
@@ -695,7 +691,7 @@ def script_tool(project_gdb=""):
             project_name,
         )
         # Declared Variables
-        #del contacts, target_tree, target_root, new_item_name, root_dict
+        #d el contacts, target_tree, target_root, new_item_name, root_dict
         # Imports
         del etree, md, StringIO, dismap_tools
         # Function Parameters
@@ -745,27 +741,33 @@ def script_tool(project_gdb=""):
 if __name__ == "__main__":
     try:
 
-        project_gdb = arcpy.GetParameterAsText(0)
-        if not project_gdb:
-            project_name = "August-1-2025"
-            project_gdb = os.path.join(
-                os.path.expanduser("~"),
-                f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}\\{project_name}.gdb",
-            )
-            del project_name
+        home_folder  = arcpy.GetParameterAsText(0)
+        project_name = arcpy.GetParameterAsText(1)
+
+        if not home_folder:
+            home_folder = os.path.join(os.path.expanduser("~"), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python")
         else:
             pass
 
-        script_tool(project_gdb)
-        arcpy.SetParameterAsText(1, "Result")
+        if not project_name:
+            project_name = "August-1-2025"
+        else: # This else block is empty, can be removed.
+            pass
 
-    except SystemExit:
-        pass
+        script_tool(home_folder, project_name)
+
+        arcpy.SetParameterAsText(2, "Result")
+
+        del home_folder, project_name
+
     except arcpy.ExecuteError:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-    except Exception:
+    except Exception as e:
+        arcpy.AddError(e)
         traceback.print_exc()
-
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
 
 # This is an autogenerated comment.

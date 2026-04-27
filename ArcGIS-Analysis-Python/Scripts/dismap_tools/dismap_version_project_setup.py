@@ -54,7 +54,7 @@ def _create_project_structure(home_folder, new_project_folder, project_folders):
             arcpy.management.CreateFolder(project_path, "Scratch")
             arcpy.AddMessage(arcpy.GetMessages())
         else:
-            arcpy.AddMessage(f"Scratch Folder: {new_project_folder}\Scratch exists")
+            arcpy.AddMessage(f"Scratch Folder: {new_project_folder}/Scratch exists")
 
         # Create Scratch geodatabase
         scratch_gdb_path = rf"{scratch_folder_path}\scratch.gdb"
@@ -91,7 +91,7 @@ def script_tool(base_project_folder="", new_project_folder="", project_folders="
             aprx = arcpy.mp.ArcGISProject("CURRENT")
         except (RuntimeError, FileNotFoundError) as e: # If no current project, try to open a specific one
             arcpy.AddWarning(f"Could not open current ArcGIS Project: {e}. Attempting to open default project.")
-            aprx = arcpy.mp.ArcGISProject(rf"{base_project_folder}\DisMAP.aprx")
+            aprx = arcpy.mp.ArcGISProject(os.path.join(base_project_folder, "DisMAP.aprx"))
         except Exception as e: # Catch any other unexpected errors during aprx loading
             arcpy.AddError(f"An unexpected error occurred while loading the ArcGIS Project: {e}")
             traceback.print_exc()
