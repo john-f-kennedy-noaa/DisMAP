@@ -62,7 +62,7 @@ def worker(region_gdb=""):
         # FeatureServiceTitle    MosaicName    MosaicTitle    ImageServiceName, ImageServiceTitle
 
         fields = ["TableName", "GeographicArea", "DatasetCode", "Region", "Season", "DistributionProjectCode"]
-        region_list = [row for row in arcpy.da.SearchCursor(rf"{region_gdb}\Datasets", fields, where_clause = f"TableName = '{table_name}'")][0]
+        region_list = [row for row in arcpy.da.SearchCursor(os.path.join(region_gdb, "Datasets"), fields, where_clause = f"TableName = '{table_name}'")][0]
         del fields
 
         # Assigning variables from items in the chosen table list
@@ -214,28 +214,19 @@ def worker(region_gdb=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except SystemExit as se:
-        arcpy.AddError(f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function.")
-        sys.exit()
     except Exception as e:
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:  # noqa: E722
-        arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
-        traceback.print_exc()
+    except SystemExit as se:
+        arcpy.AddError(f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function.")
         sys.exit()
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk:
-            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
-        del rk
         return True
     finally:
         pass
 
-def script_tool(project_gdb=""):
+def script_tool(home_folder, project_name):
     try:
         # Imports
         from time import gmtime, localtime, strftime, time
@@ -258,9 +249,9 @@ def script_tool(project_gdb=""):
         arcpy.env.parallelProcessingFactor = "100%"
 
         # Set varaibales
-        project_folder = os.path.dirname(project_gdb)
+        project_folder = os.path.join(home_folder, project_name)
         scratch_folder = os.path.join(project_folder, "Scratch")
-        del project_folder
+        project_gdb    = os.path.join(project_folder, f"{project_name}.gdb")
 
         # Clear Scratch Folder
         dismap_tools.clear_folder(folder=scratch_folder)
@@ -292,13 +283,6 @@ def script_tool(project_gdb=""):
                 arcpy.management.CreateFileGDB(os.path.join(scratch_folder, table_name), "scratch")
         del scratch_workspace
 
-##        edit = arcpy.da.Editor(region_gdb)
-##        arcpy.AddMessage("edit created")
-##        edit.startEditing()
-##        arcpy.AddMessage("edit started")
-##        edit.startOperation()
-##        arcpy.AddMessage("operation started")
-
         # Setup worker workspace and copy data
         #datasets = [ros.path.join(project_gdb, "Datasets") os.path.join(project_gdb, "DisMAP_Regions")]
         #if not any(arcpy.management.GetCount(d)[0] == 0 for d in datasets):
@@ -317,28 +301,12 @@ def script_tool(project_gdb=""):
         dismap_regions_md = md.Metadata(os.path.join(project_gdb, "DisMAP_Regions"))
         dataset_md = md.Metadata(rf"{region_gdb}\DisMAP_Regions")
         dataset_md.copy(dismap_regions_md)
-        dataset_md.save()
-        dataset_md.synchronize("OVERWRITE")
-        dataset_md.save()
         dataset_md.synchronize("ALWAYS")
         dataset_md.save()
         del dataset_md, dismap_regions_md
 
-        #else:
-        #    arcpy.AddWarning(f"One or more datasets contains zero records!!")
-        #    for d in datasets:
-        #        arcpy.AddMessage(f"\t{os.path.basename(d)} has {arcpy.management.GetCount(d)[0]} records")
-        #        del d
-        #    sys.exit()
-        #if "datasets" in locals().keys(): del datasets
 
-        try:
-            pass
-            worker(region_gdb=region_gdb)
-        except SystemExit:
-            arcpy.AddError(arcpy.GetMessages(2))
-            traceback.print_exc()
-            sys.exit()
+        worker(region_gdb=region_gdb)
 
         # Declared Varaiables
         del region_gdb, table_name, scratch_folder
@@ -346,7 +314,6 @@ def script_tool(project_gdb=""):
         del md, dismap_tools
 
         # Function Parameters
-        del project_gdb
         # Elapsed time
         end_time = time()
         elapse_time =  end_time - start_time
@@ -372,41 +339,48 @@ def script_tool(project_gdb=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except SystemExit as se:
-        arcpy.AddError(f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function.")
-        sys.exit()
     except Exception as e:
         arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
         traceback.print_exc()
         sys.exit()
-    except:  # noqa: E722
-        arcpy.AddError(f"Caught an except error in the '{inspect.stack()[0][3]}' function.")
-        traceback.print_exc()
+    except SystemExit as se:
+        arcpy.AddError(f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function.")
         sys.exit()
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith('__')]
-        if rk:
-            arcpy.AddMessage(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
-        del rk
         return True
     finally:
         pass
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     try:
-        project_gdb = arcpy.GetParameterAsText(0)
-        if not project_gdb:
-            project_gdb = os.path.join(os.path.expanduser('~'), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb")))
+
+        home_folder  = arcpy.GetParameterAsText(0)
+        project_name = arcpy.GetParameterAsText(1)
+
+        if not home_folder:
+            home_folder = os.path.join(os.path.expanduser("~"), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python")
         else:
             pass
-        script_tool(project_gdb)
-        arcpy.SetParameterAsText(1, "Result")
-        del project_gdb
-    except:  # noqa: E722
+
+
+        if not project_name:
+            project_name =  "August-1-2025"
+        else: # This else block is empty, can be removed.
+            pass
+
+        script_tool(home_folder, project_name)
+
+        arcpy.SetParameterAsText(2, "Result")
+
+        del home_folder, project_name
+
+    except arcpy.ExecuteError:
+        arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-    else:
-        pass
-    finally:
+    except Exception as e:
+        arcpy.AddError(e)
+        traceback.print_exc()
+    except SystemExit:
         pass
 # This is an autogenerated comment.

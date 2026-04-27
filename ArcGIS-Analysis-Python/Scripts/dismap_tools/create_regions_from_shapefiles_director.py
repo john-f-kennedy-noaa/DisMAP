@@ -134,7 +134,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         project_folder = os.path.dirname(project_gdb)
         scratch_folder = os.path.join(project_folder, "Scratch")
         scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
-        csv_data_folder = rf"{project_folder}\CSV_Data"
+        csv_data_folder = os.path.join(project_folder, f"CSV_Data")
 
         # Clear Scratch Folder
         dismap_tools.clear_folder(folder=scratch_folder)

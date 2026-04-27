@@ -961,25 +961,25 @@ def dataset_title_dict(project_gdb=""):
         else:
             project = os.path.basename(os.path.dirname(project_gdb))
 
+        #print(project_gdb)
+        #print([f.name for f in arcpy.ListFields(os.path.join(project_gdb, "Datasets"))])
+
         project_folder = os.path.dirname(project_gdb)
+        csv_data_folder = os.path.join(project_folder, "CSV_Data")
+        #print([f.name for f in arcpy.ListFields(os.path.join(csv_data_folder, "Datasets.csv"))])
+
         crf_folder = rf"{project_folder}\CRFs"
         _credits = "These data were produced by NMFS OST."
         access_constraints = "***No Warranty*** The user assumes the entire risk related to its use of these data. NMFS is providing these data 'as is' and NMFS disclaims any and all warranties, whether express or implied, including (without limitation) any implied warranties of merchantability or fitness for a particular purpose. No warranty expressed or implied is made regarding the accuracy or utility of the data on any other system or for general or scientific purposes, nor shall the act of distribution constitute any such warranty. It is strongly recommended that careful attention be paid to the contents of the metadata file associated with these data to evaluate dataset limitations, restrictions or intended use. In no event will NMFS be liable to you or to any third party for any direct, indirect, incidental, consequential, special or exemplary damages or lost profit resulting from any use or misuse of these data."
 
         __datasets_dict = {}
 
-        dataset_codes = {
-            row[0]: [row[1], row[2], row[3], row[4]]
-            for row in arcpy.da.SearchCursor(
-                os.path.join(project_gdb, "Datasets"),
-                [
-                    "DatasetCode",
-                    "PointFeatureType",
-                    "DistributionProjectCode",
-                    "Region",
-                    "Season",
-                ],
-            )
+        #for row in arcpy.da.SearchCursor(os.path.join(csv_data_folder, "Datasets.csv"), ["PointFeatureType","DistributionProjectCode","Region","Season",]):
+        #    print(row)
+
+        dataset_codes = {row[0]: [row[1], row[2], row[3], row[4]]
+                            for row in arcpy.da.SearchCursor(os.path.join(csv_data_folder, "Datasets.csv"),
+                                ["DatasetCode","PointFeatureType","DistributionProjectCode","Region","Season",],)
         }
         # for dataset_code in dataset_codes:
         #    dataset_codes[dataset_code] = [s for s in dataset_codes[dataset_code] if s.strip()]
@@ -1471,7 +1471,7 @@ def dataset_title_dict(project_gdb=""):
                     "Dataset Service Title": datasets_tbst,
                     "Tags": "DisMAP, Datasets",
                     "Summary": summary,
-                    "Description": "This table functions as a look-up table of vales",
+                    "Description": "This table functions as a look-up table of values",
                     "Credits": _credits,
                     "Access Constraints": access_constraints,
                 }
@@ -1678,19 +1678,9 @@ def dataset_title_dict(project_gdb=""):
         traceback.print_exc()
         sys.exit()
     else:
-        # While in development, leave here. For test, move to finally
-        if "tags" in locals().keys():
-            del tags
-        rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
         return __datasets_dict
     finally:
-        if "__datasets_dict" in locals().keys():
-            del __datasets_dict
+        pass
 
 
 def date_code(version):
@@ -2187,7 +2177,8 @@ def import_metadata(csv_data_folder="", dataset=""):
         # arcpy.AddMessage(csv_data_folder)
 
         project_folder = os.path.dirname(csv_data_folder)
-        metadata_folder = rf"{project_folder}\Metadata_Export"
+        #metadata_folder = os.path.join(project_folder, "Metadata_Export")
+        metadata_folder = os.path.join(project_folder, "Gemini_Metadata")
 
         # ArcPy Environments
         arcpy.env.overwriteOutput = True
@@ -2232,12 +2223,12 @@ def import_metadata(csv_data_folder="", dataset=""):
         del resource_citation_contacts  # , poc_template_md
         # Create a new Metadata object and add some content to it
         # https://pro.arcgis.com/en/pro-app/latest/arcpy/metadata/metadata-class.htm
-        dataset_md.title = metadata_dictionary[dataset_name]["Dataset Service Title"]
-        dataset_md.tags = metadata_dictionary[dataset_name]["Tags"]
-        dataset_md.summary = metadata_dictionary[dataset_name]["Summary"]
-        dataset_md.description = metadata_dictionary[dataset_name]["Description"]
-        dataset_md.credits = metadata_dictionary[dataset_name]["Credits"]
-        dataset_md.accessConstraints = metadata_dictionary[dataset_name][
+        dataset_md.title = metadata_dictionary[dataset_name.replace(".csv", "")]["Dataset Service Title"]
+        dataset_md.tags = metadata_dictionary[dataset_name.replace(".csv", "")]["Tags"]
+        dataset_md.summary = metadata_dictionary[dataset_name.replace(".csv", "")]["Summary"]
+        dataset_md.description = metadata_dictionary[dataset_name.replace(".csv", "")]["Description"]
+        dataset_md.credits = metadata_dictionary[dataset_name.replace(".csv", "")]["Credits"]
+        dataset_md.accessConstraints = metadata_dictionary[dataset_name.replace(".csv", "")][
             "Access Constraints"
         ]
         dataset_md.save()
@@ -2252,8 +2243,7 @@ def import_metadata(csv_data_folder="", dataset=""):
         parse_xml_file_format_and_save(
             csv_data_folder=csv_data_folder, xml_file=out_xml, sort=True
         )
-    except KeyboardInterrupt:
-        sys.exit()
+
     except arcpy.ExecuteWarning:
         arcpy.AddWarning(arcpy.GetMessages(1))
         traceback.print_exc()
@@ -2266,18 +2256,7 @@ def import_metadata(csv_data_folder="", dataset=""):
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
         sys.exit()
-    except SystemExit:
-        sys.exit()
-    except:  # noqa: E722
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk: arcpy.AddMessage(
-            f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-        )
         return True
     finally:
         pass
@@ -2710,10 +2689,10 @@ def test_bed_1(project_gdb=""):
         ##        del field_csv_dtypes, field_gdb_dtypes
         ##        del dev_dismap_tools, in_table
 
-        ##    # ###--->>>
-        ##        dataset = r'{os.environ['USERPROFILE']}\Documents\ArcGIS\Projects\DisMAP-ArcGIS-Analysis\May 1 2024\CRFs\NBS_IDW.crf'
-        ##        import_metadata(csv_data_folder, dataset)
-        ##    # ###--->>>
+##            # ###--->>>
+##                dataset = r'{os.environ['USERPROFILE']}\Documents\ArcGIS\Projects\DisMAP-ArcGIS-Analysis\May 1 2024\CRFs\NBS_IDW.crf'
+##                import_metadata(csv_data_folder, dataset)
+##            # ###--->>>
 
         ##    # ###--->>>
         ##        # Update Dataset Metadata Dictionary
@@ -3502,7 +3481,7 @@ def script_tool(project_gdb=""):
         TestTableDefinitions = False
         if TestTableDefinitions:
             arcpy.AddMessage(os.path.basename(project_gdb))
-            from dev_create_table_definitions_json import \
+            from create_table_definitions_json import \
                 get_list_of_table_fields
 
             project_folder = os.path.dirname(project_gdb)
@@ -3535,19 +3514,21 @@ def script_tool(project_gdb=""):
         # ###--->>>
 
         TestImportMetadata = True
+        print(project_gdb)
         if TestImportMetadata:
             project_folder = os.path.dirname(project_gdb)
             csv_data_folder = os.path.join(project_folder, "CSV_Data")
-            # table_name = "Datasets"
+            table_name = "Datasets.csv"
             # table_name = "Species_Filter"
             # table_name = "DisMAP_Survey_Info"
             # table_name = "HI_IDW_Mosaic"
             # table_name = "HI_IDW_Fishnet_Bathymetry"
-            table_name = "Indicators"
+            # table_name = "Indicators"
 
             try:
-
-                import_metadata(csv_data_folder, dataset=rf"{project_gdb}\{table_name}")
+                #project_name = "August-1-2025"
+                #import_metadata(csv_data_folder, dataset=rf"{project_gdb}\{table_name}")
+                import_metadata(csv_data_folder, dataset=os.path.join(csv_data_folder, table_name))
                 # import_metadata(csv_data_folder, dataset=rf"{project_folder}\Scratch\HI_IDW.gdb\{table_name}")
 
             except:  # noqa: E722
@@ -3559,7 +3540,6 @@ def script_tool(project_gdb=""):
         del TestImportMetadata
 
         # Declared variables
-        del project_folder
         # Function parameters
         del project_gdb
 
@@ -3603,32 +3583,33 @@ def script_tool(project_gdb=""):
 if __name__ == "__main__":
     try:
 
-        project_gdb = arcpy.GetParameterAsText(0)
-        if not project_gdb:
+        home_folder  = arcpy.GetParameterAsText(0)
+        project_name = arcpy.GetParameterAsText(1)
+
+        if not home_folder:
+            home_folder = os.path.join(os.path.expanduser("~"), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python")
+        else:
+            pass
+
+        if not project_name:
             project_name = "August-1-2025"
-            project_gdb = os.path.join(
-                os.path.expanduser("~"),
-                f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}\\{project_name}.gdb",
-            )
         else: # This else block is empty, can be removed.
             pass
 
-        arcpy.AddMessage(f"Running Python script: {os.path.basename(__file__)}")
+        script_tool(home_folder, project_name)
 
-        test_bed_1(project_gdb)
-        #script_tool(project_gdb)
+        arcpy.SetParameterAsText(2, "Result")
 
-        arcpy.SetParameterAsText(1, "Result")
+        del home_folder, project_name
 
-        del project_gdb
-
-    except SystemExit:
-        pass
     except arcpy.ExecuteError:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-    except Exception:
+    except Exception as e:
+        arcpy.AddError(e)
         traceback.print_exc()
-
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
 
 # This is an autogenerated comment.

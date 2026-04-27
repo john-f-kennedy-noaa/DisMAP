@@ -4783,7 +4783,7 @@ if __name__ == "__main__":
         project_name = "December 1 2024"
         # project_name   = "June 1 2025"
         project_folder = rf"{base_project_folder}\{project_name}"
-        project_gdb = rf"{project_folder}\{project_name}.gdb"
+        project_gdb = os.path.join(project_folder, f"{project_name}.gdb")
 
         main(project_gdb=project_gdb)
 

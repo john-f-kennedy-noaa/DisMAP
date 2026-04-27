@@ -47,7 +47,7 @@ def worker(region_gdb=""):
         table_name = os.path.basename(region_gdb).replace(".gdb", "")
         scratch_folder = os.path.dirname(region_gdb)
         project_folder = os.path.dirname(scratch_folder)
-        csv_data_folder = rf"{project_folder}\CSV_Data"
+        csv_data_folder = os.path.join(project_folder, f"CSV_Data")
         process_table = rf"{csv_data_folder}\{table_name}.csv"
         scratch_workspace = os.path.join(scratch_folder, "scratch.gdb")
         del scratch_folder

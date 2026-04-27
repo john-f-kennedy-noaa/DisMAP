@@ -43,7 +43,7 @@ def worker(region_gdb=""):
         table_name = os.path.basename(region_gdb).replace(".gdb", "")
         scratch_folder = os.path.dirname(region_gdb)
         project_folder = os.path.dirname(scratch_folder)
-        csv_data_folder = rf"{project_folder}\CSV_Data"
+        csv_data_folder = os.path.join(project_folder, f"CSV_Data")
         scratch_workspace = rf"{scratch_folder}\{table_name}\scratch.gdb"
 
         # arcpy.AddMessage(f"Table Name: {table_name}\nProject Folder: {os.path.basename(project_folder)}\nScratch Folder: {os.path.basename(scratch_folder)}\n")

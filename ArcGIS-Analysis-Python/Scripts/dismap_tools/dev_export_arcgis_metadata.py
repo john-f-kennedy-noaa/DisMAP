@@ -181,7 +181,7 @@ if __name__ == "__main__":
         project_folder = rf"{os.path.dirname(os.path.dirname(__file__))}"
         project_name = "National Mapper"
         # project_name    = "NMFS_ESA_Range"
-        project_gdb = rf"{project_folder}\{project_name}.gdb"
+        project_gdb = os.path.join(project_folder, f"{project_name}.gdb")
         metadata_workspace = f"Export"
         # metadata_workspace = f"Export {date_string}"
         # metadata_workspace = f"Export 2025-01-27"
