@@ -1,2 +1,9 @@
 #
 .
+
+!/Scripts/dismap_tools/*.py
+!/Scripts/dismap_tools/*.pyt
+
+!README.md
+!/Scripts/README.md
+!/Scripts/dismap_tools/README.md
