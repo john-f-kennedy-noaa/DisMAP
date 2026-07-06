@@ -796,8 +796,8 @@ if __name__ == '__main__':
 
         project_folder = arcpy.GetParameterAsText(0)
         if not project_folder:
-            # project_name = "February-1-2026"
             # project_name = "August-1-2025"
+            # project_name = "February-1-2026"
             project_name = "June-1-2026"
             project_folder = os.path.join(os.path.expanduser('~'), f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}")
         else:
