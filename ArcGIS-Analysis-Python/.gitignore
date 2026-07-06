@@ -1,18 +1,9 @@
-# ignore everything
-*
+#
+#.
 
-# but don't ignore files ending with slash = directories
-#!*/
+#!/Scripts/dismap_tools/*.py
+#!/Scripts/dismap_tools/*.pyt
 
-# Except the following:
-!.gitignore
-!.gitattributes
-!README.md
-!Metadata.md
-!Metadata.doc
-
-# And except the following Python scripts
-
-# Create DisMAP Datasets
-#!Create DisMAP Biomass Datasets.py
-#!Create DisMAP Biomass Datasets 20230401.py
+#!README.md
+#!/Scripts/README.md
+#!/Scripts/dismap_tools/README.md

@@ -1,9 +1,8 @@
 # DisMAP ArcGIS Pro Analysis using Python
 > This code is always in development. Find the code used for various reports in the code [releases](https://github.com/nmfs-fish-tools/DisMAP/releases).
 
-#### Explanation of this Folder 
-
-This folder is part of the overall DisMAP repository and inparticular the ArcGIS Python Process fork. The "src" folder coontains a folder called "dismap_tools", which contains the set of Python scripts to process raw data into other datasets and eventually the interpolated biomass rasters.
+### Explanation of this Folder
+* dismap_tools folder - This folder contains the current version of Python scripts for generating the interpolated biomass and calculating the distribution indicators (latitude, depth, range limits, etc). 
 
 #### Suggestions and Comments
 
@@ -21,3 +20,4 @@ Software code created by U.S. Government employees is not subject to copyright i
 <img src="https://raw.githubusercontent.com/nmfs-general-modeling-tools/nmfspalette/main/man/figures/noaa-fisheries-rgb-2line-horizontal-small.png" alt="NOAA Fisheries" height="75"/>
 
 [U.S. Department of Commerce](https://www.commerce.gov/) \| [National Oceanographic and Atmospheric Administration](https://www.noaa.gov) \| [NOAA Fisheries](https://www.fisheries.noaa.gov/)
+

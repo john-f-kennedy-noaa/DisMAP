@@ -1,149 +1,193 @@
-# This function can be used to download the most recent survey data files for the AK regions and 
-# put them in the data_raw folder.
-# The ai_strata.csv, ebs_strata.csv, and goa_strata.csv do not change year to year, and should be retained 
+# This function can be used to download the most recent survey data files for the AK regions and
+# put them in the data folder.
+# The ai_strata.csv, ebs_strata.csv, and goa_strata.csv do not change year to year, and should be retained
 # between updates (do not delete these files)
 
 # Resources --------------------------------------------------------------------
 
-# - https://www.fisheries.noaa.gov/alaska/science-data/groundfish-assessment-program-bottom-trawl-surveys
+# https://www.fisheries.noaa.gov/alaska/science-data/groundfish-assessment-program-bottom-trawl-surveys
+# adatapted from https://afsc-gap-products.github.io/gap_products/content/foss-api-r.html#haul-data
+# Last updated by April 21, 2025 by Emily Markowitz, AFSC
 
 # Install libraries ------------------------------------------------------------
 
-PKG <- c(
-  # Mapping
-  "akgfmaps", # devtools::install_github("sean-rohan-noaa/akgfmaps", build_vignettes = TRUE)
-  "sf",
-  "janitor",
-  "readr", 
-  "rmarkdown", 
-  "tidyr", 
-  "dplyr",
-  "googledrive",
-  "here",
-  "magrittr",
-  "stringr", 
-  "readxl",
-  "RODBC", 
-  "googledrive",
-  "RCurl" # for ftp connection
-)
+library(dplyr)
+library(httr)
+library(jsonlite)
+options(scipen = 999)
 
-for (p in PKG) {
-  if(!require(p,character.only = TRUE)) {  
-    install.packages(p, verbose = FALSE)
-    require(p,character.only = TRUE)}
-}
+# Download data from FOSS API --------------------------------------------------
 
-# Knowns -----------------------------------------------------------------------
+## Download Haul Data ----------------------------------------------------------
 
-data_source <- "gd" # gd = google drive; oracle; api
+dat <- data.frame()
+for (i in seq(0, 500000, 10000)){
+  # print(i)
+  ## query the API link
+  res <- httr::GET(url = paste0('https://apps-st.fisheries.noaa.gov/ods/foss/afsc_groundfish_survey_haul/',
+                                "?offset=",i,"&limit=10000"))
+  ## convert from JSON format
+  data <- jsonlite::fromJSON(base::rawToChar(res$content))
 
-
-### Download data from Oracle --------------------------------------------------
-# mostly recording this for posterity, in case I need to use it again for google drive loads! - EHM
-if (data_source == "oracle") {
-  # Log into Oracle
-  
-  if (file.exists("Z:/Projects/ConnectToOracle.R")) {
-    # This has a specific username and password because I DONT want people to have access to this!
-    source("Z:/Projects/ConnectToOracle.R")
-  } else {
-    # For those without a ConnectToOracle file
-    library(rstudioapi)
-    library(RODBC)
-    channel <- odbcConnect(dsn = "AFSC", 
-                           uid = rstudioapi::showPrompt(title = "Username", 
-                                                        message = "Oracle Username", default = ""), 
-                           pwd = rstudioapi::askForPassword("Enter Password"),
-                           believeNRows = FALSE)
+  ## if there are no data, stop the loop
+  if (is.null(nrow(data$items))) {
+    break
   }
-  
-  # Pull data from GAP_PRODUCTS
-  
-  locations <- c(
-    # "GAP_PRODUCTS.METADATA_COLUMN", # metadata
-    # "GAP_PRODUCTS.METADATA_TABLE", # metaddata
-    "GAP_PRODUCTS.FOSS_CATCH",
-    "GAP_PRODUCTS.FOSS_HAUL",
-    "GAP_PRODUCTS.FOSS_SPECIES"#,
-    # "GAP_PRODUCTS.FOSS_SURVEY_SPECIES"
-  )
-  
-  print(Sys.Date())
-  
-  error_loading <- c()
-  for (i in 1:length(locations)){
-    print(locations[i])
-    
-    a <- RODBC::sqlQuery(channel, paste0("SELECT * FROM ", locations[i], "; "))
-    
-    if (is.null(nrow(a))) { # if (sum(grepl(pattern = "SQLExecDirect ", x = a))>1) {
-      error_loading <- c(error_loading, locations[i])
-    } else {
-      write.csv(x = a, 
-                here::here("data_processing_rcode/data",
-                           paste0(tolower(gsub(pattern = '.', 
-                                               replacement = "_", 
-                                               x = locations[i], 
-                                               fixed = TRUE)),
-                                  ".csv")))
-    }
-    remove(a)
-  }
-  error_loading
+
+  ## bind sub-pull to dat data.frame
+  dat <- dplyr::bind_rows(dat,
+                          data$items %>%
+                            dplyr::select(-links)) # necessary for API accounting, but not part of the dataset)
 }
+haul <- dat %>%
+  dplyr::mutate(date_time = as.POSIXct(date_time,
+                                       format = "%Y-%m-%dT%H:%M:%S",
+                                       tz = Sys.timezone()))
 
-### Download data from google drive folder -------------------------------------
-googledrive::drive_deauth()
-googledrive::drive_auth()
-2
+# mostly for testing, but also nice to have it organized
+haul <- haul[order(haul$hauljoin), ]
 
-if (data_source == "gd") { # if you are loading these files from google drive
-  
-  dir_googledrive <- "https://drive.google.com/drive/folders/1NcDCxolMf-drd01vy0_NIhqD1lf3r_Ud" # downloaded 4/12/2024
-  
-  # see what files are in this google drive
-  temp <- googledrive::drive_ls(path = googledrive::as_id(dir_googledrive))
-  # download each of the 3 files in the folder (catch, haul, and species)
-  for (i in 1:nrow(temp)) {
-    print(temp$name[i]) # for seeing progress
-    googledrive::drive_download(
-      file = temp$id[i], 
-      path = here::here("data_processing_rcode/data/", temp$name[i]), 
-      overwrite = TRUE)    
+write.csv(x = haul,
+          here::here("data_processing_rcode/data/AK_gap_products_foss_haul.csv"))
+
+## Download Species Data -------------------------------------------------------
+
+res <- httr::GET(url = paste0('https://apps-st.fisheries.noaa.gov/ods/foss/afsc_groundfish_survey_species/',
+                              "?offset=0&limit=10000")) # , '&q={"species_code":{"$lt":32000}}'))
+
+## convert from JSON format
+data <- jsonlite::fromJSON(base::rawToChar(res$content))
+catch_spp <- data$items  %>%
+  dplyr::select(-links) # necessary for API accounting, but not part of the dataset
+
+catch_spp <- catch_spp %>%
+  dplyr::filter(species_code < 32000) # dplyr::filter(species_code < 32000 | species_code %in% c(69323, 69322, 68580))
+
+write.csv(x = catch_spp,
+          here::here("data_processing_rcode/data/AK_gap_products_foss_species.csv"))
+
+## Download Catch Data ---------------------------------------------------------
+# pull only the data in the catch_spp list (which currently includes species codes below 32000)
+
+dat <- data.frame()
+for (ii in 1:nrow(catch_spp)) {
+for (i in seq(0, 1000000, 10000)){
+  ## find how many iterations it takes to cycle through the data
+  print(i)
+  ## query the API link
+  res <- httr::GET(url = paste0("https://apps-st.fisheries.noaa.gov/ods/foss/afsc_groundfish_survey_catch/",
+                                "?offset=",i,"&limit=10000", '&q={"species_code":',catch_spp$species_code[ii],'}')) # '&q={"species_code":{"$lt":32000}}'
+  ## convert from JSON format
+  data <- jsonlite::fromJSON(base::rawToChar(res$content))
+
+  ## if there are no data, stop the loop
+  if (is.null(nrow(data$items))) {
+    break
   }
+
+  ## bind sub-pull to dat data.frame
+  dat <- dplyr::bind_rows(dat,
+                          data$items %>%
+                            dplyr::select(-links)) # necessary for API accounting, but not part of the dataset)
 }
+}
+catch <- unique(dat)
 
-### Download data from FOSS API ------------------------------------------------
+# mostly for testing, but also nice to have it organized
+catch <- catch[order(catch$species_code), ]
+catch <- catch[order(catch$hauljoin), ]
 
-# !!!! IN DEV !!! #TOLEDO
+write.csv(x = catch,
+          here::here("data_processing_rcode/data/AK_gap_products_foss_catch.csv"))
 
-# if (data_source == "api") {
-# ## New Data download function for getting data from the Fisheries one-stop-shop (FOSS): 
-# #the API is broken so instead will need to go to FOSS() and manually download the data for each survey and save to local folder. 
-# 
-# # install.packages(c("httr", "jsonlite"))
-# library(httr)
-# library(jsonlite)
-# library(dplyr)
-# 
-# # link to the API
-# api_link <- "https://apps-st.fisheries.noaa.gov/ods/foss/afsc_groundfish_survey/"
-# 
-# 
-# #EBS
-# res <- httr::GET(
-#   url = paste0(api_link, '?q={"srvy":"EBS"}'))
-# data <- jsonlite::fromJSON(base::rawToChar(res$content))
-# 
-# as_tibble(data$items) %>% 
-#   mutate_if(is.character, type.convert, as.is = TRUE) %>%
-#   head(3) %>%
-#   dplyr::mutate(across(where(is.numeric), round, 3)) %>%
-#   dplyr::select(year, srvy, stratum, species_code, cpue_kgkm2) %>%
-#   flextable::flextable() %>%
-#   flextable::fit_to_width(max_width = 6) %>% 
-#   flextable::theme_zebra() %>%
-#   flextable::colformat_num(x = ., j = c("year", "species_code"), big.mark = "") 
-# 
-# }
+############ Testing # April 21, 2025
+dim(catch)
+# 438608      7
+summary(catch)
+# hauljoin        species_code     cpue_kgkm2        cpue_nokm2          count           weight_kg         taxon_confidence
+# Min.   : -23911   Min.   :    1   Min.   :      0   Min.   :     14   Min.   :    1.0   Min.   :    0.001   Length:438608
+# 1st Qu.: -14310   1st Qu.:10130   1st Qu.:     25   1st Qu.:     64   1st Qu.:    2.0   1st Qu.:    0.872   Class :character
+# Median :  -4750   Median :20510   Median :    171   Median :    243   Median :    9.0   Median :    5.900   Mode  :character
+# Mean   : 284057   Mean   :16337   Mean   :   2236   Mean   :   4437   Mean   :  154.4   Mean   :   71.638
+# 3rd Qu.: 802455   3rd Qu.:21740   3rd Qu.:    897   3rd Qu.:   1307   3rd Qu.:   46.0   3rd Qu.:   31.320
+# Max.   :1225635   Max.   :30600   Max.   :3226235   Max.   :4481702   Max.   :47118.0   Max.   :18187.700
+#                                   NA's   :943       NA's   :943
+
+# ### Download Catch Data - Alt --------------------------------------------------
+# # pull all data and crop to the species codes less than 32000
+#
+# dat <- data.frame()
+#   for (i in seq(0, 1000000, 10000)){
+#     ## find how many iterations it takes to cycle through the data
+#     print(i)
+#     ## query the API link
+#     res <- httr::GET(url = paste0("https://apps-st.fisheries.noaa.gov/ods/foss/afsc_groundfish_survey_catch/",
+#                                   "?offset=",i,"&limit=10000")) # '&q={"species_code":{"$lt":32000}}'
+#     ## convert from JSON format
+#     data <- jsonlite::fromJSON(base::rawToChar(res$content))
+#
+#     ## if there are no data, stop the loop
+#     if (is.null(nrow(data$items))) {
+#       break
+#     }
+#
+#     ## bind sub-pull to dat data.frame
+#     dat <- dplyr::bind_rows(dat,
+#                             data$items %>%
+#                               dplyr::select(-links)) # necessary for API accounting, but not part of the dataset)
+#   }
+#
+#
+#
+# catch <- dat %>%
+#   dplyr::filter(species_code < 32000) %>%
+#   unique()
+#
+# ############ Testing # April 21, 2025
+# # all data
+# dim(dat)
+# # 891144      7
+# summary(dat)
+# # hauljoin        species_code     cpue_kgkm2        cpue_nokm2           count            weight_kg         taxon_confidence
+# # Min.   : -23911   Min.   :    1   Min.   :      0   Min.   :      13   Min.   :     1.0   Min.   :    0.001   Length:891144
+# # 1st Qu.: -14439   1st Qu.:20510   1st Qu.:      6   1st Qu.:      58   1st Qu.:     2.0   1st Qu.:    0.199   Class :character
+# # Median :  -5267   Median :40500   Median :     49   Median :     214   Median :     8.0   Median :    1.814   Mode  :character
+# # Mean   : 280338   Mean   :45195   Mean   :   1250   Mean   :    4605   Mean   :   180.5   Mean   :   41.720
+# # 3rd Qu.: 802426   3rd Qu.:71800   3rd Qu.:    372   3rd Qu.:    1137   3rd Qu.:    43.0   3rd Qu.:   13.780
+# # Max.   :1225635   Max.   :99999   Max.   :3226235   Max.   :21780780   Max.   :867119.0   Max.   :18187.700
+# #                                   NA's   :87811      NA's   :87811
+#
+# ############ Testing # April 21, 2025
+# # data cropped to species codes of interest
+# dim(catch)
+# # 438608      7
+# summary(catch)
+# # hauljoin        species_code     cpue_kgkm2        cpue_nokm2          count           weight_kg         taxon_confidence
+# # Min.   : -23911   Min.   :    1   Min.   :      0   Min.   :     14   Min.   :    1.0   Min.   :    0.001   Length:438608
+# # 1st Qu.: -14310   1st Qu.:10130   1st Qu.:     25   1st Qu.:     64   1st Qu.:    2.0   1st Qu.:    0.872   Class :character
+# # Median :  -4750   Median :20510   Median :    171   Median :    243   Median :    9.0   Median :    5.900   Mode  :character
+# # Mean   : 284057   Mean   :16337   Mean   :   2236   Mean   :   4437   Mean   :  154.4   Mean   :   71.638
+# # 3rd Qu.: 802455   3rd Qu.:21740   3rd Qu.:    897   3rd Qu.:   1307   3rd Qu.:   46.0   3rd Qu.:   31.320
+# # Max.   :1225635   Max.   :30600   Max.   :3226235   Max.   :4481702   Max.   :47118.0   Max.   :18187.700
+# #                                   NA's   :943       NA's   :943
+#
+# # mostly for testing, but also nice to have it organized
+# catch <- catch[order(catch$species_code), ]
+# catch <- catch[order(catch$hauljoin), ]
+#
+# write.csv(x = catch,
+#           here::here("data_processing_rcode/data/AK_gap_products_foss_catch.csv"))
+
+# # Zero-Filled Data -----------------------------------------------------------
+#
+# dat <- dplyr::full_join(
+#   haul,
+#   catch) %>%
+#   dplyr::full_join(
+#    catch_spp)  %>%
+#   # modify zero-filled rows
+#   dplyr::mutate(
+#     cpue_kgkm2 = ifelse(is.na(cpue_kgkm2), 0, cpue_kgkm2),
+#     cpue_nokm2 = ifelse(is.na(cpue_nokm2), 0, cpue_nokm2),
+#     count = ifelse(is.na(count), 0, count),
+#     weight_kg = ifelse(is.na(weight_kg), 0, weight_kg))
