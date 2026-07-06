@@ -5,7 +5,7 @@ library(jsonlite)
 library(here)
 library(httr)
 
-wcann_save_loc <- "data"
+# wcann_save_loc <- "data"
 save_date <- Sys.Date()
 catch_file_name <- paste("wcann", "catch.csv", sep="_")
 haul_file_name <- paste("wcann", "haul.csv", sep="_")
@@ -24,8 +24,8 @@ url_haul <- "https://www.webapps.nwfsc.noaa.gov/data/api/v1/source/trawl.operati
 data_haul <- jsonlite::fromJSON(url_haul)
 
 
-write.csv(data_catch, here::here(wcann_save_loc, catch_file_name))
-write.csv(data_haul, here::here(wcann_save_loc, haul_file_name))
-### NOTE: the above urls download files with different columns then if go directly to the FRAM site and click on the CSV next to the table type. This way has more column names, including Temperature 
+write.csv(data_catch, here::here("data_processing_rcode", "data", catch_file_name))
+write.csv(data_haul, here::here("data_processing_rcode", "data", haul_file_name))
+### NOTE: the above urls download files with different columns then if go directly to the FRAM site and click on the CSV next to the table type. This way has more column names, including Temperature
 
 
