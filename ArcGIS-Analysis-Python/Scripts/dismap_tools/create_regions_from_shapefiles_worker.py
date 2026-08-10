@@ -16,17 +16,19 @@ import traceback
 
 import arcpy  # third-parties second
 
-
 def worker(region_gdb=""):
     try:
         # Test if passed workspace exists, if not sys.exit()
         if not arcpy.Exists(rf"{region_gdb}"):
             sys.exit()(f"{os.path.basename(region_gdb)} is missing!!")
 
+        # Imports
+        from lxml import etree
+        from  io import StringIO
+        from arcpy import metadata as md
+
         # Import the dismap_tools module to access tools
         import dismap_tools
-        # Imports
-        from arcpy import metadata as md
 
         # Set History and Metadata logs, set serverity and message level
         arcpy.SetLogHistory(True) # Look in %AppData%\Roaming\Esri\ArcGISPro\ArcToolbox\History
@@ -40,7 +42,9 @@ def worker(region_gdb=""):
         table_name        = os.path.basename(region_gdb).replace(".gdb","")
         scratch_folder    = os.path.dirname(region_gdb)
         project_folder    = os.path.dirname(scratch_folder)
-        csv_data_folder   = rf"{project_folder}\CSV_Data"
+        home_folder       = os.path.dirname(project_folder)
+        project_name      = os.path.basename(project_folder)
+        csv_data_folder   = os.path.join(project_folder, "CSV_Data")
         scratch_workspace = rf"{scratch_folder}\{table_name}\scratch.gdb"
 
         arcpy.AddMessage(f"Table Name: {table_name}\nProject Folder: {os.path.basename(project_folder)}\nScratch Folder: {os.path.basename(scratch_folder)}\n")
@@ -124,16 +128,6 @@ def worker(region_gdb=""):
         geographic_area_boundary      = f"{geographic_area.replace('_Region','_Boundary')}"
         geographic_area_boundary_path = rf"{region_gdb}\{geographic_area.replace('_Region','_Boundary')}"
 
-        dismap_regions_md = md.Metadata(rf"{region_gdb}\DisMAP_Regions")
-        dataset_md = md.Metadata(geographic_area_path)
-        dataset_md.copy(dismap_regions_md)
-        dataset_md.save()
-        dataset_md.synchronize("OVERWRITE")
-        dataset_md.save()
-        dataset_md.synchronize("ALWAYS")
-        dataset_md.save()
-        del dataset_md, dismap_regions_md
-
         arcpy.AddMessage(f'\t\tCopy {geographic_area} Shape File.')
 
         arcpy.AddMessage(f"\t\tAppend: {geographic_area}")
@@ -159,6 +153,21 @@ def worker(region_gdb=""):
         arcpy.management.DeleteField(in_table = rf"{region_gdb}\{geographic_area_boundary}", drop_field = [f"FID_{geographic_area}"])
         arcpy.AddMessage("\t\t\t{0}\n".format(arcpy.GetMessages().replace("\n", '\n\t\t\t')))
 
+        # Add boilerplate metadata to dataset
+        # Version Code
+        version_code = dismap_tools.date_code(project_name)
+        # Boilerplate
+        contacts = rf"{home_folder}\Initial-Data\DisMAP-Contacts-{version_code}.xml"
+        # Reads XML, pretty format, and write back the contacts XML
+        etree.parse(contacts, parser=etree.XMLParser(encoding='UTF-8', remove_blank_text=True)).write(contacts, pretty_print=True, xml_declaration=True, encoding="UTF-8") # pyright: ignore[reportAttributeAccessIssue]
+
+        # Create Metadata object for new table
+        dataset_md = md.Metadata(geographic_area_path)
+        dataset_md.importMetadata(contacts, "ARCGIS_METADATA")
+        dataset_md.save()
+        dataset_md.synchronize("ALWAYS")
+        dataset_md.save()
+        del dataset_md
 
         arcpy.AddMessage(f"\t\tAlter Fields for: '{os.path.basename(geographic_area_path)}'")
         dismap_tools.alter_fields(csv_data_folder, geographic_area_path)
@@ -168,18 +177,55 @@ def worker(region_gdb=""):
         dataset_md.save()
         del dataset_md
 
-        arcpy.AddMessage(f"\t\tAlter Fields for: '{os.path.basename(geographic_area_boundary_path)}'")
-        dismap_tools.alter_fields(csv_data_folder, geographic_area_boundary_path)
+        arcpy.AddMessage(f"\t\tImport Metadata for: '{os.path.basename(geographic_area_path)}'")
+        dismap_tools.import_metadata(project_folder, geographic_area_path)
 
-        geographic_area_path_md = md.Metadata(geographic_area_path)
-        dataset_md = md.Metadata(geographic_area_boundary_path)
-        dataset_md.copy(geographic_area_path_md)
+        dataset_md = md.Metadata(geographic_area_path)
+        dataset_md.synchronize("ALWAYS")
         dataset_md.save()
-        dataset_md.synchronize("OVERWRITE")
+        del dataset_md
+
+        dataset_md  = md.Metadata(geographic_area_path)
+        tree = etree.parse(StringIO(dataset_md.xml), parser=etree.XMLParser(encoding="UTF-8", remove_blank_text=True))
+        root = tree.getroot()
+        etree.indent(root, space="\t")
+        dataset_md.xml = etree.tostring(tree, encoding="UTF-8", method="xml", xml_declaration=True, pretty_print=True,)
+        dataset_md.save()
+        del dataset_md
+        del tree, root
+
+        # Create Metadata object for new table
+        dataset_md = md.Metadata(geographic_area_boundary_path)
+        dataset_md.importMetadata(contacts, "ARCGIS_METADATA")
         dataset_md.save()
         dataset_md.synchronize("ALWAYS")
         dataset_md.save()
-        del dataset_md, geographic_area_path_md
+        del dataset_md
+
+        arcpy.AddMessage(f"\t\tAlter Fields for: '{os.path.basename(geographic_area_boundary_path)}'")
+        dismap_tools.alter_fields(csv_data_folder, geographic_area_boundary_path)
+
+        dataset_md = md.Metadata(geographic_area_boundary_path)
+        dataset_md.synchronize("ALWAYS")
+        dataset_md.save()
+        del dataset_md
+
+        arcpy.AddMessage(f"\t\tImport Metadata for: '{os.path.basename(geographic_area_boundary_path)}'")
+        dismap_tools.import_metadata(project_folder, geographic_area_boundary_path)
+
+        dataset_md = md.Metadata(geographic_area_boundary_path)
+        dataset_md.synchronize("ALWAYS")
+        dataset_md.save()
+        del dataset_md
+
+        dataset_md  = md.Metadata(geographic_area_boundary_path)
+        tree = etree.parse(StringIO(dataset_md.xml), parser=etree.XMLParser(encoding="UTF-8", remove_blank_text=True))
+        root = tree.getroot()
+        etree.indent(root, space="\t")
+        dataset_md.xml = etree.tostring(tree, encoding="UTF-8", method="xml", xml_declaration=True, pretty_print=True,)
+        dataset_md.save()
+        del dataset_md
+        del tree, root
 
         del geographic_area, geographic_area_boundary
 
@@ -204,35 +250,34 @@ def worker(region_gdb=""):
         # Function parameter
         del region_gdb
 
-    except KeyboardInterrupt:
-        sys.exit()
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(f"Caught an arcpy.ExecuteWarning error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddWarning(arcpy.GetMessages(1))
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        arcpy.AddError(f"Caught an arcpy.ExecuteError error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.print_exc()}")
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
     except Exception as e:
-        arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:\n")
         traceback.print_exc()
-        sys.exit()
-    except SystemExit as se:
-        arcpy.AddError(f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function.")
-        sys.exit()
     else:
         return True
-    finally:
-        pass
 
-def script_tool(home_folder, project_name):
+def script_tool(project_folder):
     try:
-        # Imports
         from time import gmtime, localtime, strftime, time
 
-        import dismap_tools
         from arcpy import metadata as md
+
+        import dismap_tools
 
         # Set a start time so that we can see how log things take
         start_time = time()
@@ -241,29 +286,18 @@ def script_tool(home_folder, project_name):
         arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
-        arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
+        arcpy.AddMessage(
+            f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}"
+        )
         arcpy.AddMessage(f"{'-' * 80}\n")
 
         # Set basic arcpy.env variables
-        arcpy.env.overwriteOutput          = True
+        arcpy.env.overwriteOutput = True
         arcpy.env.parallelProcessingFactor = "100%"
 
-        # Set varaibales
-        project_folder = os.path.join(home_folder, project_name)
-        scratch_folder = os.path.join(project_folder, "Scratch")
+        project_name   = os.path.basename(project_folder)
         project_gdb    = os.path.join(project_folder, f"{project_name}.gdb")
-
-        # Clear Scratch Folder
-        dismap_tools.clear_folder(folder=scratch_folder)
-
-        # Create project scratch workspace, if missing
-        if not arcpy.Exists(os.path.join(scratch_folder, "scratch.gdb")):
-            if not arcpy.Exists(scratch_folder):
-                os.makedirs(scratch_folder)
-            if not arcpy.Exists(os.path.join(scratch_folder, "scratch.gdb")):
-                arcpy.management.CreateFileGDB(scratch_folder, "scratch")
-        else:
-            pass
+        scratch_folder = os.path.join(project_folder, "Scratch")
 
         # Set worker parameters
         table_name = "AI_IDW"
@@ -286,6 +320,7 @@ def script_tool(home_folder, project_name):
         # Setup worker workspace and copy data
         #datasets = [ros.path.join(project_gdb, "Datasets") os.path.join(project_gdb, "DisMAP_Regions")]
         #if not any(arcpy.management.GetCount(d)[0] == 0 for d in datasets):
+
         if not arcpy.Exists(os.path.join(scratch_folder, f"{table_name}.gdb")):
             arcpy.management.CreateFileGDB(scratch_folder, table_name)
             arcpy.AddMessage("\tCreate File GDB: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
@@ -298,13 +333,12 @@ def script_tool(home_folder, project_name):
         arcpy.management.CreateFeatureclass(rf"{region_gdb}", "DisMAP_Regions", "POLYLINE", os.path.join(project_gdb, "DisMAP_Regions"))
         arcpy.AddMessage("\tCopy: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
-        dismap_regions_md = md.Metadata(os.path.join(project_gdb, "DisMAP_Regions"))
-        dataset_md = md.Metadata(rf"{region_gdb}\DisMAP_Regions")
-        dataset_md.copy(dismap_regions_md)
-        dataset_md.synchronize("ALWAYS")
-        dataset_md.save()
-        del dataset_md, dismap_regions_md
-
+##        dismap_regions_md = md.Metadata(os.path.join(project_gdb, "DisMAP_Regions"))
+##        dataset_md = md.Metadata(rf"{region_gdb}\DisMAP_Regions")
+##        dataset_md.copy(dismap_regions_md)
+##        dataset_md.synchronize("ALWAYS")
+##        dataset_md.save()
+##        del dataset_md, dismap_regions_md
 
         worker(region_gdb=region_gdb)
 
@@ -313,74 +347,68 @@ def script_tool(home_folder, project_name):
         # Imports
         del md, dismap_tools
 
-        # Function Parameters
         # Elapsed time
         end_time = time()
-        elapse_time =  end_time - start_time
-        hours, rem = divmod(end_time-start_time, 3600)
+        elapse_time = end_time - start_time
+        hours, rem = divmod(end_time - start_time, 3600)
         minutes, seconds = divmod(rem, 60)
+
         arcpy.AddMessage(f"\n{'-' * 80}")
         arcpy.AddMessage(f"Python script: {os.path.basename(__file__)}")
         arcpy.AddMessage(f"Start Time:    {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
         arcpy.AddMessage(f"End Time:      {strftime('%a %b %d %I:%M %p', localtime(end_time))}")
         arcpy.AddMessage(f"Elapsed Time   {int(hours):0>2}:{int(minutes):0>2}:{seconds:05.2f} (H:M:S)")
         arcpy.AddMessage(f"{'-' * 80}")
+
         del hours, rem, minutes, seconds
         del elapse_time, end_time, start_time
         del gmtime, localtime, strftime, time
 
-    except KeyboardInterrupt:
-        sys.exit()
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(f"Caught an arcpy.ExecuteWarning error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddWarning(arcpy.GetMessages(1))
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        arcpy.AddError(f"Caught an arcpy.ExecuteError error in the '{inspect.stack()[0][3]}' function.")
-        arcpy.AddError(arcpy.GetMessages(2))
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
+        arcpy.AddError("Traceback:\n")
         traceback.print_exc()
-        sys.exit()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        raise SystemExit
     except Exception as e:
-        arcpy.AddError(f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function.")
+        arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}")
+        arcpy.AddError("Traceback:")
         traceback.print_exc()
-        sys.exit()
-    except SystemExit as se:
-        arcpy.AddError(f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function.")
-        sys.exit()
     else:
-        return True
+        arcpy.AddMessage("\nScript finished successfully.\n")
     finally:
-        pass
+        arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
 
-        home_folder  = arcpy.GetParameterAsText(0)
-        project_name = arcpy.GetParameterAsText(1)
-
-        if not home_folder:
-            home_folder = os.path.join(os.path.expanduser("~"), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python")
+        project_folder = arcpy.GetParameterAsText(0)
+        if not project_folder:
+            # project_name = "August-1-2025"
+            # project_name = "February-1-2026"
+            project_name = "June-1-2026"
+            project_folder = os.path.join(os.path.expanduser('~'), f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}")
         else:
             pass
 
+        script_tool(project_folder)
 
-        if not project_name:
-            project_name =  "August-1-2025"
-        else: # This else block is empty, can be removed.
-            pass
+        arcpy.SetParameterAsText(1, "Result")
 
-        script_tool(home_folder, project_name)
+        del project_folder
 
-        arcpy.SetParameterAsText(2, "Result")
-
-        del home_folder, project_name
-
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
     except arcpy.ExecuteError:
         arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-    except Exception as e:
-        arcpy.AddError(e)
+    except Exception:
         traceback.print_exc()
-    except SystemExit:
-        pass
+
+
 # This is an autogenerated comment.

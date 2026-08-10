@@ -12,49 +12,38 @@
 import os
 import sys
 import traceback
+import inspect
 
 import arcpy  # third-parties second
 
 
-def trace():
-    import sys  # noqa: E401
-    import traceback
-
-    tb = sys.exc_info()[2]
-    tbinfo = traceback.format_tb(tb)[0]
-    line = tbinfo.split(", ")[1]
-    # filename = sys.path[0] + os.sep + f"{os.path.basename(__file__)}"
-    filename = os.path.basename(__file__)
-    synerror = traceback.print_exc().splitlines()[-1]
-    return line, filename, synerror
-
-
 def worker(region_gdb=""):
     try:
+        #from lxml import etree
+        #from  io import StringIO
+        #from arcpy import metadata as md
+
+        # Import the dismap module to access tools
+        #import dismap_tools
 
         # Set History and Metadata logs, set serverity and message level
-        arcpy.SetLogHistory(
-            True
-        )  # Look in %AppData%\Roaming\Esri\ArcGISPro\ArcToolbox\History
+        arcpy.SetLogHistory(True)  # Look in %AppData%\Roaming\Esri\ArcGISPro\ArcToolbox\History
         arcpy.SetLogMetadata(True)
-        arcpy.SetSeverityLevel(
-            2
-        )  # 0—A tool will not throw an exception, even if the tool produces an error or warning.
+        arcpy.SetSeverityLevel(2)  # 0—A tool will not throw an exception, even if the tool produces an error or warning.
         # 1—If a tool produces a warning or an error, it will throw an exception.
         # 2—If a tool produces an error, it will throw an exception. This is the default.
-        arcpy.SetMessageLevels(
-            ["NORMAL"]
-        )  # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
+        arcpy.SetMessageLevels(["NORMAL"])  # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
 
         table_name = os.path.basename(region_gdb).replace(".gdb", "")
         scratch_folder = os.path.dirname(region_gdb)
         project_folder = os.path.dirname(scratch_folder)
+        # home_folder       = os.path.dirname(project_folder)
+        # project_name      = os.path.basename(project_folder)
+        # csv_data_folder   = os.path.join(project_folder, "CSV_Data")
         scratch_workspace = rf"{scratch_folder}\{table_name}\scratch.gdb"
         region_raster_mask = rf"{region_gdb}\{table_name}_Raster_Mask"
 
-        arcpy.AddMessage(
-            f"Table Name: {table_name}\nProject Folder: {os.path.basename(project_folder)}\nScratch Folder: {os.path.basename(scratch_folder)}\n"
-        )
+        arcpy.AddMessage(f"Table Name: {table_name}\nProject Folder: {os.path.basename(project_folder)}\nScratch Folder: {os.path.basename(scratch_folder)}\n")
 
         # Set basic workkpace variables
         arcpy.env.workspace = region_gdb
@@ -83,6 +72,7 @@ def worker(region_gdb=""):
             "MosaicName",
             "MosaicTitle",
         ]
+
         region_list = [
             row
             for row in arcpy.da.SearchCursor(
@@ -95,11 +85,11 @@ def worker(region_gdb=""):
 
         # Assigning variables from items in the chosen table list
         # ['AI_IDW', 'AI_IDW_Region', 'AI', 'Aleutian Islands', None, 'IDW']
-        table_name = region_list[0]
+        table_name   = region_list[0]
         # geographic_area = region_list[1]
-        datasetcode = region_list[2]
-        cell_size = region_list[3]
-        mosaic_name = region_list[4]
+        datasetcode  = region_list[2]
+        cell_size    = region_list[3]
+        mosaic_name  = region_list[4]
         mosaic_title = region_list[5]
         del region_list
 
@@ -113,44 +103,31 @@ def worker(region_gdb=""):
         # arcpy.env.outputCoordinateSystem = psr
         # del geographic_area_sr, geographic_area
 
-        arcpy.AddMessage(
-            "\tSet the 'outputCoordinateSystem' based on the projection information for the geographic region"
-        )
+        arcpy.AddMessage("\tSet the 'outputCoordinateSystem' based on the projection information for the geographic region")
         psr = arcpy.Describe(region_raster_mask).spatialReference
         arcpy.env.outputCoordinateSystem = psr
+        #print(psr.name)
         del region_raster_mask
 
         arcpy.AddMessage("Building the 'input_raster_paths' list")
 
-        layerspeciesyearimagename = (
-            rf"{region_gdb}\{table_name}_LayerSpeciesYearImageName"
-        )
+        layerspeciesyearimagename = os.path.join(region_gdb, f"{table_name}_LayerSpeciesYearImageName")
 
         input_raster_paths = []
 
         fields = ["Variable", "ImageName"]
-        with arcpy.da.SearchCursor(
-            layerspeciesyearimagename,
-            fields,
-            where_clause=f"DatasetCode = '{datasetcode}'",
-        ) as cursor:
+        with arcpy.da.SearchCursor(layerspeciesyearimagename, fields, where_clause=f"DatasetCode = '{datasetcode}'",) as cursor:
             for row in cursor:
                 variable, image_name = row[0], row[1]
                 # if variable not in variables: variables.append(variable)
                 # arcpy.AddMessage(f"{variable}, {image_name}")
-                variable = (
-                    f"_{variable}" if "Species Richness" in variable else variable
-                )
-                input_raster_path = (
-                    rf"{project_folder}\Images\{table_name}\{variable}\{image_name}.tif"
-                )
+                variable = (f"_{variable}" if "Species Richness" in variable else variable)
+                input_raster_path = (rf"{project_folder}\Images\{table_name}\{variable}\{image_name}.tif")
                 if arcpy.Exists(input_raster_path):
                     # arcpy.AddMessage(input_raster_path)
                     input_raster_paths.append(input_raster_path)
                 else:
-                    arcpy.AddError(
-                        f"{os.path.basename(input_raster_path)} is missing!!"
-                    )
+                    arcpy.AddError(f"{os.path.basename(input_raster_path)} is missing!!")
                 # arcpy.AddMessage(input_raster_path)
                 del row, variable, image_name, input_raster_path
             del cursor
@@ -174,11 +151,9 @@ def worker(region_gdb=""):
                 product_band_definitions="",
             )
 
-            arcpy.AddMessage(
-                "\tCreate Mosaic Dataset: {0}\n".format(
-                    arcpy.GetMessages().replace("\n", "\n\t")
-                )
-            )
+            arcpy.AddMessage("\tCreate Mosaic Dataset: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
+
+            #print(arcpy.Describe(mosaic_path).spatialReference.name)
 
         arcpy.AddMessage(f"Loading Rasters into the {os.path.basename(mosaic_path)}.")
 
@@ -198,29 +173,23 @@ def worker(region_gdb=""):
             filter="",
             sub_folder="NO_SUBFOLDERS",
             # duplicate_items_action = "OVERWRITE_DUPLICATES",
-            duplicate_items_action="EXCLUDE_DUPLICATES",
-            build_pyramids="NO_PYRAMIDS",
+            duplicate_items_action  = "EXCLUDE_DUPLICATES",
+            build_pyramids          = "NO_PYRAMIDS",
             # calculate_statistics   = "CALCULATE_STATISTICS",
-            calculate_statistics="NO_STATISTICS",
+            calculate_statistics    = "NO_STATISTICS",
             # build_thumbnails       = "BUILD_THUMBNAILS",
-            build_thumbnails="NO_THUMBNAILS",
-            operation_description="DisMAP",
-            # force_spatial_reference= "NO_FORCE_SPATIAL_REFERENCE",
-            force_spatial_reference="FORCE_SPATIAL_REFERENCE",
-            # estimate_statistics    = "ESTIMATE_STATISTICS",
-            estimate_statistics="NO_STATISTICS",
+            build_thumbnails        = "NO_THUMBNAILS",
+            operation_description   = "DisMAP",
+            #force_spatial_reference = "NO_FORCE_SPATIAL_REFERENCE",
+            force_spatial_reference = "FORCE_SPATIAL_REFERENCE",
+            #estimate_statistics     = "ESTIMATE_STATISTICS",
+            estimate_statistics     = "NO_STATISTICS",
         )
-        arcpy.AddMessage(
-            "\tAdd Rasters To Mosaic Dataset: {0}\n".format(
-                arcpy.GetMessages().replace("\n", "\n\t")
-            )
-        )
+        arcpy.AddMessage("\tAdd Rasters To Mosaic Dataset: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
         del input_raster_paths
         del psr
 
-        arcpy.AddMessage(
-            f"Joining {os.path.basename(mosaic_path)} with {os.path.basename(layerspeciesyearimagename)}"
-        )
+        arcpy.AddMessage(f"Joining {os.path.basename(mosaic_path)} with {os.path.basename(layerspeciesyearimagename)}")
 
         arcpy.management.JoinField(
             in_data=mosaic_path,
@@ -229,48 +198,27 @@ def worker(region_gdb=""):
             join_field="ImageName",
             fields="DatasetCode;Region;Season;Species;CommonName;SpeciesCommonName;CoreSpecies;Year;StdTime;Variable;Value;Dimensions",
         )
-        arcpy.AddMessage(
-            "\tJoin Field: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t"))
-        )
+        arcpy.AddMessage("\tJoin Field: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
         del layerspeciesyearimagename
 
-        arcpy.AddMessage(f"Removing field index from {os.path.basename(mosaic_path)}")
-
-        try:
-            arcpy.management.RemoveIndex(
-                mosaic_path,
-                [
-                    f"{table_name}_MosaicSpeciesIndex",
-                ],
-            )
-        except:  # noqa: E722
-            pass
+        # arcpy.AddMessage(f"Removing field index from {os.path.basename(mosaic_path)}")
+        # try:
+        #     arcpy.management.RemoveIndex(mosaic_path, [f"{table_name}_MosaicSpeciesIndex",],)
+        # except Exception as e:
+        #     print(e)
 
         arcpy.AddMessage(f"Adding field index to {os.path.basename(mosaic_path)}")
 
         # Add Attribute Index
-        arcpy.management.AddIndex(
-            mosaic_path,
-            ["Species", "CommonName", "SpeciesCommonName", "Year"],
-            f"{table_name}_MosaicSpeciesIndex",
-            "NON_UNIQUE",
-            "NON_ASCENDING",
-        )
-        arcpy.AddMessage(
-            "\tAdd Index: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t"))
-        )
+        arcpy.management.AddIndex(mosaic_path, ["Species", "CommonName", "SpeciesCommonName", "Year"], f"{table_name}_MosaicSpeciesIndex", "NON_UNIQUE", "NON_ASCENDING",)
+
+        arcpy.AddMessage("\tAdd Index: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
 
         arcpy.management.CalculateStatistics(mosaic_path, 1, 1, [], "OVERWRITE", "")
-        arcpy.AddMessage(
-            "\tCalculate Statistics: {0}\n".format(
-                arcpy.GetMessages().replace("\n", "\n\t")
-            )
-        )
+        arcpy.AddMessage("\tCalculate Statistics: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
 
         # --->>> SetMosaicDatasetProperties
-        arcpy.AddMessage(
-            f"Set Mosaic Dataset Properties for {os.path.basename(mosaic_path)}"
-        )
+        arcpy.AddMessage(f"Set Mosaic Dataset Properties for {os.path.basename(mosaic_path)}")
 
         # fields = [f.name for f in arcpy.ListFields(mosaic_path) if f.type not in ['Geometry', 'OID'] and f.name not in ["Shape", "Raster", "Category", "TypeID", "ItemTS", "UriHash", "Uri",]]
         fields = [f.name for f in arcpy.ListFields(mosaic_path)]
@@ -322,11 +270,8 @@ def worker(region_gdb=""):
             product_definition="NONE",
             product_band_definitions=None,
         )
-        arcpy.AddMessage(
-            "\tSet Mosaic Dataset Properties: {0}\n".format(
-                arcpy.GetMessages().replace("\n", "\n\t")
-            )
-        )
+        arcpy.AddMessage("\tSet Mosaic Dataset Properties: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
+
         del fields
 
         arcpy.AddMessage(f"Analyze Mosaic {os.path.basename(mosaic_path)} Dataset")
@@ -336,15 +281,9 @@ def worker(region_gdb=""):
             where_clause="",
             checker_keywords="FOOTPRINT;FUNCTION;RASTER;PATHS;SOURCE_VALIDITY;STALE;PYRAMIDS;STATISTICS;PERFORMANCE;INFORMATION",
         )
-        arcpy.AddMessage(
-            "\tSet Mosaic Dataset Properties: {0}\n".format(
-                arcpy.GetMessages().replace("\n", "\n\t")
-            )
-        )
+        arcpy.AddMessage("\tSet Mosaic Dataset Properties: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
 
-        arcpy.AddMessage(
-            f"Adding Multidimensional Information to {os.path.basename(mosaic_path)} Dataset"
-        )
+        arcpy.AddMessage(f"Adding Multidimensional Information to {os.path.basename(mosaic_path)} Dataset")
 
         with arcpy.EnvManager(scratchWorkspace=scratch_workspace, workspace=region_gdb):
             arcpy.md.BuildMultidimensionalInfo(
@@ -356,19 +295,13 @@ def worker(region_gdb=""):
                 variable_desc_units=None,
                 delete_multidimensional_info="NO_DELETE_MULTIDIMENSIONAL_INFO",
             )
-            arcpy.AddMessage(
-                "\tBuild Multidimensional Info: {0}\n".format(
-                    arcpy.GetMessages().replace("\n", "\n\t")
-                )
-            )
+            arcpy.AddMessage("\tBuild Multidimensional Info: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
 
         # arcpy.management.CalculateStatistics(mosaic_path, 1, 1, [], "OVERWRITE", "")
         # arcpy.AddMessage("\tCalculate Statistics: {0}\n".format(arcpy.GetMessages().replace("\n", '\n\t')))
 
         # Copy Raster to CRF
-        crf_path = (
-            rf"{scratch_folder}\{table_name}\{mosaic_name.replace('_Mosaic', '')}.crf"
-        )
+        crf_path = os.path.join(scratch_folder, f"{table_name}", f"{mosaic_name.replace('_Mosaic', '_CRF')}.crf")
 
         arcpy.management.CopyRaster(
             in_raster=mosaic_path,
@@ -386,18 +319,12 @@ def worker(region_gdb=""):
             process_as_multidimensional="ALL_SLICES",
             build_multidimensional_transpose="NO_TRANSPOSE",
         )
-        arcpy.AddMessage(
-            "\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t"))
-        )
+        arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
 
         arcpy.AddMessage(f"Calculate Statistics for {os.path.basename(crf_path)}")
 
         arcpy.management.CalculateStatistics(crf_path, 1, 1, [], "OVERWRITE", "")
-        arcpy.AddMessage(
-            "\tCalculate Statistics: {0}\n".format(
-                arcpy.GetMessages().replace("\n", "\n\t")
-            )
-        )
+        arcpy.AddMessage("\tCalculate Statistics: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
         del crf_path
         del mosaic_path
 
@@ -416,25 +343,24 @@ def worker(region_gdb=""):
         # Function parameter
         del region_gdb
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}")
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
+        pass
 
 
-def script_tool(project_gdb=""):
+def script_tool(project_folder=""):
     try:
         # Imports
         from time import gmtime, localtime, strftime, time
@@ -449,10 +375,12 @@ def script_tool(project_gdb=""):
         arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
-        arcpy.AddMessage(
-            f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}"
-        )
+        arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
         arcpy.AddMessage(f"{'-' * 80}\n")
+
+        project_name        = os.path.basename(project_folder)
+        project_gdb         = os.path.join(project_folder, f"{project_name}.gdb")
+        #home_folder         = os.path.dirname(project_folder)
 
         ##        # Set worker parameters
         ##        #table_name = "AI_IDW"
@@ -460,16 +388,13 @@ def script_tool(project_gdb=""):
         ##        #table_name = "NBS_IDW"
         ##        #table_name = "ENBS_IDW"
 
-        table_names = ["HI_IDW", "NBS_IDW"]
+        table_names = ["HI_IDW"]
 
-        preprocessing(
-            project_gdb=project_gdb, table_names=table_names, clear_folder=True
-        )
+        preprocessing(project_gdb=project_gdb, table_names=table_names, clear_folder=True)
 
         for table_name in table_names:
             region_gdb = rf"{os.path.dirname(project_gdb)}\Scratch\{table_name}.gdb"
             try:
-                pass
                 worker(region_gdb=region_gdb)
             except SystemExit:
                 arcpy.AddError(arcpy.GetMessages(2))
@@ -491,63 +416,59 @@ def script_tool(project_gdb=""):
         minutes, seconds = divmod(rem, 60)
         arcpy.AddMessage(f"\n{'-' * 80}")
         arcpy.AddMessage(f"Python script: {os.path.basename(__file__)}")
-        arcpy.AddMessage(
-            f"Start Time:    {strftime('%a %b %d %I:%M %p', localtime(start_time))}"
-        )
-        arcpy.AddMessage(
-            f"End Time:      {strftime('%a %b %d %I:%M %p', localtime(end_time))}"
-        )
-        arcpy.AddMessage(
-            f"Elapsed Time   {int(hours):0>2}:{int(minutes):0>2}:{seconds:05.2f} (H:M:S)"
-        )
+        arcpy.AddMessage(f"Start Time:    {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
+        arcpy.AddMessage(f"End Time:      {strftime('%a %b %d %I:%M %p', localtime(end_time))}")
+        arcpy.AddMessage(f"Elapsed Time   {int(hours):0>2}:{int(minutes):0>2}:{seconds:05.2f} (H:M:S)")
         arcpy.AddMessage(f"{'-' * 80}")
         del hours, rem, minutes, seconds
         del elapse_time, end_time, start_time
         del gmtime, localtime, strftime, time
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}")
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
+        arcpy.AddMessage("\nScript finished successfully.\n")
+    finally:
+        arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
-        project_gdb = arcpy.GetParameterAsText(0)
-        if not project_gdb:
-            project_gdb = os.path.join(
-                os.path.expanduser("~"),
-                "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb",
-            )
+
+        project_folder = arcpy.GetParameterAsText(0)
+        if not project_folder:
+            # project_name = "August-1-2025"
+            # project_name = "February-1-2026"
+            project_name = "June-1-2026"
+            project_folder = os.path.join(os.path.expanduser('~'), f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}")
         else:
             pass
-        script_tool(project_gdb)
-        arcpy.SetParameterAsText(1, "Result")
-        del project_gdb
 
+        script_tool(project_folder)
+
+        arcpy.SetParameterAsText(1, "Result")
+
+        del project_folder
+
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
+        arcpy.AddError(arcpy.GetMessages(2))
+        traceback.print_exc()
+    except Exception:
+        traceback.print_exc()
+
 
 # This is an autogenerated comment.

@@ -221,26 +221,28 @@ def add_fields(csv_data_folder="", in_table=""):
             in_table=in_table, field_description=field_definition_list, template=""
         )
         arcpy.AddMessage("\t{0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
-    except KeyboardInterrupt:
-        sys.exit()
+
+
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.print_exc()}")
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:\n")
         traceback.print_exc()
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
     else:
         return True
-    finally:
-        pass
 
 
 def alter_fields(csv_data_folder="", in_table=""):
@@ -307,26 +309,26 @@ def alter_fields(csv_data_folder="", in_table=""):
 
         del _field_definitions, project_gdb, in_table
 
-    except KeyboardInterrupt:
-        sys.exit()
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.print_exc()}")
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:\n")
         traceback.print_exc()
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
     else:
         return True
-    finally:
-        pass
 
 
 def backup_gdb(project_gdb=""):
@@ -339,27 +341,28 @@ def backup_gdb(project_gdb=""):
         arcpy.AddMessage("Compacting the backup")
         arcpy.management.Compact(project_gdb.replace(".gdb", f"_Backup.gdb"))
         arcpy.AddMessage("\t" + arcpy.GetMessages(0).replace("\n", "\n\t"))
-    except KeyboardInterrupt:
-        sys.exit()
-    except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
-    except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    else:
-        return True
-    finally:
-        pass
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
+    except arcpy.ExecuteError:
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
+    else:
+        pass
 
 def basic_metadata(csv_data_folder="", in_table=""):
     # Deprecated
@@ -371,7 +374,7 @@ def basic_metadata(csv_data_folder="", in_table=""):
         # set workspace environment
         arcpy.env.overwriteOutput = True
         arcpy.env.parallelProcessingFactor = "100%"
-        arcpy.env.scratchWorkspace = rf"Scratch\\scratch.gdb"
+        arcpy.env.scratchWorkspace = r"Scratch\\scratch.gdb"
         arcpy.env.workspace = project_gdb
         arcpy.SetLogMetadata(True)
 
@@ -413,25 +416,27 @@ def basic_metadata(csv_data_folder="", in_table=""):
 
         else:
             arcpy.AddWarning(f"Adding Metadata: {table} not found")
-    except KeyboardInterrupt:
-        sys.exit()
+
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError("Traceback:\n")
         traceback.print_exc()
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:")
         traceback.print_exc()
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
     else:
-        return True
-    finally:
         pass
 
 
@@ -682,27 +687,26 @@ def check_datasets(datasets=[]):
 
         del formatDateTime, datasets
 
-    except KeyboardInterrupt:
-        sys.exit()
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
-        traceback.print_exc()
-        sys.exit()
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError("Traceback:\n")
         traceback.print_exc()
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:")
         traceback.print_exc()
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
     else:
-        return True
-    finally:
         pass
 
 
@@ -736,20 +740,24 @@ def clear_folder(folder=""):
                 pass
 
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.print_exc()}")
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
     else:
         return True
 
@@ -776,22 +784,26 @@ def compare_metadata_xml(file1="", file2=""):
         if __diff:
             __diff = main.diff_files(file1, file2, formatter=formatting.XMLFormatter())
             return __diff
-    except KeyboardInterrupt:
-        sys.exit()
+
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError("Traceback:\n")
         traceback.print_exc()
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:")
         traceback.print_exc()
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
     else:
         return __diff
     finally:
@@ -914,14 +926,14 @@ def convertSeconds(seconds):
 ##        pass
 
 
-def dataset_title_dict(project_gdb=""):
+def dataset_title_dict(project_folder=""):
     try:
-        project_folder = os.path.dirname(project_gdb)
-        project = os.path.basename(project_folder)
-        csv_data_folder = os.path.join(project_folder, "CSV_Data")
-        #print([f.name for f in arcpy.ListFields(os.path.join(csv_data_folder, "Datasets.csv"))])
+        project_name = os.path.basename(project_folder)
+        project_gdb  = os.path.join(project_folder, f"{project_name}.gdb")
 
-        crf_folder = rf"{project_folder}\CRFs"
+        datasets_table_path = os.path.join(project_gdb, "Datasets")
+
+        #crf_folder = os.path.join(project_folder, "CRFs")
         _credits = "These data were produced by NMFS OST."
         access_constraints = "***No Warranty*** The user assumes the entire risk related to its use of these data. NMFS is providing these data 'as is' and NMFS disclaims any and all warranties, whether express or implied, including (without limitation) any implied warranties of merchantability or fitness for a particular purpose. No warranty expressed or implied is made regarding the accuracy or utility of the data on any other system or for general or scientific purposes, nor shall the act of distribution constitute any such warranty. It is strongly recommended that careful attention be paid to the contents of the metadata file associated with these data to evaluate dataset limitations, restrictions or intended use. In no event will NMFS be liable to you or to any third party for any direct, indirect, incidental, consequential, special or exemplary damages or lost profit resulting from any use or misuse of these data."
 
@@ -930,10 +942,15 @@ def dataset_title_dict(project_gdb=""):
         #for row in arcpy.da.SearchCursor(os.path.join(csv_data_folder, "Datasets.csv"), ["PointFeatureType","DistributionProjectCode","Region","Season",]):
         #    print(row)
 
+        #print(f"Project folder: {project_folder}")
+        #print(f"Project GDB:    {project_gdb}")
+        #print(datasets_table_path)
+        #print(arcpy.Exists(datasets_table_path))
+
         dataset_codes = {row[0]: [row[1], row[2], row[3], row[4]]
-                            for row in arcpy.da.SearchCursor(os.path.join(csv_data_folder, "Datasets.csv"),
+                            for row in arcpy.da.SearchCursor(datasets_table_path,
                                 ["DatasetCode","PointFeatureType","DistributionProjectCode","Region","Season",],)
-        }
+                        }
         # for dataset_code in dataset_codes:
         #    dataset_codes[dataset_code] = [s for s in dataset_codes[dataset_code] if s.strip()]
         #    #print(f"Dataset Code: {dataset_code}\n\t{dataset_codes[dataset_code]}")
@@ -962,8 +979,8 @@ def dataset_title_dict(project_gdb=""):
 
             if distribution_project_code == "IDW":
                 table_name = f"{dataset_code}_{distribution_project_code}"
-                table_name_s = f"{table_name}_{date_code(project)}"
-                table_name_st = f"{region} {season} Table {date_code(project)}".replace(
+                table_name_s = f"{table_name}_{date_code(project_name)}"
+                table_name_st = f"{region} {season} Table {date_code(project_name)}".replace(
                     "  ", " "
                 )
 
@@ -985,8 +1002,8 @@ def dataset_title_dict(project_gdb=""):
                 sample_locations_fc = (
                     f"{table_name}_{point_feature_type.replace(' ', '_')}"
                 )
-                sample_locations_fcs = f"{table_name.replace('_IDW', '')}_{point_feature_type.replace(' ', '_')}_{date_code(project)}"
-                feature_service_title = f"{region} {season} {point_feature_type} {date_code(project)}".replace(
+                sample_locations_fcs = f"{table_name.replace('_IDW', '')}_{point_feature_type.replace(' ', '_')}_{date_code(project_name)}"
+                feature_service_title = f"{region} {season} {point_feature_type} {date_code(project_name)}".replace(
                     "  ", " "
                 )
                 sample_locations_fcst = f"{feature_service_title}"
@@ -997,7 +1014,7 @@ def dataset_title_dict(project_gdb=""):
                     "Dataset Service Title": sample_locations_fcst,
                     "Tags": tags,
                     "Summary": f"{summary}. These layers provide information on the spatial extent/boundaries of the bottom trawl surveys. Information on species distributions is of paramount importance for understanding and preparing for climate-change impacts, and plays a key role in climate-ready fisheries management.",
-                    "Description": f"This survey points layer provides information on both the locations where species are caught in several NOAA Fisheries surveys and the amount (i.e., biomass weight catch per unit effort, standardized to kg/ha) of each species that was caught at each location. Information on species distributions is of paramount importance for understanding and preparing for climate-change impacts, and plays a key role in climate-ready fisheries management.",
+                    "Description": "This survey points layer provides information on both the locations where species are caught in several NOAA Fisheries surveys and the amount (i.e., biomass weight catch per unit effort, standardized to kg/ha) of each species that was caught at each location. Information on species distributions is of paramount importance for understanding and preparing for climate-change impacts, and plays a key role in climate-ready fisheries management.",
                     "Credits": _credits,
                     "Access Constraints": access_constraints,
                 }
@@ -1021,9 +1038,9 @@ def dataset_title_dict(project_gdb=""):
 
                 # Bathymetry
                 bathymetry_r = f"{dataset_code}_Bathymetry"
-                bathymetry_rs = f"{dataset_code}_Bathymetry_{date_code(project)}"
+                bathymetry_rs = f"{dataset_code}_Bathymetry_{date_code(project_name)}"
                 feature_service_title = (
-                    f"{region} {season} Bathymetry {date_code(project)}".replace(
+                    f"{region} {season} Bathymetry {date_code(project_name)}".replace(
                         "  ", " "
                     )
                 )
@@ -1050,9 +1067,9 @@ def dataset_title_dict(project_gdb=""):
 
                 # Boundary
                 boundary_fc = f"{dataset_code}_Boundary"
-                boundary_fcs = f"{dataset_code}_Boundary_{date_code(project)}"
+                boundary_fcs = f"{dataset_code}_Boundary_{date_code(project_name)}"
                 feature_service_title = (
-                    f"{region} {season} Boundary {date_code(project)}".replace(
+                    f"{region} {season} Boundary {date_code(project_name)}".replace(
                         "  ", " "
                     )
                 )
@@ -1079,9 +1096,9 @@ def dataset_title_dict(project_gdb=""):
 
                 # Boundary Line
                 boundary_line_fc = f"{dataset_code}_Boundary_Line"
-                boundary_line_fcs = f"{dataset_code}_Boundary_Line_{date_code(project)}"
+                boundary_line_fcs = f"{dataset_code}_Boundary_Line_{date_code(project_name)}"
                 feature_service_title = (
-                    f"{region} {season} Boundary Line {date_code(project)}".replace(
+                    f"{region} {season} Boundary Line {date_code(project_name)}".replace(
                         "  ", " "
                     )
                 )
@@ -1108,9 +1125,9 @@ def dataset_title_dict(project_gdb=""):
 
                 # Extent Points
                 extent_points_fc = f"{dataset_code}_Extent_Points"
-                extent_points_fcs = f"{dataset_code}_Extent_Points_{date_code(project)}"
+                extent_points_fcs = f"{dataset_code}_Extent_Points_{date_code(project_name)}"
                 feature_service_title = (
-                    f"{region} {season} Extent Points {date_code(project)}".replace(
+                    f"{region} {season} Extent Points {date_code(project_name)}".replace(
                         "  ", " "
                     )
                 )
@@ -1123,7 +1140,7 @@ def dataset_title_dict(project_gdb=""):
                     "Dataset Service Title": extent_points_fcst,
                     "Tags": tags,
                     "Summary": summary,
-                    "Description": f"The Extent Points layer represents the extent of the model region.",
+                    "Description": "The Extent Points layer represents the extent of the model region.",
                     "Credits": _credits,
                     "Access Constraints": access_constraints,
                 }
@@ -1133,9 +1150,9 @@ def dataset_title_dict(project_gdb=""):
                 del extent_points_fc, extent_points_fcs, extent_points_fcst
 
                 fishnet_fc = f"{dataset_code}_Fishnet"
-                fishnet_fcs = f"{dataset_code}_Fishnet_{date_code(project)}"
+                fishnet_fcs = f"{dataset_code}_Fishnet_{date_code(project_name)}"
                 feature_service_title = (
-                    f"{region} {season} Fishnet {date_code(project)}".replace("  ", " ")
+                    f"{region} {season} Fishnet {date_code(project_name)}".replace("  ", " ")
                 )
                 fishnet_fcst = f"{feature_service_title}"
                 del feature_service_title
@@ -1147,7 +1164,7 @@ def dataset_title_dict(project_gdb=""):
                     "Dataset Service Title": fishnet_fcst,
                     "Tags": tags,
                     "Summary": summary,
-                    "Description": f"The Fishnet is used to create the latitude and longitude rasters.",
+                    "Description": "The Fishnet is used to create the latitude and longitude rasters.",
                     "Credits": _credits,
                     "Access Constraints": access_constraints,
                 }
@@ -1159,9 +1176,9 @@ def dataset_title_dict(project_gdb=""):
                 del fishnet_fc, fishnet_fcs, fishnet_fcst
 
                 indicators_tb = f"{dataset_code}_Indicators"
-                indicators_tbs = f"{dataset_code}_Indicators_{date_code(project)}"
+                indicators_tbs = f"{dataset_code}_Indicators_{date_code(project_name)}"
                 feature_service_title = (
-                    f"{region} {season} Indicators Table {date_code(project)}".replace(
+                    f"{region} {season} Indicators Table {date_code(project_name)}".replace(
                         "  ", " "
                     )
                 )
@@ -1175,7 +1192,7 @@ def dataset_title_dict(project_gdb=""):
                     "Dataset Service Title": indicators_tbst,
                     "Tags": tags,
                     "Summary": f"{summary}. This table provides the key metrics used to evaluate a species distribution shift. Information on species distributions is of paramount importance for understanding and preparing for climate-change impacts, and plays a key role in climate-ready fisheries management.",
-                    "Description": f"These data contain the key distribution metrics of center of gravity, range limits, and depth for each species in the portal. This data set covers 8 regions of the United States: Northeast, Southeast, Gulf of Mexico, West Coast, Bering Sea, Aleutian Islands, Gulf of Alaska, and Hawai'i Islands.",
+                    "Description": "These data contain the key distribution metrics of center of gravity, range limits, and depth for each species in the portal. This data set covers 8 regions of the United States: Northeast, Southeast, Gulf of Mexico, West Coast, Bering Sea, Aleutian Islands, Gulf of Alaska, and Hawai'i Islands.",
                     "Credits": _credits,
                     "Access Constraints": access_constraints,
                 }
@@ -1187,9 +1204,9 @@ def dataset_title_dict(project_gdb=""):
                 del indicators_tb, indicators_tbs, indicators_tbst
 
                 lat_long_fc = f"{dataset_code}_Lat_Long"
-                lat_long_fcs = f"{dataset_code}_Lat_Long_{date_code(project)}"
+                lat_long_fcs = f"{dataset_code}_Lat_Long_{date_code(project_name)}"
                 feature_service_title = (
-                    f"{region} {season} Lat Long {date_code(project)}".replace(
+                    f"{region} {season} Lat Long {date_code(project_name)}".replace(
                         "  ", " "
                     )
                 )
@@ -1203,7 +1220,7 @@ def dataset_title_dict(project_gdb=""):
                     "Dataset Service Title": lat_long_fcst,
                     "Tags": tags,
                     "Summary": summary,
-                    "Description": f"The lat_long layer is used to get the latitude & longitude values to create these rasters",
+                    "Description": "The lat_long layer is used to get the latitude & longitude values to create these rasters",
                     "Credits": _credits,
                     "Access Constraints": access_constraints,
                 }
@@ -1215,9 +1232,9 @@ def dataset_title_dict(project_gdb=""):
                 del lat_long_fc, lat_long_fcs, lat_long_fcst
 
                 latitude_r = f"{dataset_code}_Latitude"
-                latitude_rs = f"{dataset_code}_Latitude_{date_code(project)}"
+                latitude_rs = f"{dataset_code}_Latitude_{date_code(project_name)}"
                 feature_service_title = (
-                    f"{region} {season} Latitude {date_code(project)}".replace(
+                    f"{region} {season} Latitude {date_code(project_name)}".replace(
                         "  ", " "
                     )
                 )
@@ -1231,7 +1248,7 @@ def dataset_title_dict(project_gdb=""):
                     "Dataset Service Title": latitude_rst,
                     "Tags": tags,
                     "Summary": summary,
-                    "Description": f"The Latitude raster",
+                    "Description": "The Latitude raster",
                     "Credits": _credits,
                     "Access Constraints": access_constraints,
                 }
@@ -1246,9 +1263,9 @@ def dataset_title_dict(project_gdb=""):
                     f"{dataset_code}_LayerSpeciesYearImageName"
                 )
                 layer_species_year_image_name_tbs = (
-                    f"{dataset_code}_LayerSpeciesYearImageName_{date_code(project)}"
+                    f"{dataset_code}_LayerSpeciesYearImageName_{date_code(project_name)}"
                 )
-                feature_service_title = f"{region} {season} Layer Species Year Image Name Table {date_code(project)}"
+                feature_service_title = f"{region} {season} Layer Species Year Image Name Table {date_code(project_name)}"
                 layer_species_year_image_name_tbst = f"{feature_service_title}"
                 del feature_service_title
 
@@ -1259,7 +1276,7 @@ def dataset_title_dict(project_gdb=""):
                     "Dataset Service Title": layer_species_year_image_name_tbst,
                     "Tags": tags,
                     "Summary": summary,
-                    "Description": f"Layer Species Year Image Name Table",
+                    "Description": "Layer Species Year Image Name Table",
                     "Credits": _credits,
                     "Access Constraints": access_constraints,
                 }
@@ -1275,9 +1292,9 @@ def dataset_title_dict(project_gdb=""):
                 )
 
                 longitude_r = f"{dataset_code}_Longitude"
-                longitude_rs = f"{dataset_code}_Longitude_{date_code(project)}"
+                longitude_rs = f"{dataset_code}_Longitude_{date_code(project_name)}"
                 feature_service_title = (
-                    f"{region} {season} Longitude {date_code(project)}".replace(
+                    f"{region} {season} Longitude {date_code(project_name)}".replace(
                         "  ", " "
                     )
                 )
@@ -1291,7 +1308,7 @@ def dataset_title_dict(project_gdb=""):
                     "Dataset Service Title": longitude_rst,
                     "Tags": tags,
                     "Summary": summary,
-                    "Description": f"The Longitude raster",
+                    "Description": "The Longitude raster",
                     "Credits": _credits,
                     "Access Constraints": access_constraints,
                 }
@@ -1303,8 +1320,8 @@ def dataset_title_dict(project_gdb=""):
                 del longitude_r, longitude_rs, longitude_rst
 
                 mosaic_r = f"{dataset_code}_Mosaic"
-                mosaic_rs = f"{dataset_code}_Mosaic_{date_code(project)}"
-                feature_service_title = f"{region} {season} {dataset_code[dataset_code.rfind('_')+1:]} Mosaic {date_code(project)}".replace(
+                mosaic_rs = f"{dataset_code}_Mosaic_{date_code(project_name)}"
+                feature_service_title = f"{region} {season} {dataset_code[dataset_code.rfind('_')+1:]} Mosaic {date_code(project_name)}".replace(
                     "  ", " "
                 )
                 mosaic_rst = f"{feature_service_title}"
@@ -1317,7 +1334,7 @@ def dataset_title_dict(project_gdb=""):
                     "Dataset Service Title": mosaic_rst,
                     "Tags": tags,
                     "Summary": f"{summary}. These interpolated biomass layers provide information on the spatial distribution of species caught in the NOAA Fisheries fisheries-independent surveys. Information on species distributions is of paramount importance for understanding and preparing for climate-change impacts, and plays a key role in climate-ready fisheries management.",
-                    "Description": f"NOAA Fisheries and its partners conduct fisheries-independent surveys in 8 regions in the US (Northeast, Southeast, Gulf of Mexico, West Coast, Gulf of Alaska, Bering Sea, Aleutian Islands, Hawai’i Islands). These surveys are designed to collect information on the seasonal distribution, relative abundance, and biodiversity of fish and invertebrate species found in U.S. waters. Over 400 species of fish and invertebrates have been identified in these surveys.",
+                    "Description": "NOAA Fisheries and its partners conduct fisheries-independent surveys in 8 regions in the US (Northeast, Southeast, Gulf of Mexico, West Coast, Gulf of Alaska, Bering Sea, Aleutian Islands, Hawai’i Islands). These surveys are designed to collect information on the seasonal distribution, relative abundance, and biodiversity of fish and invertebrate species found in U.S. waters. Over 400 species of fish and invertebrates have been identified in these surveys.",
                     "Credits": _credits,
                     "Access Constraints": access_constraints,
                 }
@@ -1328,11 +1345,12 @@ def dataset_title_dict(project_gdb=""):
 
                 del mosaic_r, mosaic_rs, mosaic_rst
 
-                crf_r = f"{dataset_code}.crf"
-                crf_rs = f"{dataset_code}_{date_code(project)}"
-                feature_service_title = f"{region} {season} {dataset_code[dataset_code.rfind('_')+1:]} {date_code(project)}".replace(
-                    "  ", " "
-                )
+                crf_r = f"{dataset_code}_CRF"
+                crf_rs = f"{dataset_code}_CRF_{date_code(project_name)}"
+                # feature_service_title = f"{region} {season} {dataset_code[dataset_code.rfind('_')+1:]} {date_code(project_name)}".replace(
+                #     "  ", " "
+                # )
+                feature_service_title = f"{region} {season} IDW {date_code(project_name)}".replace("  ", " ")
                 crf_rst = f"{feature_service_title}"
                 del feature_service_title
 
@@ -1342,10 +1360,10 @@ def dataset_title_dict(project_gdb=""):
                     "Dataset Service": crf_rs,
                     "Dataset Service Title": crf_rst,
                     "Tags": tags,
-                    "Summary": f"{summary}. These interpolated biomass layers provide information on the spatial distribution of species caught in the NOAA Fisheries fisheries-independent surveys. Information on species distributions is of paramount importance for understanding and preparing for climate-change impacts, and plays a key role in climate-ready fisheries management.",
-                    "Description": f"NOAA Fisheries and its partners conduct fisheries-independent surveys in 8 regions in the US (Northeast, Southeast, Gulf of Mexico, West Coast, Gulf of Alaska, Bering Sea, Aleutian Islands, Hawai’i Islands). These surveys are designed to collect information on the seasonal distribution, relative abundance, and biodiversity of fish and invertebrate species found in U.S. waters. Over 400 species of fish and invertebrates have been identified in these surveys.",
-                    "Credits": _credits,
-                    "Access Constraints": access_constraints,
+                    #"Summary": f"{summary}. These interpolated biomass layers provide information on the spatial distribution of species caught in the NOAA Fisheries fisheries-independent surveys. Information on species distributions is of paramount importance for understanding and preparing for climate-change impacts, and plays a key role in climate-ready fisheries management.",
+                    #"Description": "NOAA Fisheries and its partners conduct fisheries-independent surveys in 8 regions in the US (Northeast, Southeast, Gulf of Mexico, West Coast, Gulf of Alaska, Bering Sea, Aleutian Islands, Hawai’i Islands). These surveys are designed to collect information on the seasonal distribution, relative abundance, and biodiversity of fish and invertebrate species found in U.S. waters. Over 400 species of fish and invertebrates have been identified in these surveys.",
+                    #"Credits": _credits,
+                    #"Access Constraints": access_constraints,
                 }
 
                 # arcpy.AddMessage(f"\tCFR R:   {crf_r}")
@@ -1355,9 +1373,9 @@ def dataset_title_dict(project_gdb=""):
                 del crf_r, crf_rs, crf_rst
 
                 raster_mask_r = f"{dataset_code}_Raster_Mask"
-                raster_mask_rs = f"{dataset_code}_Raster_Mask_{date_code(project)}"
+                raster_mask_rs = f"{dataset_code}_Raster_Mask_{date_code(project_name)}"
                 feature_service_title = (
-                    f"{region} {season} Raster Mask {date_code(project)}".replace(
+                    f"{region} {season} Raster Mask {date_code(project_name)}".replace(
                         "  ", " "
                     )
                 )
@@ -1371,7 +1389,7 @@ def dataset_title_dict(project_gdb=""):
                     "Dataset Service Title": raster_mask_rst,
                     "Tags": tags,
                     "Summary": summary,
-                    "Description": f"Raster Mask is used for image production",
+                    "Description": "Raster Mask is used for image production",
                     "Credits": _credits,
                     "Access Constraints": access_constraints,
                 }
@@ -1383,9 +1401,9 @@ def dataset_title_dict(project_gdb=""):
                 del raster_mask_r, raster_mask_rs, raster_mask_rst
 
                 region_fc = f"{dataset_code}_Region"
-                region_fcs = f"{dataset_code}_Region_{date_code(project)}"
+                region_fcs = f"{dataset_code}_Region_{date_code(project_name)}"
                 feature_service_title = (
-                    f"{region} {season} Region {date_code(project)}".replace("  ", " ")
+                    f"{region} {season} Region {date_code(project_name)}".replace("  ", " ")
                 )
                 region_fcst = f"{feature_service_title}"
                 del feature_service_title
@@ -1397,7 +1415,7 @@ def dataset_title_dict(project_gdb=""):
                     "Dataset Service Title": region_fcst,
                     "Tags": tags,
                     "Summary": summary,
-                    "Description": f"These files contain the spatial boundaries of the NOAA Fisheries Bottom-trawl surveys. This data set covers 8 regions of the United States: Northeast, Southeast, Gulf of Mexico, West Coast, Bering Sea, Aleutian Islands, Gulf of Alaska, and Hawai'i Islands.",
+                    "Description": "These files contain the spatial boundaries of the NOAA Fisheries Bottom-trawl surveys. This data set covers 8 regions of the United States: Northeast, Southeast, Gulf of Mexico, West Coast, Bering Sea, Aleutian Islands, Gulf of Alaska, and Hawai'i Islands.",
                     "Credits": _credits,
                     "Access Constraints": access_constraints,
                 }
@@ -1416,8 +1434,8 @@ def dataset_title_dict(project_gdb=""):
                 # arcpy.AddMessage(f"\tProcessing: {dataset_code}")
 
                 datasets_tb = dataset_code
-                datasets_tbs = f"{dataset_code}_{date_code(project)}"
-                datasets_tbst = f"{dataset_code} {date_code(project)}"
+                datasets_tbs = f"{dataset_code}_{date_code(project_name)}"
+                datasets_tbst = f"{dataset_code} {date_code(project_name)}"
 
                 __datasets_dict[datasets_tb] = {
                     "Dataset Service": datasets_tbs,
@@ -1439,8 +1457,8 @@ def dataset_title_dict(project_gdb=""):
                 # arcpy.AddMessage(f"\tProcessing: {dataset_code}")
 
                 regions_fc = dataset_code
-                regions_fcs = f"{dataset_code}_{date_code(project)}"
-                regions_fcst = f"DisMAP Regions {date_code(project)}"
+                regions_fcs = f"{dataset_code}_{date_code(project_name)}"
+                regions_fcst = f"DisMAP Regions {date_code(project_name)}"
 
                 __datasets_dict[regions_fc] = {
                     "Dataset Service": regions_fcs,
@@ -1461,15 +1479,15 @@ def dataset_title_dict(project_gdb=""):
                 # arcpy.AddMessage(f"\tProcessing: {dataset_code}")
 
                 indicators_tb = f"{dataset_code}"
-                indicators_tbs = f"{dataset_code}_{date_code(project)}"
-                indicators_tbst = f"{dataset_code} {date_code(project)}"
+                indicators_tbs = f"{dataset_code}_{date_code(project_name)}"
+                indicators_tbst = f"{dataset_code} {date_code(project_name)}"
 
                 __datasets_dict[indicators_tb] = {
                     "Dataset Service": indicators_tbs,
                     "Dataset Service Title": indicators_tbst,
                     "Tags": "DisMAP, Indicators",
                     "Summary": f"{summary}. This table provides the key metrics used to evaluate a species distribution shift. Information on species distributions is of paramount importance for understanding and preparing for climate-change impacts, and plays a key role in climate-ready fisheries management.",
-                    "Description": f"These data contain the key distribution metrics of center of gravity, range limits, and depth for each species in the portal. This data set covers 8 regions of the United States: Northeast, Southeast, Gulf of Mexico, West Coast, Bering Sea, Aleutian Islands, Gulf of Alaska, and Hawai'i Islands.",
+                    "Description": "These data contain the key distribution metrics of center of gravity, range limits, and depth for each species in the portal. This data set covers 8 regions of the United States: Northeast, Southeast, Gulf of Mexico, West Coast, Bering Sea, Aleutian Islands, Gulf of Alaska, and Hawai'i Islands.",
                     "Credits": _credits,
                     "Access Constraints": access_constraints,
                 }
@@ -1483,8 +1501,8 @@ def dataset_title_dict(project_gdb=""):
                 # arcpy.AddMessage(f"\tProcessing: {dataset_code}")
 
                 species_filter_tb = dataset_code
-                species_filter_tbs = f"{dataset_code}_{date_code(project)}"
-                species_filter_tbst = f"Species Filter Table {date_code(project)}"
+                species_filter_tbs = f"{dataset_code}_{date_code(project_name)}"
+                species_filter_tbst = f"Species Filter {date_code(project_name)}"
 
                 __datasets_dict[species_filter_tb] = {
                     "Dataset Service": species_filter_tbs,
@@ -1509,8 +1527,9 @@ def dataset_title_dict(project_gdb=""):
                 # arcpy.AddMessage(f"\tProcessing: {dataset_code}")
 
                 tb = dataset_code
-                tbs = f"{dataset_code}_{date_code(project)}"
-                tbst = f"DisMAP Survey Info Table {date_code(project)}"
+                tbs = f"{dataset_code}_{date_code(project_name)}"
+                #tbst = f"DisMAP Survey Info Table {date_code(project_name)}"
+                tbst = f"DisMAP Survey Info {date_code(project_name)}"
 
                 __datasets_dict[tb] = {
                     "Dataset Service": tbs,
@@ -1536,8 +1555,8 @@ def dataset_title_dict(project_gdb=""):
                 # arcpy.AddMessage(f"\tProcessing: {dataset_code} DisMAP_Survey_Info")
 
                 tb = dataset_code
-                tbs = f"{dataset_code}_{date_code(project)}"
-                tbst = f"Spatial Group Species Persistence Indicator Table {date_code(project)}"
+                tbs = f"{dataset_code}_{date_code(project_name)}"
+                tbst = f"Spatial Group Species Persistence Indicator {date_code(project_name)}"
 
                 __datasets_dict[tb] = {
                     "Dataset Service": tbs,
@@ -1564,8 +1583,8 @@ def dataset_title_dict(project_gdb=""):
                 # arcpy.AddMessage(f"\tProcessing: {dataset_code} DisMAP_Survey_Info")
 
                 tb = dataset_code
-                tbs = f"{dataset_code}_{date_code(project)}"
-                tbst = f"Species Persistence Indicator Percentile Bin Table {date_code(project)}"
+                tbs = f"{dataset_code}_{date_code(project_name)}"
+                tbst = f"Species Persistence Indicator Percentile Bin {date_code(project_name)}"
 
                 __datasets_dict[tb] = {
                     "Dataset Service": tbs,
@@ -1591,8 +1610,8 @@ def dataset_title_dict(project_gdb=""):
                 # arcpy.AddMessage(f"\tProcessing: {dataset_code}")
 
                 tb = dataset_code
-                tbs = f"{dataset_code}_{date_code(project)}"
-                tbst = f"Species Persistence Indicator Trend Table {date_code(project)}"
+                tbs = f"{dataset_code}_{date_code(project_name)}"
+                tbst = f"Species Persistence Indicator Trend {date_code(project_name)}"
 
                 __datasets_dict[tb] = {
                     "Dataset Service": tbs,
@@ -1614,8 +1633,8 @@ def dataset_title_dict(project_gdb=""):
                 pass
                 # arcpy.AddMessage(f"\tProcessing: {dataset_code}")
                 # table    = dataset_code
-                # table_s  = f"{dataset_code}_{date_code(project)}"
-                # table_st = f"{table_s.replace('_',' ')} {date_code(project)}"
+                # table_s  = f"{dataset_code}_{date_code(project_name)}"
+                # table_st = f"{table_s.replace('_',' ')} {date_code(project_name)}"
                 # arcpy.AddMessage(f"\tProcessing: {table_s}")
                 # __datasets_dict[table] = {"Dataset Service"       : table_s,
                 #                        "Dataset Service Title" : table_st,
@@ -1637,23 +1656,28 @@ def dataset_title_dict(project_gdb=""):
         del _credits, access_constraints
 
         del dataset_codes
-        del project_folder, crf_folder
-        del project, project_gdb
+        del project_folder #, crf_folder
+        del project_name, project_gdb
 
-    except KeyboardInterrupt:
-        raise SystemExit
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError("Traceback:\n")
         traceback.print_exc()
-        raise SystemExit
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        raise SystemExit
     except SystemExit:
+        # This is not an error, so we allow the script to exit.
         raise SystemExit
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
         return __datasets_dict
     finally:
@@ -1701,7 +1725,7 @@ def date_code(version):
         arcpy.AddError(f"Traceback:\n{traceback.print_exc()}")
     except SystemExit:
         # This is not an error, so we allow the script to exit.
-        pass
+        raise SystemExit
     except Exception as e:
         arcpy.AddError(
             f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
@@ -1774,7 +1798,7 @@ def dTypesCSV(csv_data_folder="", table=""):
         traceback.print_exc()
     except SystemExit:
         # This is not an error, so we allow the script to exit.
-        pass
+        raise SystemExit
     except Exception as e:
         arcpy.AddError(
             f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
@@ -1994,70 +2018,91 @@ def field_definitions(csv_data_folder="", field=""):
         del json, copy
         # Function parameters
         del csv_data_folder, field
-    except KeyboardInterrupt:
-        sys.exit()
+
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError("Traceback:\n")
         traceback.print_exc()
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        raise SystemExit
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:")
         traceback.print_exc()
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
     else:
         return __results
-    finally:
-        if "__results" in locals().keys():
-            del __results
-
 
 def get_encoding_index_col(csv_file):
-    from pathlib import Path
+    try:
+        from pathlib import Path
 
-    import chardet
-    import pandas as pd
+        import chardet
+        import pandas as pd
 
-    # Open the file in binary mode
-    with open(csv_file, "rb") as f:
-        # Read the file's content
-        data = f.read()
-    # Detect the encoding using chardet.detect()
-    encoding_result = chardet.detect(data)
-    # Retrieve the encoding information
-    encoding = encoding_result["encoding"]
-    # Print the detected encoding
-    # arcpy.AddMessage("Detected Encoding:", encoding)
+        # Open the file in binary mode
+        with open(csv_file, "rb") as f:
+            # Read the file's content
+            data = f.read()
+        # Detect the encoding using chardet.detect()
+        encoding_result = chardet.detect(data)
+        # Retrieve the encoding information
+        encoding = encoding_result["encoding"]
+        # Print the detected encoding
+        # arcpy.AddMessage("Detected Encoding:", encoding)
 
-    path = Path(csv_file)
-    path.write_text(path.read_text(encoding=encoding), encoding="utf8")
-    del path
+        path = Path(csv_file)
+        path.write_text(path.read_text(encoding=encoding), encoding="utf8")
+        del path
 
-    dtypes = {}
-    # Read the CSV file into a DataFrame
-    df = pd.read_csv(
-        csv_file,
-        encoding=encoding,
-        delimiter=",",
-    )
-    # Analyze the data types and lengths
-    for column in df.columns:
-        dtypes[column] = df[column].dtype
-        del column
-    first_column = list(dtypes.keys())[0]
-    index_column = 0 if first_column == "Unnamed: 0" else None
-    # Declared Variables
-    del df, dtypes, first_column
+        dtypes = {}
+        # Read the CSV file into a DataFrame
+        df = pd.read_csv(
+            csv_file,
+            encoding=encoding,
+            delimiter=",",
+        )
+        # Analyze the data types and lengths
+        for column in df.columns:
+            dtypes[column] = df[column].dtype
+            del column
+        first_column = list(dtypes.keys())[0]
+        index_column = 0 if first_column == "Unnamed: 0" else None
+        # Declared Variables
+        del df, dtypes, first_column
 
-    # Import
-    del chardet, pd, Path
+        # Import
+        del chardet, pd, Path
 
-    return encoding, index_column
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
+    except arcpy.ExecuteError:
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        raise SystemExit
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
+    else:
+        return encoding, index_column
 
 
 def get_transformation(gsr_wkt="", psr_wkt=""):
@@ -2077,29 +2122,27 @@ def get_transformation(gsr_wkt="", psr_wkt=""):
     return transform
 
 
-def import_metadata(csv_data_folder="", dataset=""):
+#def import_metadata(csv_data_folder="", dataset=""):
+def import_metadata(project_folder="", dataset=""):
     try:
-        # arcpy.AddMessage(csv_data_folder)
-        # arcpy.AddMessage(dataset)
-        if len(csv_data_folder) == 0 or len(dataset) == 0:
-            arcpy.AddError(
-                f"{os.path.basename(csv_data_folder)} or {os.path.basename(dataset)} is empty"
-            )
-            raise Exception
-        else:
-            pass
         # Import
         from arcpy import metadata as md
 
-        # arcpy.AddMessage(f"{csv_data_folder}")
-        # arcpy.AddMessage(f"{dataset}")
+        # ArcPy Environments
+        arcpy.env.overwriteOutput = True
+        arcpy.env.parallelProcessingFactor = "100%"
+        arcpy.SetLogMetadata(True)
 
-        dataset_name = os.path.basename(dataset).replace(".crf", "_CRF") if dataset.endswith(".crf") else os.path.basename(dataset)
-        project_gdb = os.path.dirname(dataset)
+        dataset_name = os.path.basename(dataset).replace(".crf", "") if dataset.endswith(".crf") else os.path.basename(dataset)
 
+        arcpy.AddMessage(f"Dataset: {dataset_name}")
+
+        #project_gdb = os.path.dirname(dataset)
+        #arcpy.env.workspace = project_gdb
+        #arcpy.env.scratchWorkspace = os.path.join(os.path.dirname(project_gdb), "Scratch\\scratch.gdb")
+        #sys.exit()
         # arcpy.AddMessage(f"{dataset_name}")
         # arcpy.AddMessage(f"{project_gdb}")
-
         # if dataset_name.endswith(".crf"):
         #    dataset_name = dataset_name.replace(".crf", "_CRF")
         #    #_project = os.path.basename(os.path.dirname(os.path.dirname(dataset)))
@@ -2108,32 +2151,20 @@ def import_metadata(csv_data_folder="", dataset=""):
         # else:
         #    pass
         #    #project_gdb = os.path.dirname(dataset)
-
         # arcpy.AddMessage(f"{'-' * 10}")
         # arcpy.AddError(project_gdb)
         # arcpy.AddError(csv_data_folder)
         # arcpy.AddError(dataset)
         # arcpy.AddMessage(f"{'-' * 10}")
         # raise SystemExit
-
         # arcpy.AddMessage(csv_data_folder)
 
-        project_folder = os.path.dirname(csv_data_folder)
         metadata_folder = os.path.join(project_folder, "Metadata_Export")
         #metadata_folder = os.path.join(project_folder, "Gemini_Metadata")
 
-        # ArcPy Environments
-        arcpy.env.overwriteOutput = True
-        arcpy.env.parallelProcessingFactor = "100%"
-        arcpy.env.workspace = project_gdb
-        arcpy.env.scratchWorkspace = os.path.join(
-            os.path.dirname(project_gdb), "Scratch\\scratch.gdb"
-        )
-        arcpy.SetLogMetadata(True)
-
         try:
             arcpy.AddMessage("Create Metadata Dictionary")
-            metadata_dictionary = dataset_title_dict(project_gdb)
+            metadata_dictionary = dataset_title_dict(project_folder)
             if metadata_dictionary:
                 pass
                 #for key in metadata_dictionary:
@@ -2146,13 +2177,14 @@ def import_metadata(csv_data_folder="", dataset=""):
         except:  # noqa: E722
             traceback.print_exc()
             sys.exit()
+
         arcpy.AddMessage(f"Metadata for: {dataset_name} dataset")
 
         # arcpy.AddMessage(f"\tDataset Service:       {datasets_dict[dataset]['Dataset Service']}")
         # arcpy.AddMessage(f"\tDataset Service Title: {datasets_dict[dataset]['Dataset Service Title']}")
 
         # Assign the Metadata object's content to a target item
-        dataset_md = md.Metadata(dataset)
+##        dataset_md = md.Metadata(dataset)
 ##        # resource_citation_contacts = rf"{metadata_folder}\resource_citation_contacts.xml"
 ##        resource_citation_contacts = rf"{metadata_folder}\contacts.xml"
 ##        # arcpy.AddMessage(resource_citation_contacts)
@@ -2164,6 +2196,7 @@ def import_metadata(csv_data_folder="", dataset=""):
 
         # Create a new Metadata object and add some content to it
         # https://pro.arcgis.com/en/pro-app/latest/arcpy/metadata/metadata-class.htm
+        dataset_md = md.Metadata(dataset)
         dataset_md.title = metadata_dictionary[dataset_name.replace(".csv", "")]["Dataset Service Title"]
         dataset_md.tags = metadata_dictionary[dataset_name.replace(".csv", "")]["Tags"]
         dataset_md.summary = metadata_dictionary[dataset_name.replace(".csv", "")]["Summary"]
@@ -2178,31 +2211,22 @@ def import_metadata(csv_data_folder="", dataset=""):
         dataset_md.saveAsXML(out_xml, "REMOVE_ALL_SENSITIVE_INFO")
         # dataset_md.saveAsXML(out_xml, "REMOVE_MACHINE_NAMES")
         #dataset_md.saveAsXML(out_xml)
-        parse_xml_file_format_and_save(
-            csv_data_folder=csv_data_folder, xml_file=out_xml, sort=True
-        )
+        #parse_xml_file_format_and_save(csv_data_folder=csv_data_folder, xml_file=out_xml, sort=True)
 
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(
-            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
-        )
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        arcpy.AddError(
-            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
-        )
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
         arcpy.AddError("Traceback:\n")
         traceback.print_exc()
         raise SystemExit
     except SystemExit:
         # This is not an error, so we allow the script to exit.
-        pass
+        raise SystemExit
     except Exception as e:
         arcpy.AddError("Traceback:\n")
         traceback.print_exc()
-        arcpy.AddError(
-            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}\n{arcpy.GetMessages()}"
-        )
-
+        arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}\n{arcpy.GetMessages()}")
         raise SystemExit
     else:
         return True
@@ -2222,29 +2246,28 @@ def metadata_dictionary_json(csv_data_folder="", dataset_name=""):
             __results = metadata_dictionary[dataset_name]
         else:
             __results = None
-    except KeyboardInterrupt:
-        sys.exit()
+
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(arcpy.GetMessages(1))
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError("Traceback:\n")
         traceback.print_exc()
-        sys.exit()
-    except Exception:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
     except SystemExit:
-        sys.exit()
-    except:  # noqa: E722
-        arcpy.AddError(arcpy.GetMessages(2))
+        # This is not an error, so we allow the script to exit.
+        raise SystemExit
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:")
         traceback.print_exc()
-        sys.exit()
     else:
         return __results
-    finally:
-        if "__results" in locals().keys():
-            del __results
 
 
 def pretty_format_xml_file(metadata=""):
@@ -2364,6 +2387,7 @@ def table_definitions(csv_data_folder="", dataset_name=""):
         # arcpy.AddMessage(dataset_name)
         # arcpy.AddMessage(csv_data_folder)
         import json
+        import copy
 
         # Read a File
         with open(
@@ -2372,7 +2396,6 @@ def table_definitions(csv_data_folder="", dataset_name=""):
             _table_definitions = json.load(json_file)
 
         if not dataset_name or dataset_name == "":
-            import copy
             # Return a dictionary of all values
             __results = copy.deepcopy(_table_definitions)
         elif dataset_name:
@@ -3028,7 +3051,7 @@ def test_bed_1(project_gdb=""):
         arcpy.AddError(f"Traceback:\n{traceback.print_exc()}")
     except SystemExit:
         # This is not an error, so we allow the script to exit.
-        pass
+        raise SystemExit
     except Exception:
         arcpy.AddError(
             f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
@@ -3045,13 +3068,13 @@ def test_bed_2(project=""):
         arcpy.env.overwriteOutput = True
         arcpy.env.parallelProcessingFactor = "100%"
 
-        base_project_folder = os.path.dirname(os.path.dirname(__file__))
-
-        # Test if passed workspace exists, if not raise SystemExit
-        if not arcpy.Exists(project_gdb):
-            raise SystemExit(f"{os.path.basename(project_gdb)} is missing!!")
-        else:
-            pass
+##        base_project_folder = os.path.dirname(os.path.dirname(__file__))
+##
+##        # Test if passed workspace exists, if not raise SystemExit
+##        if not arcpy.Exists(project_gdb):
+##            raise SystemExit(f"{os.path.basename(project_gdb)} is missing!!")
+##        else:
+##            pass
 
         ##    # ###--->>>
         ##        from arcpy import metadata as md
@@ -3336,7 +3359,7 @@ def test_bed_2(project=""):
         ##    # ###--->>>
 
         # Function parameters
-        del project_gdb
+        #del project_gdb
         del project
 
     except arcpy.ExecuteWarning:
@@ -3350,7 +3373,7 @@ def test_bed_2(project=""):
         arcpy.AddError(f"Traceback:\n{traceback.print_exc()}")
     except SystemExit:
         # This is not an error, so we allow the script to exit.
-        pass
+        raise SystemExit
     except Exception as e:
         arcpy.AddError(
             f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
@@ -3362,7 +3385,7 @@ def test_bed_2(project=""):
     finally: arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
-def script_tool(project_gdb=""):
+def script_tool(project_folder=""):
     try:
         from time import gmtime, localtime, strftime, time
 
@@ -3378,6 +3401,9 @@ def script_tool(project_gdb=""):
         arcpy.env.overwriteOutput = True
         arcpy.env.parallelProcessingFactor = "100%"
 
+        project_name   = os.path.basename(project_folder)
+        project_gdb    = os.path.join(project_folder, f"{project_name}.gdb")
+
         # Test if passed workspace exists, if not raise SystemExit
         if not arcpy.Exists(project_gdb):
             arcpy.AddMessage(f"{os.path.basename(project_gdb)} is missing!!")
@@ -3385,18 +3411,21 @@ def script_tool(project_gdb=""):
             pass
 
         # ###--->>> dataset_title_dict Test #1
-        DatasetTitleDict = False
+        DatasetTitleDict = True
         if DatasetTitleDict:
-            md_dict = dataset_title_dict(project_gdb)
-            for key in sorted(md_dict):
-                arcpy.AddMessage(key)
-                arcpy.AddMessage(f"\tDataset Service Title: {md_dict[key]['Dataset Service Title']}"
-                )
-                arcpy.AddMessage(
-                    f"\tDataset Service:       {md_dict[key]['Dataset Service']}"
-                )
-                arcpy.AddMessage(f"\tTags:                  {md_dict[key]['Tags']}")
-                del key
+            md_dict = dataset_title_dict(project_folder)
+            if md_dict:
+                for key in sorted(md_dict):
+##                    arcpy.AddMessage(key)
+##                    arcpy.AddMessage(f"\tDataset Service Title: {md_dict[key]['Dataset Service Title']}")
+##                    arcpy.AddMessage(f"\tDataset Service:       {md_dict[key]['Dataset Service']}")
+##                    arcpy.AddMessage(f"\tTags:                  {md_dict[key]['Tags']}")
+                    del key
+            else:
+                pass
+
+            import_metadata(project_folder, r"C:\Users\john.f.kennedy\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\June-1-2026\CRFs\HI_IDW_CRF.crf")
+
             del md_dict
         else:
             pass
@@ -3439,8 +3468,8 @@ def script_tool(project_gdb=""):
 
         # ###--->>>
 
-        TestImportMetadata = True
-        print(project_gdb)
+        TestImportMetadata = False
+        #print(project_gdb)
         if TestImportMetadata:
             project_folder = os.path.dirname(project_gdb)
             csv_data_folder = os.path.join(project_folder, "CSV_Data")
@@ -3453,9 +3482,9 @@ def script_tool(project_gdb=""):
 
             try:
                 #project_name = "August-1-2025"
-                #import_metadata(csv_data_folder, dataset=rf"{project_gdb}\{table_name}")
-                import_metadata(csv_data_folder, dataset=os.path.join(csv_data_folder, table_name))
-                # import_metadata(csv_data_folder, dataset=rf"{project_folder}\Scratch\HI_IDW.gdb\{table_name}")
+                #import_metadata(dataset=rf"{project_gdb}\{table_name}")
+                import_metadata(dataset=os.path.join(csv_data_folder, table_name))
+                # import_metadata(dataset=rf"{project_folder}\Scratch\HI_IDW.gdb\{table_name}")
 
             except:  # noqa: E722
                 pass
@@ -3494,7 +3523,7 @@ def script_tool(project_gdb=""):
         arcpy.AddError(f"Traceback:\n{traceback.print_exc()}")
     except SystemExit:
         # This is not an error, so we allow the script to exit.
-        pass
+        raise SystemExit
     except Exception as e:
         arcpy.AddError(
             f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
@@ -3507,36 +3536,32 @@ def script_tool(project_gdb=""):
         arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
 
-        home_folder  = arcpy.GetParameterAsText(0)
-        project_name = arcpy.GetParameterAsText(1)
-
-        if not home_folder:
-            home_folder = os.path.join(os.path.expanduser("~"), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python")
+        project_folder = arcpy.GetParameterAsText(0)
+        if not project_folder:
+            # project_name = "August-1-2025"
+            # project_name = "February-1-2026"
+            project_name = "June-1-2026"
+            project_folder = os.path.join(os.path.expanduser('~'), f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}")
         else:
             pass
 
-        if not project_name:
-            project_name = "August-1-2025"
-        else: # This else block is empty, can be removed.
-            pass
+        script_tool(project_folder)
 
-        script_tool(home_folder, project_name)
+        arcpy.SetParameterAsText(1, "Result")
 
-        arcpy.SetParameterAsText(2, "Result")
+        del project_folder
 
-        del home_folder, project_name
-
-    except arcpy.ExecuteError:
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-    except Exception as e:
-        arcpy.AddError(e)
-        traceback.print_exc()
     except SystemExit:
         # This is not an error, so we allow the script to exit.
         pass
+    except arcpy.ExecuteError:
+        arcpy.AddError(arcpy.GetMessages(2))
+        traceback.print_exc()
+    except Exception:
+        traceback.print_exc()
+
 
 # This is an autogenerated comment.

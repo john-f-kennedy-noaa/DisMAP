@@ -12,21 +12,9 @@
 import os
 import sys
 import traceback
+import inspect
 
 import arcpy  # third-parties second
-
-
-def trace():
-    import sys  # noqa: E401
-    import traceback
-
-    tb = sys.exc_info()[2]
-    tbinfo = traceback.format_tb(tb)[0]
-    line = tbinfo.split(", ")[1]
-    filename = sys.path[0] + os.sep + f"{__file__}"
-    synerror = traceback.print_exc().splitlines()[-1]
-    return line, filename, synerror
-
 
 def preprocessing(project_gdb="", table_names="", clear_folder=True):
     try:
@@ -185,6 +173,10 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
             del sample_locations
             del region_gdb, table_name
             del datasets, filter_region, filter_subregion
+
+        # Reset environment settings to default settings.
+        arcpy.ResetEnvironments()
+
         # Declared Variables
         del scratch_folder
         # Imports
@@ -192,22 +184,27 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         # Function Parameters
         del project_gdb, table_names
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
+        pass
 
 
 def director(project_gdb="", Sequential=True, table_names=[]):
@@ -223,18 +220,12 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         else:
             pass
 
-        arcpy.SetLogHistory(
-            True
-        )  # Look in %AppData%\Roaming\Esri\ArcGISPro\ArcToolbox\History
+        arcpy.SetLogHistory(True)  # Look in %AppData%\Roaming\Esri\ArcGISPro\ArcToolbox\History
         arcpy.SetLogMetadata(True)
-        arcpy.SetSeverityLevel(
-            1
-        )  # 0—A tool will not throw an exception, even if the tool produces an error or warning.
+        arcpy.SetSeverityLevel(1)  # 0—A tool will not throw an exception, even if the tool produces an error or warning.
         # 1—If a tool produces a warning or an error, it will throw an exception.
         # 2—If a tool produces an error, it will throw an exception. This is the default.
-        arcpy.SetMessageLevels(
-            ["NORMAL"]
-        )  # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
+        arcpy.SetMessageLevels(["NORMAL"])  # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
 
         arcpy.env.overwriteOutput = True
         arcpy.env.parallelProcessingFactor = "100%"
@@ -243,9 +234,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         scratch_folder = os.path.join(project_folder, "Scratch")
         del project_folder
 
-        preprocessing(
-            project_gdb=project_gdb, table_names=table_names, clear_folder=True
-        )
+        preprocessing(project_gdb=project_gdb, table_names=table_names, clear_folder=True)
 
         # Sequential Processing
         if Sequential:
@@ -277,12 +266,8 @@ def director(project_gdb="", Sequential=True, table_names=[]):
             multiprocessing.set_executable(os.path.join(sys.exec_prefix, "pythonw.exe"))
             # Get CPU count and then take 2 away for other process
             _processes = multiprocessing.cpu_count() - 2
-            _processes = (
-                _processes if len(table_names) >= _processes else len(table_names)
-            )
-            arcpy.AddMessage(
-                f"Creating the multiprocessing Pool with {_processes} processes"
-            )
+            _processes = (_processes if len(table_names) >= _processes else len(table_names))
+            arcpy.AddMessage(f"Creating the multiprocessing Pool with {_processes} processes")
             # Create a pool of workers, keep one cpu free for surfing the net.
             # Let each worker process only handle 1 task before being restarted (in case of nasty memory leaks)
             with multiprocessing.Pool(processes=_processes, maxtasksperchild=1) as pool:
@@ -372,6 +357,9 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         arcpy.management.Compact(project_gdb)
         arcpy.AddMessage("\t" + arcpy.GetMessages(0).replace("\n", "\n\t"))
 
+        # Reset environment settings to default settings.
+        arcpy.ResetEnvironments()
+
         # Declared Variables assigned in function
         del scratch_folder
 
@@ -381,25 +369,29 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         # Function Parameters
         del project_gdb, Sequential, table_names
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
+        pass
 
-
-def script_tool(project_gdb=""):
+def script_tool(project_folder=""):
     try:
         # Imports
         from time import gmtime, localtime, strftime, time
@@ -411,68 +403,63 @@ def script_tool(project_gdb=""):
         arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
-        arcpy.AddMessage(
-            f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}"
-        )
+        arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
         arcpy.AddMessage(f"{'-' * 80}\n")
 
-        try:
+        # Set varaibales
+        project_name   = os.path.basename(project_folder)
+        project_gdb    = os.path.join(project_folder, f"{project_name}.gdb")
+
+        Test = False
+        if Test:
+            director(
+                project_gdb=project_gdb,
+                Sequential=True,
+                table_names=["GMEX_IDW",],
+            )
+
+        elif not Test:
+            #
+            # director(project_gdb=project_gdb, Sequential=False, table_names = ["AI_IDW", "EBS_IDW", "ENBS_IDW", "GMEX_IDW", "GOA_IDW", "HI_IDW", "NBS_IDW", "NEUS_FAL_IDW", "NEUS_SPR_IDW", "SEUS_FAL_IDW", "SEUS_SPR_IDW", "SEUS_SUM_IDW", "WC_ANN_IDW", "WC_TRI_IDW",])
+            # director(project_gdb=project_gdb, Sequential=False, table_names = ["AI_IDW", "HI_IDW",])
+            # director(project_gdb=project_gdb, Sequential=False, table_names = ["EBS_IDW", "ENBS_IDW", "GMEX_IDW", "GOA_IDW", "NBS_IDW", ])
+            # director(project_gdb=project_gdb, Sequential=False, table_names = ["HI_IDW",])
+            # director(project_gdb=project_gdb, Sequential=False, table_names = [ "WC_ANN_IDW", "WC_TRI_IDW",])
+            # director(project_gdb=project_gdb, Sequential=False, table_names = ["SEUS_FAL_IDW", "SEUS_SPR_IDW", "SEUS_SUM_IDW",])
+            # director(project_gdb=project_gdb, Sequential=False, table_names = ["NEUS_FAL_IDW", "NEUS_SPR_IDW", ])
+            director(
+                project_gdb=project_gdb,
+                Sequential=False,
+                table_names=[
+                    "AI_IDW",
+                    "EBS_IDW",
+                    "ENBS_IDW",
+                    "GMEX_IDW",
+                    "GOA_IDW",
+                    "NBS_IDW",
+                    "NEUS_FAL_IDW",
+                ],
+            )
+            director(
+                project_gdb=project_gdb,
+                Sequential=False,
+                table_names=[
+                    "HI_IDW",
+                    "NEUS_SPR_IDW",
+                    "SEUS_FAL_IDW",
+                    "SEUS_SPR_IDW",
+                    "SEUS_SUM_IDW",
+                    "WC_ANN_IDW",
+                    "WC_TRI_IDW",
+                ],
+            )
+            # director(project_gdb=project_gdb, Sequential=False, table_names=[])
+        else:
             pass
-            # table_names = ["AI_IDW", "EBS_IDW", "ENBS_IDW", "GMEX_IDW", "GOA_IDW", "HI_IDW", "NBS_IDW", "NEUS_FAL_IDW", "NEUS_SPR_IDW", "SEUS_FAL_IDW", "SEUS_SPR_IDW", "SEUS_SUM_IDW", "WC_ANN_IDW", "WC_TRI_IDW",]
+        del Test
 
-            Test = False
-            if Test:
-                director(
-                    project_gdb=project_gdb,
-                    Sequential=True,
-                    table_names=[
-                        "HI_IDW",
-                        "AI_IDW",
-                    ],
-                )
-
-            elif not Test:
-                #
-                # director(project_gdb=project_gdb, Sequential=False, table_names = ["AI_IDW", "EBS_IDW", "ENBS_IDW", "GMEX_IDW", "GOA_IDW", "HI_IDW", "NBS_IDW", "NEUS_FAL_IDW", "NEUS_SPR_IDW", "SEUS_FAL_IDW", "SEUS_SPR_IDW", "SEUS_SUM_IDW", "WC_ANN_IDW", "WC_TRI_IDW",])
-                # director(project_gdb=project_gdb, Sequential=False, table_names = ["EBS_IDW", "ENBS_IDW", "GMEX_IDW", "GOA_IDW", "NBS_IDW", ])
-                # director(project_gdb=project_gdb, Sequential=False, table_names = ["HI_IDW",])
-                # director(project_gdb=project_gdb, Sequential=False, table_names = [ "WC_ANN_IDW", "WC_TRI_IDW",])
-                # director(project_gdb=project_gdb, Sequential=False, table_names = ["SEUS_FAL_IDW", "SEUS_SPR_IDW", "SEUS_SUM_IDW",])
-                # director(project_gdb=project_gdb, Sequential=False, table_names = ["NEUS_FAL_IDW", "NEUS_SPR_IDW", ])
-                director(
-                    project_gdb=project_gdb,
-                    Sequential=False,
-                    table_names=[
-                        "EBS_IDW",
-                        "ENBS_IDW",
-                        "GMEX_IDW",
-                        "GOA_IDW",
-                        "NBS_IDW",
-                        "NEUS_FAL_IDW",
-                    ],
-                )
-                director(
-                    project_gdb=project_gdb,
-                    Sequential=False,
-                    table_names=[
-                        "NEUS_SPR_IDW",
-                        "SEUS_FAL_IDW",
-                        "SEUS_SPR_IDW",
-                        "SEUS_SUM_IDW",
-                        "WC_ANN_IDW",
-                        "WC_TRI_IDW",
-                    ],
-                )
-                # director(project_gdb=project_gdb, Sequential=False, table_names=[])
-            else:
-                pass
-            del Test
-
-        except:  # noqa: E722
-            pass
-            # arcpy.AddError(arcpy.GetMessages(2))
-            # traceback.print_exc()
-            # sys.exit()
+        # Reset environment settings to default settings.
+        arcpy.ResetEnvironments()
 
         # Declared Varaiables
         # Imports
@@ -500,48 +487,50 @@ def script_tool(project_gdb=""):
         del elapse_time, end_time, start_time
         del gmtime, localtime, strftime, time
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}")
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
+        arcpy.AddMessage("\nScript finished successfully.\n")
+    finally:
+        arcpy.AddMessage(f"\n{'--End' * 10}--")
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
-        project_gdb = arcpy.GetParameterAsText(0)
-        if not project_gdb:
-            project_gdb = os.path.join(
-                os.path.expanduser("~"),
-                "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb",
-            )
+
+        project_folder = arcpy.GetParameterAsText(0)
+        if not project_folder:
+            # project_name = "August-1-2025"
+            # project_name = "February-1-2026"
+            project_name = "June-1-2026"
+            project_folder = os.path.join(os.path.expanduser('~'), f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}")
         else:
             pass
-        script_tool(project_gdb)
-        arcpy.SetParameterAsText(1, "Result")
-        del project_gdb
 
+        script_tool(project_folder)
+
+        arcpy.SetParameterAsText(1, "Result")
+
+        del project_folder
+
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
+        arcpy.AddError(arcpy.GetMessages(2))
+        traceback.print_exc()
+    except Exception:
+        traceback.print_exc()
+
+
 # This is an autogenerated comment.

@@ -12,23 +12,11 @@
 import os
 import sys
 import traceback
+import inspect
 
 import arcpy  # third-parties second
 
-
-def trace():
-    import sys  # noqa: E401
-    import traceback
-
-    tb = sys.exc_info()[2]
-    tbinfo = traceback.format_tb(tb)[0]
-    line = tbinfo.split(", ")[1]
-    filename = sys.path[0] + os.sep + "test.py"
-    synerror = traceback.print_exc().splitlines()[-1]
-    return line, filename, synerror
-
-
-def preprocessing(project_gdb="", table_names="", clear_folder=True):
+def preprocessing(project_gdb="", table_names="", clear_folder=False):
     try:
         import dismap_tools
 
@@ -41,9 +29,7 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         )  # 0—A tool will not throw an exception, even if the tool produces an error or warning.
         # 1—If a tool produces a warning or an error, it will throw an exception.
         # 2—If a tool produces an error, it will throw an exception. This is the default.
-        arcpy.SetMessageLevels(
-            ["NORMAL"]
-        )  # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
+        arcpy.SetMessageLevels(["NORMAL"])  # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
 
         # Set basic arcpy.env variables
         arcpy.env.overwriteOutput = True
@@ -54,15 +40,15 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         scratch_folder = rf"{project_folder}\Scratch"
         scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
 
-        # Clear Scratch Folder
-        # ClearScratchFolder = True
-        # if ClearScratchFolder:
-        if clear_folder:
-            dismap_tools.clear_folder(folder=scratch_folder)
-        else:
-            pass
-        # del ClearScratchFolder
-        del clear_folder
+##        # Clear Scratch Folder
+##        # ClearScratchFolder = True
+##        # if ClearScratchFolder:
+##        if clear_folder:
+##            dismap_tools.clear_folder(folder=scratch_folder)
+##        else:
+##            pass
+##        # del ClearScratchFolder
+##        del clear_folder
 
         arcpy.env.workspace = project_gdb
         arcpy.env.scratchWorkspace = scratch_workspace
@@ -104,91 +90,85 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
             )
 
             # Process: Make Table View (Make Table View) (management)
-            datasets = rf"{project_gdb}\Datasets"
-            arcpy.AddMessage(
-                f"\t{os.path.basename(datasets)} has {arcpy.management.GetCount(datasets)[0]} records"
-            )
+            datasets = os.path.join(project_gdb, "Datasets")
+            region_datasets = os.path.join(region_gdb, "Datasets")
+            arcpy.AddMessage(f"\t{os.path.basename(datasets)} has {arcpy.management.GetCount(datasets)[0]} records")
 
             table_name_view = "Dataset Table View"
-            arcpy.management.MakeTableView(
-                in_table=datasets,
-                out_view=table_name_view,
-                where_clause=f"TableName = '{table_name}'",
-            )
-            arcpy.AddMessage(
-                f"\tThe table {table_name_view} has {arcpy.management.GetCount(table_name_view)[0]} records"
-            )
-            arcpy.management.CopyRows(table_name_view, rf"{region_gdb}\Datasets")
+            arcpy.management.MakeTableView(in_table=datasets,
+                                           out_view=table_name_view,
+                                           where_clause=f"TableName = '{table_name}'",)
+            arcpy.AddMessage(f"\tThe table {table_name_view} has {arcpy.management.GetCount(table_name_view)[0]} records")
+            arcpy.management.CopyRows(table_name_view, region_datasets)
             arcpy.AddMessage(
                 "\tCopy Rows: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t"))
             )
 
-            filter_region = [
-                row[0]
-                for row in arcpy.da.SearchCursor(
-                    rf"{region_gdb}\Datasets", "FilterRegion"
-                )
-            ][0].replace("'", "''")
-            filter_subregion = [
-                row[0]
-                for row in arcpy.da.SearchCursor(
-                    rf"{region_gdb}\Datasets", "FilterSubRegion"
-                )
-            ][0].replace("'", "''")
+            filter_region = [row[0] for row in arcpy.da.SearchCursor( region_datasets, "FilterRegion")][0].replace("'", "''")
+            filter_subregion = [row[0]  for row in arcpy.da.SearchCursor( region_datasets, "FilterSubRegion")][0].replace("'", "''")
 
             arcpy.management.Delete(table_name_view)
             del table_name_view
 
             region_table = rf"{project_gdb}\{table_name}"
-            arcpy.AddMessage(
-                f"\t{os.path.basename(region_table)} has {arcpy.management.GetCount(region_table)[0]} records"
-            )
+            arcpy.AddMessage(f"\t{os.path.basename(region_table)} has {arcpy.management.GetCount(region_table)[0]} records")
             # Process: Make Table View (Make Table View) (management)
             table_name_view = "IDW Table View"
             arcpy.management.MakeTableView(
-                in_table=region_table,
-                out_view=table_name_view,
-                where_clause="DistributionProjectName = 'NMFS/Rutgers IDW Interpolation'",
-            )
+                                           in_table=region_table,
+                                           out_view=table_name_view,
+                                           where_clause="DistributionProjectName = 'NMFS/Rutgers IDW Interpolation'",)
+                                           #where_clause="DistributionProjectName <> 'Not for IDW'",)
             # Process: Copy Rows (Copy Rows) (management)
-            arcpy.AddMessage(
-                f"\t{table_name_view} has {arcpy.management.GetCount(table_name_view)[0]} records"
-            )
-            arcpy.management.CopyRows(
-                in_rows=table_name_view, out_table=rf"{region_gdb}\{table_name}"
-            )
-            arcpy.AddMessage(
-                "\tCopy Rows: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t"))
-            )
+            arcpy.AddMessage(f"\t{table_name_view} has {arcpy.management.GetCount(table_name_view)[0]} records")
+            arcpy.management.CopyRows(in_rows=table_name_view, out_table=rf"{region_gdb}\{table_name}")
+            arcpy.AddMessage("\tCopy Rows: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
 
             arcpy.management.Delete(table_name_view)
             del table_name_view
 
             # Process: Make Table View (Make Table View) (management)
             # arcpy.AddMessage(filter_subregion)
-            species_filter = rf"{project_gdb}\Species_Filter"
-            arcpy.AddMessage(
-                f"\t{os.path.basename(species_filter)} has {arcpy.management.GetCount(species_filter)[0]} records"
-            )
+            species_filter = os.path.join(project_gdb, "Species_Filter")
+
+            arcpy.AddMessage(f"\t{os.path.basename(species_filter)} has {arcpy.management.GetCount(species_filter)[0]} records")
+
             table_name_view = "Species Filter Table View"
+
+##            arcpy.management.MakeTableView(
+##                in_table=species_filter,
+##                out_view=table_name_view,
+##                # where_clause = f"FilterSubRegion = '{filter_subregion}'",
+##                #where_clause=f"FilterSubRegion = '{filter_subregion}' AND DistributionProjectName = 'NMFS/Rutgers IDW Interpolation'",
+##                #where_clause=f"FilterSubRegion = '{filter_subregion}' AND DistributionProjectName <> 'Not for IDW'",
+##                where_clause = f"FilterRegion = '{filter_region}' And FilterSubRegion = '{filter_subregion}' And DistributionProjectName <> 'Not for IDW'",
+##                workspace=region_gdb,
+##                #field_info="OBJECTID OBJECTID VISIBLE NONE;Species Species VISIBLE NONE;CommonName CommonName VISIBLE NONE;TaxonomicGroup TaxonomicGroup VISIBLE NONE;FilterRegion FilterRegion VISIBLE NONE;FilterSubRegion FilterSubRegion VISIBLE NONE;ManagementBody ManagementBody VISIBLE NONE;ManagementPlan ManagementPlan VISIBLE NONE;DistributionProjectName DistributionProjectName VISIBLE NONE",
+##            )
+##
+##            arcpy.management.MakeTableView(
+##                in_table=r"C:\Users\john.f.kennedy\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\June-1-2026\June-1-2026.gdb\Species_Filter",
+##                out_view="Species_Filter_View",
+##                where_clause="FilterRegion = 'Alaska' And FilterSubRegion = 'Northern Bering Sea' And DistributionProjectName <> 'Not for IDW'",
+##                workspace=None,
+##                field_info="OBJECTID OBJECTID VISIBLE NONE;Species Species VISIBLE NONE;CommonName CommonName VISIBLE NONE;TaxonomicGroup TaxonomicGroup VISIBLE NONE;FilterRegion FilterRegion VISIBLE NONE;FilterSubRegion FilterSubRegion VISIBLE NONE;ManagementBody ManagementBody VISIBLE NONE;ManagementPlan ManagementPlan VISIBLE NONE;DistributionProjectName DistributionProjectName VISIBLE NONE"
+##            )
+
             arcpy.management.MakeTableView(
-                in_table=species_filter,
-                out_view=table_name_view,
-                # where_clause = f"FilterSubRegion = '{filter_subregion}'",
-                where_clause=f"FilterSubRegion = '{filter_subregion}' AND DistributionProjectName = 'NMFS/Rutgers IDW Interpolation'",
-                workspace=region_gdb,
-                field_info="OBJECTID OBJECTID VISIBLE NONE;Species Species VISIBLE NONE;CommonName CommonName VISIBLE NONE;TaxonomicGroup TaxonomicGroup VISIBLE NONE;FilterRegion FilterRegion VISIBLE NONE;FilterSubRegion FilterSubRegion VISIBLE NONE;ManagementBody ManagementBody VISIBLE NONE;ManagementPlan ManagementPlan VISIBLE NONE;DistributionProjectName DistributionProjectName VISIBLE NONE",
+                in_table     = species_filter,
+                out_view     = table_name_view,
+                #where_clause = "FilterRegion = 'Alaska' And FilterSubRegion = 'Northern Bering Sea' And DistributionProjectName <> 'Not for IDW'",
+                where_clause = f"FilterRegion = '{filter_region}' And FilterSubRegion = '{filter_subregion}' And DistributionProjectName <> 'Not for IDW'",
+                workspace    = None,
+                field_info   = "OBJECTID OBJECTID VISIBLE NONE;Species Species VISIBLE NONE;CommonName CommonName VISIBLE NONE;TaxonomicGroup TaxonomicGroup VISIBLE NONE;FilterRegion FilterRegion VISIBLE NONE;FilterSubRegion FilterSubRegion VISIBLE NONE;ManagementBody ManagementBody VISIBLE NONE;ManagementPlan ManagementPlan VISIBLE NONE;DistributionProjectName DistributionProjectName VISIBLE NONE"
             )
 
-            arcpy.AddMessage(
-                f"\t{table_name_view} has {arcpy.management.GetCount(table_name_view)[0]} records"
-            )
-            arcpy.management.CopyRows(
-                in_rows=table_name_view, out_table=rf"{region_gdb}\Species_Filter"
-            )
-            arcpy.AddMessage(
-                "\tCopy Rows: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t"))
-            )
+            print(filter_region)
+            print(filter_subregion)
+
+            arcpy.AddMessage(f"\t{table_name_view} has {arcpy.management.GetCount(table_name_view)[0]} records")
+            arcpy.management.CopyRows(in_rows=table_name_view, out_table=rf"{region_gdb}\Species_Filter")
+            arcpy.AddMessage("\tCopy Rows: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
 
             arcpy.management.Delete(table_name_view)
             del table_name_view
@@ -207,24 +187,28 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         # Function Parameters
         del project_gdb, table_names
 
-    except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
         sys.exit()
-        return False
+    except arcpy.ExecuteError:
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
-
+        pass
 
 def director(project_gdb="", Sequential=True, table_names=[]):
     try:
@@ -255,14 +239,12 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         del project_folder
 
         # scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
-        # csv_data_folder   = rf"{project_folder}\CSV_Data"
+        # csv_data_folder   = os.path.join(project_folder, "CSV_Data")
         # arcpy.env.workspace        = project_gdb
         # arcpy.env.scratchWorkspace = scratch_workspace
         # del project_folder, scratch_workspace
 
-        preprocessing(
-            project_gdb=project_gdb, table_names=table_names, clear_folder=True
-        )
+        preprocessing(project_gdb=project_gdb, table_names=table_names, clear_folder=True)
 
         # Sequential Processing
         if Sequential:
@@ -456,25 +438,23 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         # Function Parameters
         del project_gdb, Sequential, table_names
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}")
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
+        pass
 
-
-def script_tool(project_gdb=""):
+def script_tool(project_folder=""):
     try:
         # Imports
         from time import gmtime, localtime, strftime, time
@@ -488,21 +468,21 @@ def script_tool(project_gdb=""):
         arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
-        arcpy.AddMessage(
-            f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}"
-        )
+        arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
         arcpy.AddMessage(f"{'-' * 80}\n")
 
         # Set varaibales
-        project_folder = os.path.dirname(project_gdb)
-        scratch_folder = rf"{os.path.dirname(project_gdb)}\Scratch"
-        del project_folder
+        project_name   = os.path.basename(project_folder)
+        project_gdb    = os.path.join(project_folder, f"{project_name}.gdb")
+        scratch_folder = os.path.join(project_folder, "Scratch")
+
+        #del project_folder
 
         # Clear Scratch Folder
         ClearScratchFolder = False
         if ClearScratchFolder:
             # if clear_folder:
-            _scratch_folder = rf"{os.path.dirname(project_gdb)}\Scratch"
+            _scratch_folder = os.path.join(project_folder, "Scratch")
             dismap_tools.clear_folder(folder=_scratch_folder)
             del _scratch_folder
         else:
@@ -572,7 +552,7 @@ def script_tool(project_gdb=""):
         ClearScratchFolder = False
         if ClearScratchFolder:
             # if clear_folder:
-            _scratch_folder = rf"{os.path.dirname(project_gdb)}\Scratch"
+            _scratch_folder = rf"{project_folder}\Scratch"
             dismap_tools.clear_folder(folder=_scratch_folder)
             del _scratch_folder
         else:
@@ -591,65 +571,60 @@ def script_tool(project_gdb=""):
         minutes, seconds = divmod(rem, 60)
         arcpy.AddMessage(f"\n{'-' * 80}")
         arcpy.AddMessage(f"Python script: {os.path.basename(__file__)}")
-        arcpy.AddMessage(
-            f"Start Time:    {strftime('%a %b %d %I:%M %p', localtime(start_time))}"
-        )
-        arcpy.AddMessage(
-            f"End Time:      {strftime('%a %b %d %I:%M %p', localtime(end_time))}"
-        )
-        arcpy.AddMessage(
-            f"Elapsed Time   {int(hours):0>2}:{int(minutes):0>2}:{seconds:05.2f} (H:M:S)"
-        )
+        arcpy.AddMessage(f"Start Time:    {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
+        arcpy.AddMessage(f"End Time:      {strftime('%a %b %d %I:%M %p', localtime(end_time))}")
+        arcpy.AddMessage(f"Elapsed Time   {int(hours):0>2}:{int(minutes):0>2}:{seconds:05.2f} (H:M:S)")
         arcpy.AddMessage(f"{'-' * 80}")
         del hours, rem, minutes, seconds
         del elapse_time, end_time, start_time
         del gmtime, localtime, strftime, time
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        sys.exit()
-        return False
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}")
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
+        arcpy.AddMessage("\nScript finished successfully.\n")
+    finally:
+        arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
-        project_gdb = arcpy.GetParameterAsText(0)
-        if not project_gdb:
-            project_gdb = os.path.join(
-                os.path.expanduser("~"),
-                "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb",
-            )
+
+        project_folder = arcpy.GetParameterAsText(0)
+        if not project_folder:
+            # project_name = "August-1-2025"
+            # project_name = "February-1-2026"
+            project_name = "June-1-2026"
+            project_folder = os.path.join(os.path.expanduser('~'), f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}")
+            del project_name
         else:
             pass
 
-        script_tool(project_gdb)
+        script_tool(project_folder)
 
         arcpy.SetParameterAsText(1, "Result")
-        del project_gdb
 
+        del project_folder
+
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
+        arcpy.AddError(arcpy.GetMessages(2))
+        traceback.print_exc()
+    except Exception:
+        traceback.print_exc()
+
+
 # This is an autogenerated comment.

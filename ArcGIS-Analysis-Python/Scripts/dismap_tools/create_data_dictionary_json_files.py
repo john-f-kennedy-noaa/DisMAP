@@ -7,7 +7,6 @@ Script documentation
                                         arcpy.SetParameterAsText()
 """
 
-
 import os
 import inspect
 import traceback
@@ -1841,7 +1840,7 @@ def script_tool(project_gdb=""):
                 "field_precision": 0,
                 "field_required": "true",
                 "field_scale": 0,
-                "field_type": "String",
+                "field_type": "Integer",
                 "field_attrdef": "Year",
                 "field_attrdefs": "DisMAP Project GDB Data Dictionary",
                 "field_attrdomv": {"udom": "Year"},
@@ -2091,8 +2090,8 @@ def script_tool(project_gdb=""):
             "Year",
             "Species",
             "CommonName",
-            "PercentileBin",
             "WTCPUE",
+            "PercentileBin",
             "HaulProportion",
             "HaulBin",
         ]
@@ -2144,9 +2143,9 @@ def script_tool(project_gdb=""):
             "Indicators",
             "Species_Filter",
             "DisMAP_Survey_Info",
+            "SpatialGroup_SpeciesPersistenceIndicator",
             "SpeciesPersistenceIndicatorTrend",
             "SpeciesPersistenceIndicatorPercentileBin",
-            "SpatialGroup_SpeciesPersistenceIndicator",
         ]
 
         for table_name in table_names:
