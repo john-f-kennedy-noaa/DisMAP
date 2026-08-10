@@ -12,20 +12,9 @@
 import os
 import sys
 import traceback
+import inspect
 
 import arcpy  # third-parties second
-
-
-def trace():
-    import sys  # noqa: E401
-    import traceback
-    tb = sys.exc_info()[2]
-    tbinfo = traceback.format_tb(tb)[0]
-    line = tbinfo.split(", ")[1]
-    #filename = sys.path[0] + os.sep + f"{os.path.basename(__file__)}"
-    filename = os.path.basename(__file__)
-    synerror = traceback.print_exc().splitlines()[-1]
-    return line, filename, synerror
 
 def print_table(table=""):
     try:
@@ -41,22 +30,23 @@ def print_table(table=""):
             del row
         del desc, fields, oid
         del table
+
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        #Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        #Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}")
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
+        pass
+
 
 def worker(region_gdb=""):
     try:
@@ -64,12 +54,12 @@ def worker(region_gdb=""):
         if not arcpy.Exists(rf"{region_gdb}"):
             sys.exit()(f"{os.path.basename(region_gdb)} is missing!!")
 
-        # Import the dismap module to access tools
-        #import dev_dismap_tools
-        #importlib.reload(dev_dismap_tools)
+        #from lxml import etree
+        from arcpy import metadata as md
 
-        # Import the worker module to process data
-        # N/A
+        # Import the dismap module to access tools
+        #import dismap_tools
+
 
         # Set History and Metadata logs, set serverity and message level
         arcpy.SetLogHistory(True) # Look in %AppData%\Roaming\Esri\ArcGISPro\ArcToolbox\History
@@ -153,7 +143,7 @@ def worker(region_gdb=""):
         #with arcpy.da.SearchCursor(layerspeciesyearimagename, fields, where_clause = f"TableName = '{table_name}'") as cursor:
         with arcpy.da.SearchCursor(layerspeciesyearimagename, fields) as cursor:
             for row in cursor:
-                image_name, variable, species, year = row[0], row[1], row[2], row[3]
+                image_name, variable, species, year = row[0], row[1], row[2], int(row[3])
                 #if variable not in variables: variables.append(variable)
                 #arcpy.AddMessage(f"{variable}, {image_name}, {species}, {year}")
                 #variable = f"_{variable}" if "Species Richness" in variable else variable
@@ -170,6 +160,8 @@ def worker(region_gdb=""):
                     #arcpy.AddMessage(image_folder)
                     del image_folder
                     del output_raster_path
+                else:
+                    pass
 
                 del row, image_name, variable, species, year
             del cursor
@@ -187,7 +179,7 @@ def worker(region_gdb=""):
         # Prepare the points layer
         sample_locations_path = rf"{region_gdb}\{sample_locations}"
         sample_locations_path_layer = arcpy.management.MakeFeatureLayer(sample_locations_path, "Region Sample Locations Layer")
-        del sample_locations_path
+        #del sample_locations_path
 
         if summary_product == "Yes":
             # Add the YearWeights feild
@@ -200,6 +192,8 @@ def worker(region_gdb=""):
         getcount = arcpy.management.GetCount(sample_locations_path_layer)[0]
         arcpy.AddMessage(f'\t{sample_locations} has {getcount} records')
         del getcount
+
+        sample_locations_path_md = md.Metadata(sample_locations_path)
 
         for output_raster in output_rasters:
             image_name, variable, species, year, output_raster_path =  output_rasters[output_raster]
@@ -215,9 +209,7 @@ def worker(region_gdb=""):
             del msg
 
             arcpy.AddMessage('\t\t\tSelect Layer by Attribute: "CLEAR_SELECTION"')
-
             arcpy.management.SelectLayerByAttribute( sample_locations_path_layer, "CLEAR_SELECTION" )
-
             arcpy.AddMessage(f"\t\t\tSelect Layer by Attribute: Species = '{species}' AND Year = {year}")
 
             # Select for species and year
@@ -240,16 +232,20 @@ def worker(region_gdb=""):
 
             arcpy.AddMessage("\t\t\tProcessing IDW")
 
+            #print(type(year))
+            low_year  = year - 2
+            high_year = year + 2
+
             # Select weighted years
             arcpy.management.SelectLayerByAttribute( sample_locations_path_layer,
                                                      "NEW_SELECTION",
-                                                     f"Species = '{species}' AND Year >= ({year-2}) AND Year <= ({year+2})"
+                                                     f"Species = '{species}' AND (Year >= {low_year} AND Year <= {high_year})"
                                                     )
 
             # Get the count of records for selected species
             getcount = arcpy.management.GetCount(sample_locations_path_layer)[0]
 
-            arcpy.AddMessage(f"\t\t\t\t{sample_locations_path_layer} has {getcount} records for {species} and from years {year-2} to {year+2}")
+            arcpy.AddMessage(f"\t\t\t\t{sample_locations_path_layer} has {getcount} records for {species} and from years ({year}-2) to ({year}+2)")
             del getcount
 
             # Calculate YearWeights=3-(abs(Tc-Ti))
@@ -320,13 +316,14 @@ def worker(region_gdb=""):
             # Clear selection
             arcpy.management.SelectLayerByAttribute( sample_locations_path_layer, "CLEAR_SELECTION" )
 
-            from arcpy import metadata as md
             tif_md = md.Metadata(output_raster_path)
+            tif_md.copy(sample_locations_path_md)
+            tif_md.save()
             tif_md.title = image_name.replace("_", " ")
             tif_md.save()
             tif_md.synchronize("ALWAYS")
             tif_md.save()
-            del md, tif_md
+            del tif_md
 
             arcpy.management.BuildPyramids(
                                             in_raster_dataset   = output_raster_path,
@@ -341,6 +338,7 @@ def worker(region_gdb=""):
             # Clean up
             del image_name, variable, species, year, output_raster_path, output_raster
 
+        del sample_locations_path_md
         del sample_locations
         # Delete sample_locations_path_layer
         arcpy.management.Delete(sample_locations_path_layer)
@@ -348,6 +346,9 @@ def worker(region_gdb=""):
 
         # End of business logic for the worker function
         arcpy.AddMessage(f"Processing for: {table_name} complete")
+
+        # Reset environment settings to default settings.
+        arcpy.ResetEnvironments()
 
         # Clean up
         del output_rasters
@@ -363,24 +364,30 @@ def worker(region_gdb=""):
         # Function parameter
         del region_gdb
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        #Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        #Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
+        pass
 
-def script_tool(project_gdb=""):
+
+def script_tool(project_folder=""):
     try:
         # Imports
         from time import gmtime, localtime, strftime, time
@@ -398,10 +405,16 @@ def script_tool(project_gdb=""):
         arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
         arcpy.AddMessage(f"{'-' * 80}\n")
 
+        # Set varaibales
+        project_name   = os.path.basename(project_folder)
+        project_gdb    = os.path.join(project_folder, f"{project_name}.gdb")
+        scratch_folder = os.path.join(project_folder, "Scratch")
+        #del project_folder
+
         # Clear Scratch Folder
-        ClearScratchFolder = False
+        ClearScratchFolder = True
         if ClearScratchFolder:
-            dismap_tools.clear_folder(folder=rf"{os.path.dirname(project_gdb)}\Scratch")
+            dismap_tools.clear_folder(folder=scratch_folder)
         else:
             pass
         del ClearScratchFolder
@@ -424,7 +437,6 @@ def script_tool(project_gdb=""):
             except SystemExit:
                 arcpy.AddError(arcpy.GetMessages(2))
                 traceback.print_exc()
-                sys.exit()
                 sys.exit()
 
             del table_name, region_gdb
@@ -451,44 +463,58 @@ def script_tool(project_gdb=""):
         del elapse_time, end_time, start_time
         del gmtime, localtime, strftime, time
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        #Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        #Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
+        arcpy.AddMessage("\nScript finished successfully.\n")
+    finally:
+        arcpy.AddMessage(f"\n{'--End' * 10}--")
+
 
 if __name__ == '__main__':
     try:
-        project_gdb = arcpy.GetParameterAsText(0)
-        if not project_gdb:
-            project_gdb = os.path.join(os.path.expanduser('~'), "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb")
+
+        project_folder = arcpy.GetParameterAsText(0)
+        if not project_folder:
+            # project_name = "August-1-2025"
+            # project_name = "February-1-2026"
+            project_name = "June-1-2026"
+            project_folder = os.path.join(os.path.expanduser('~'), f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}")
+            del project_name
         else:
             pass
-        script_tool(project_gdb)
-        arcpy.SetParameterAsText(1, "Result")
-        del project_gdb
 
+        script_tool(project_folder)
+
+        arcpy.SetParameterAsText(1, "Result")
+
+        del project_folder
+
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
     except arcpy.ExecuteError:
-        #Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-    except:  # noqa: E722
-        #Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
+        arcpy.AddError(arcpy.GetMessages(2))
+        traceback.print_exc()
+    except Exception:
+        traceback.print_exc()
+
+
 # This is an autogenerated comment.

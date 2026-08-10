@@ -11,21 +11,10 @@
 # -------------------------------------------------------------------------------
 import os
 import sys
+import traceback
+import inspect
 
 import arcpy  # third-parties second
-
-
-def trace():
-    import sys  # noqa: E401
-    import traceback
-
-    tb = sys.exc_info()[2]
-    tbinfo = traceback.format_tb(tb)[0]
-    line = tbinfo.split(", ")[1] if ", " in tbinfo else "?"
-    filename = sys.path[0] + os.sep + "test.py"
-    synerror = traceback.print_exc()
-    return line, filename, synerror
-
 
 def raster_properties_report(dataset=""):
     try:
@@ -81,17 +70,24 @@ def raster_properties_report(dataset=""):
         del pixel_types
         del dataset
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        line, filename, err = trace()
-        arcpy.AddError(f"Geoprocessing error on {line} of {filename} :\n{err}")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.print_exc()}")
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
     except Exception as e:
-        line, filename, err = trace()
-        arcpy.AddError(f"Python error on {line} of {filename}\n{err}")
-        return False
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
     else:
         return True
 
@@ -121,12 +117,16 @@ def create_alasaka_bathymetry(project_folder=""):
         arcpy.env.resamplingMethod = "BILINEAR"
         arcpy.env.outputCoordinateSystem = None
 
+        project_name = os.path.basename(project_folder)
+        home_folder  = os.path.dirname(project_folder)
+        version_code = dismap_tools.date_code(project_name)
+
         arcpy.AddMessage("Processing Alaska Bathymetry")
 
         # Setting up the base folder bathymetry for all projects
-        ai_bathy = rf"{project_folder}\Bathymetry\Alaska Bathymetry\AI_IDW_Bathy.grd"
-        ebs_bathy = rf"{project_folder}\Bathymetry\Alaska Bathymetry\EBS_IDW_Bathy.grd"
-        goa_bathy = rf"{project_folder}\Bathymetry\Alaska Bathymetry\GOA_IDW_Bathy.grd"
+        ai_bathy  = rf"{home_folder}\Initial-Data\Bathymetry-{version_code}\Alaska Bathymetry\AI_IDW_Bathy.grd"
+        ebs_bathy = rf"{home_folder}\Initial-Data\Bathymetry-{version_code}\Alaska Bathymetry\EBS_IDW_Bathy.grd"
+        goa_bathy = rf"{home_folder}\Initial-Data\Bathymetry-{version_code}\Alaska Bathymetry\GOA_IDW_Bathy.grd"
 
         # Fail fast if files are missing
         for f in [ai_bathy, ebs_bathy, goa_bathy]:
@@ -134,19 +134,19 @@ def create_alasaka_bathymetry(project_folder=""):
                 arcpy.AddError(f"Missing required raster: {f}")
                 return False
 
-        ai_bathy_grid = rf"{project_folder}\Bathymetry\Bathymetry.gdb\AI_IDW_Bathy_Grid"
+        ai_bathy_grid  = rf"{project_folder}\Bathymetry\Bathymetry.gdb\AI_IDW_Bathy_Grid"
         ebs_bathy_grid = rf"{project_folder}\Bathymetry\Bathymetry.gdb\EBS_IDW_Bathy_Grid"
         goa_bathy_grid = rf"{project_folder}\Bathymetry\Bathymetry.gdb\GOA_IDW_Bathy_Grid"
 
-        ai_bathy_raster = rf"{project_folder}\Bathymetry\Bathymetry.gdb\AI_IDW_Bathy_Raster"
+        ai_bathy_raster  = rf"{project_folder}\Bathymetry\Bathymetry.gdb\AI_IDW_Bathy_Raster"
         ebs_bathy_raster = rf"{project_folder}\Bathymetry\Bathymetry.gdb\EBS_IDW_Bathy_Raster"
         goa_bathy_raster = rf"{project_folder}\Bathymetry\Bathymetry.gdb\GOA_IDW_Bathy_Raster"
 
-        ai_bathymetry = rf"{project_folder}\Bathymetry\Bathymetry.gdb\AI_IDW_Bathymetry"
-        ebs_bathymetry = rf"{project_folder}\Bathymetry\Bathymetry.gdb\EBS_IDW_Bathymetry"
-        goa_bathymetry = rf"{project_folder}\Bathymetry\Bathymetry.gdb\GOA_IDW_Bathymetry"
+        ai_bathymetry   = rf"{project_folder}\Bathymetry\Bathymetry.gdb\AI_IDW_Bathymetry"
+        ebs_bathymetry  = rf"{project_folder}\Bathymetry\Bathymetry.gdb\EBS_IDW_Bathymetry"
+        goa_bathymetry  = rf"{project_folder}\Bathymetry\Bathymetry.gdb\GOA_IDW_Bathymetry"
         enbs_bathymetry = rf"{project_folder}\Bathymetry\Bathymetry.gdb\ENBS_IDW_Bathymetry"
-        nbs_bathymetry = rf"{project_folder}\Bathymetry\Bathymetry.gdb\NBS_IDW_Bathymetry"
+        nbs_bathymetry  = rf"{project_folder}\Bathymetry\Bathymetry.gdb\NBS_IDW_Bathymetry"
 
         arcpy.AddMessage("Processing Esri Raster Grids")
 
@@ -270,14 +270,22 @@ def create_alasaka_bathymetry(project_folder=""):
         # Final copy of rasters in Base Folder Start
         region = "AI_IDW"
         arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(
-            rf"{project_folder}\Dataset Shapefiles\{region}\{region}_Region.prj"
+            rf"{home_folder}\Initial-Data\Dataset-Shapefiles-{version_code}\{region}\{region}_Region.prj"
         )
         del region
+
         arcpy.AddMessage("Copy AI_IDW_Bathymetry_Raster to AI_IDW_Bathymetry")
         arcpy.management.CopyRaster(ai_bathy_raster, ai_bathymetry)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
-        arcpy.AddMessage(f"Importing metadata for {os.path.basename(ai_bathymetry)}")
-        dismap_tools.import_metadata(csv_data_folder, ai_bathymetry)
+
+        # print("*" * 70)
+        # print(csv_data_folder)
+        # print(ai_bathymetry)
+        # print("*" * 70)
+
+        # arcpy.AddMessage(f"Importing metadata for {os.path.basename(ai_bathymetry)}")
+        # datasets_table_path ai_bathymetry)
+
         ai_md = md.Metadata(ai_bathymetry)
         ai_md.title = os.path.basename(ai_bathymetry).replace("_", " ")
         ai_md.save()
@@ -287,14 +295,16 @@ def create_alasaka_bathymetry(project_folder=""):
 
         region = "EBS_IDW"
         arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(
-            rf"{project_folder}\Dataset Shapefiles\{region}\{region}_Region.prj"
+            rf"{home_folder}\Initial-Data\Dataset-Shapefiles-{version_code}\{region}\{region}_Region.prj"
         )
         del region
         arcpy.AddMessage("Copy EBS_IDW_Bathymetry_Raster to EBS_IDW_Bathymetry")
         arcpy.management.CopyRaster(ebs_bathy_raster, ebs_bathymetry)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
         arcpy.AddMessage(f"Importing metadata for {os.path.basename(ebs_bathymetry)}")
-        dismap_tools.import_metadata(csv_data_folder, ebs_bathymetry)
+
+        # datasets_table_path ebs_bathymetry)
+
         ebs_md = md.Metadata(ebs_bathymetry)
         ebs_md.title = os.path.basename(ebs_bathymetry).replace("_", " ")
         ebs_md.save()
@@ -304,14 +314,14 @@ def create_alasaka_bathymetry(project_folder=""):
 
         region = "ENBS_IDW"
         arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(
-            rf"{project_folder}\Dataset Shapefiles\{region}\{region}_Region.prj"
+            rf"{home_folder}\Initial-Data\Dataset-Shapefiles-{version_code}\{region}\{region}_Region.prj"
         )
         del region
         arcpy.AddMessage("Copy EBS_IDW_Bathymetry_Raster to ENBS_Bathymetry")
         arcpy.management.CopyRaster(ebs_bathy_raster, enbs_bathymetry)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
         arcpy.AddMessage(f"Importing metadata for {os.path.basename(enbs_bathymetry)}")
-        dismap_tools.import_metadata(csv_data_folder, enbs_bathymetry)
+        # datasets_table_path enbs_bathymetry)
         enbs_md = md.Metadata(enbs_bathymetry)
         enbs_md.title = os.path.basename(enbs_bathymetry).replace("_", " ")
         enbs_md.save()
@@ -321,14 +331,14 @@ def create_alasaka_bathymetry(project_folder=""):
 
         region = "NBS_IDW"
         arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(
-            rf"{project_folder}\Dataset Shapefiles\{region}\{region}_Region.prj"
+            rf"{home_folder}\Initial-Data\Dataset-Shapefiles-{version_code}\{region}\{region}_Region.prj"
         )
         del region
         arcpy.AddMessage("Copy EBS_IDW_Bathymetry_Raster to NBS_Bathymetry")
         arcpy.management.CopyRaster(ebs_bathy_raster, nbs_bathymetry)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
         arcpy.AddMessage(f"Importing metadata for {os.path.basename(nbs_bathymetry)}")
-        dismap_tools.import_metadata(csv_data_folder, nbs_bathymetry)
+        # datasets_table_path nbs_bathymetry)
         nbs_md = md.Metadata(nbs_bathymetry)
         nbs_md.title = os.path.basename(nbs_bathymetry).replace("_", " ")
         nbs_md.save()
@@ -338,14 +348,14 @@ def create_alasaka_bathymetry(project_folder=""):
 
         region = "GOA_IDW"
         arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(
-            rf"{project_folder}\Dataset Shapefiles\{region}\{region}_Region.prj"
+            rf"{home_folder}\Initial-Data\Dataset-Shapefiles-{version_code}\{region}\{region}_Region.prj"
         )
         del region
         arcpy.AddMessage("Copy GOA_IDW_Bathymetry_Raster to GOA_IDW_Bathymetry")
         arcpy.management.CopyRaster(goa_bathy_raster, goa_bathymetry)
         arcpy.AddMessage("\tCopy Raster: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
         arcpy.AddMessage(f"Importing metadata for {os.path.basename(goa_bathymetry)}")
-        dismap_tools.import_metadata(csv_data_folder, goa_bathymetry)
+        # datasets_table_path goa_bathymetry)
         goa_md = md.Metadata(goa_bathymetry)
         goa_md.title = os.path.basename(goa_bathymetry).replace("_", " ")
         goa_md.save()
@@ -370,17 +380,24 @@ def create_alasaka_bathymetry(project_folder=""):
         # Function parameter
         del project_folder
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        line, filename, err = trace()
-        arcpy.AddError(f"Geoprocessing error on {line} of {filename} :\n{err}")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.print_exc()}")
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
     except Exception as e:
-        line, filename, err = trace()
-        arcpy.AddError(f"Python error on {line} of {filename}\n{err}")
-        return False
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
     else:
         return True
 
@@ -420,10 +437,12 @@ def create_hawaii_bathymetry(project_folder=""):
 
         arcpy.env.outputCoordinateSystem = None
 
-        hi_bathy_grid = rf"{project_folder}\Bathymetry\Hawaii Bathymetry\BFISH_PSU.shp"
-        hi_bathy_raster = (
-            rf"{project_folder}\Bathymetry\Bathymetry.gdb\HI_IDW_Bathy_Raster"
-        )
+        project_name = os.path.basename(project_folder)
+        home_folder  = os.path.dirname(project_folder)
+        version_code = dismap_tools.date_code(project_name)
+
+        hi_bathy_grid = rf"{home_folder}\Initial-Data\Bathymetry-{version_code}\Hawaii Bathymetry\BFISH_PSU.shp"
+        hi_bathy_raster = (rf"{project_folder}\Bathymetry\Bathymetry.gdb\HI_IDW_Bathy_Raster")
         hi_bathymetry = rf"{project_folder}\Bathymetry\Bathymetry.gdb\HI_IDW_Bathymetry"
 
         arcpy.AddMessage("Converting Hawaii Polygon Grid to a Raster")
@@ -450,7 +469,7 @@ def create_hawaii_bathymetry(project_folder=""):
         del tmp_grid
 
         arcpy.AddMessage(f"Importing metadata for {os.path.basename(hi_bathymetry)}")
-        dismap_tools.import_metadata(csv_data_folder, hi_bathymetry)
+        # datasets_table_path hi_bathymetry)
         hi_md = md.Metadata(hi_bathymetry)
         hi_md.title = os.path.basename(hi_bathymetry).replace("_", " ")
         hi_md.save()
@@ -482,20 +501,24 @@ def create_hawaii_bathymetry(project_folder=""):
         # Function parameter
         del project_folder
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.print_exc()}")
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
     else:
         return True
 
@@ -536,6 +559,10 @@ def gebco_bathymetry(project_folder=""):
 
         arcpy.env.outputCoordinateSystem = None
 
+        project_name = os.path.basename(project_folder)
+        home_folder  = os.path.dirname(project_folder)
+        version_code = dismap_tools.date_code(project_name)
+
         arcpy.AddMessage("Processing GEBCO Raster Grids")
 
         # gebco_dict = get_dms_points_for_gebco(project_gdb)
@@ -550,13 +577,15 @@ def gebco_bathymetry(project_folder=""):
             "WC_TRI_IDW": "gebco_2022_n49.2_s36.0_w-126.6_e-121.6.asc",
         }
 
+        #hi_bathy_grid = rf"{project_folder}\Bathymetry\"
+
         arcpy.AddMessage("Processing Regions")
         # Start looping over the datasets array as we go region by region.
         for table_name in gebco_dict:
             gebco_file_name = gebco_dict[table_name]
 
             gebco_grid = (
-                rf"{project_folder}\Bathymetry\GEBCO Bathymetry\{gebco_file_name}"
+                rf"{home_folder}\Initial-Data\Bathymetry-{version_code}\GEBCO Bathymetry\{gebco_file_name}"
             )
             bathy_grid = (
                 rf"{project_folder}\Bathymetry\Bathymetry.gdb\{table_name}_Bathy_Grid"
@@ -599,7 +628,7 @@ def gebco_bathymetry(project_folder=""):
             # Set the output coordinate system to what is needed for the
             # DisMAP project
             region_sr = arcpy.SpatialReference(
-                rf"{project_folder}\Dataset Shapefiles\{table_name}\{table_name}_Region.prj"
+                rf"{home_folder}\Initial-Data\Dataset-Shapefiles-{version_code}\{table_name}\{table_name}_Region.prj"
             )
 
             if region_sr.linearUnitName == "Kilometer":
@@ -652,7 +681,7 @@ def gebco_bathymetry(project_folder=""):
                 del out_raster
 
             arcpy.AddMessage(f"Importing metadata for {os.path.basename(bathymetry)}")
-            dismap_tools.import_metadata(csv_data_folder, bathymetry)
+            # datasets_table_path bathymetry)
             bathy_md = md.Metadata(bathymetry)
             bathy_md.title = os.path.basename(bathymetry).replace("_", " ")
             bathy_md.save()
@@ -678,25 +707,29 @@ def gebco_bathymetry(project_folder=""):
         # Function parameter
         del project_folder
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError(f"Traceback:\n{traceback.print_exc()}")
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
     else:
         return True
 
 
-def main(project_folder=""):
+def script_tool(project_folder=""):
     try:
         from time import gmtime, localtime, strftime, time
 
@@ -719,15 +752,16 @@ def main(project_folder=""):
             if not arcpy.Exists(rf"{project_folder}\Scratch\scratch.gdb"):
                 arcpy.management.CreateFileGDB(rf"{project_folder}\Scratch", "scratch")
 
-        # Base Bathymetry Folder
-        if not os.path.isdir(rf"{project_folder}\Bathymetry"):
-            arcpy.AddMessage("Create Folder: 'Bathymetry'")
-            arcpy.management.CreateFolder(rf"{project_folder}\Bathymetry")
-            get_messages = "\t" + arcpy.GetMessages().replace("\n", "\n\t") + "\n"
-            arcpy.AddMessage(f"{get_messages}")
-            del get_messages
-        else:
-            pass
+##        # Base Bathymetry Folder
+##        if not os.path.isdir(rf"{project_folder}\Bathymetry"):
+##            arcpy.AddMessage("Create Folder: 'Bathymetry'")
+##            arcpy.management.CreateFolder(rf"{project_folder}\Bathymetry")
+##            get_messages = "\t" + arcpy.GetMessages().replace("\n", "\n\t") + "\n"
+##            arcpy.AddMessage(f"{get_messages}")
+##            del get_messages
+##        else:
+##            pass
+
         # Base Bathymetry GDB
         if not arcpy.Exists(rf"{project_folder}\Bathymetry\Bathymetry.gdb"):
             arcpy.AddMessage("Create File GDB: 'Bathymetry.gdb'")
@@ -740,6 +774,8 @@ def main(project_folder=""):
         else:
             pass
 
+        #print(project_folder)
+
         test = True
         # Process base Alaska bathymetry
         if test:
@@ -749,7 +785,7 @@ def main(project_folder=""):
         else:
             pass
 
-        test = False
+        test = True
         # Process base Hawaii bathymetry
         if test:
             result = create_hawaii_bathymetry(project_folder)
@@ -758,7 +794,7 @@ def main(project_folder=""):
         else:
             pass
 
-        test = False
+        test = True
         # Process base GEBCO bathymetry
         if test:
             result = gebco_bathymetry(project_folder)
@@ -791,54 +827,57 @@ def main(project_folder=""):
         del elapse_time, end_time, start_time
         del gmtime, localtime, strftime, time
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
+        arcpy.AddMessage("\nScript finished successfully.\n")
+    finally:
+        arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
-        project_folder = arcpy.GetParameterAsText(0)
 
+        project_folder = arcpy.GetParameterAsText(0)
         if not project_folder:
-            project_folder = os.path.join(
-                os.path.expanduser("~"),
-                "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python",
-            )
+            # project_name = "August-1-2025"
+            # project_name = "February-1-2026"
+            project_name = "June-1-2026"
+            project_folder = os.path.join(os.path.expanduser('~'), f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}")
         else:
             pass
 
-        result = main(project_folder)
-        arcpy.SetParameterAsText(1, result)
-        del result
+        script_tool(project_folder)
 
-        # Declared Variables
+        arcpy.SetParameterAsText(1, "Result")
+
         del project_folder
 
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
+        arcpy.AddError(arcpy.GetMessages(2))
+        traceback.print_exc()
+    except Exception:
+        traceback.print_exc()
+
 
 # This is an autogenerated comment.

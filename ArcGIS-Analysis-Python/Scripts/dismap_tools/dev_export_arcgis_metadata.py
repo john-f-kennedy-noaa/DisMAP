@@ -157,10 +157,8 @@ def main(project_gdb="", metadata_workspace=""):
         # While in development, leave here. For test, move to finally
         rk = [key for key in locals().keys() if not key.startswith("__")]
         if rk:
-            print(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-            del rk
+            print(f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##")
+        del rk
         return True
     finally:
         pass

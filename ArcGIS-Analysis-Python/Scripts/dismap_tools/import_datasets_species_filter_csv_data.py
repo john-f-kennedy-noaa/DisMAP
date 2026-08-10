@@ -6,10 +6,10 @@ Script documentation
                                         arcpy.SetParameterAsText()
 """
 import os
-# type: ignore # Temporarily ignore Pylance messages for development mode
 import sys
 import traceback
 import inspect
+
 import arcpy
 
 def get_encoding_index_col(csv_file):
@@ -43,22 +43,17 @@ def get_encoding_index_col(csv_file):
         del chardet, pd
         # Function Parameter
         del csv_file
+
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(
-            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
-        )
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        arcpy.AddError(
-            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
-        )
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
         arcpy.AddError(f"Traceback:\n{traceback.print_exc()}")
     except SystemExit:
         # This is not an error, so we allow the script to exit.
         pass
     except Exception as e:
-        arcpy.AddError(
-            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
-        )
+        arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}")
         arcpy.AddError("Traceback:\n")
         traceback.print_exc()
     else:
@@ -81,6 +76,7 @@ def worker(project_gdb="", csv_file=""):
         import json
 
         from arcpy import metadata as md
+
         import dismap_tools
 
         # Set History and Metadata logs, set serverity and message level
@@ -96,10 +92,10 @@ def worker(project_gdb="", csv_file=""):
         csv_data_folder   = os.path.dirname(csv_file)
         project_folder    = os.path.dirname(csv_data_folder)
         scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
-        project_name      = rf"{os.path.basename(project_folder)}"
-        home_folder       = rf"{os.path.dirname(project_folder)}"
+        project_name      = os.path.basename(project_folder)
+        home_folder       = os.path.dirname(project_folder)
 
-        arcgis_metadata   = rf"{project_folder}\Metadata_ArcGIS"
+        #arcgis_metadata   = rf"{project_folder}\Metadata_ArcGIS"
         # inport_metadata   = rf"{project_folder}\Metadata_InPort"
 
         # Set basic workkpace variables
@@ -162,9 +158,7 @@ def worker(project_gdb="", csv_file=""):
         try:
             array = np.array(np.rec.fromrecords(df.values), dtype = field_gdb_dtypes)
         except Exception as e:
-            arcpy.AddError(
-                f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
-            )
+            arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}")
             arcpy.AddError("Traceback:\n")
             traceback.print_exc()
             raise SystemExit
@@ -200,56 +194,46 @@ def worker(project_gdb="", csv_file=""):
         arcpy.management.Delete(tmp_table)
         del tmp_table
 
-        # Alter Fields
-        dismap_tools.alter_fields(csv_data_folder, dataset_path)
-
+        # Add boilerplate metadata to dataset
+        # Version Code
         version_code = dismap_tools.date_code(project_name)
-
-        contacts = rf"{home_folder}\Initial-Data\DisMAP_Contacts_{version_code}.xml"
-
-        # print(contacts)
+        # Boilerplate
+        contacts = rf"{home_folder}\Initial-Data\DisMAP-Contacts-{version_code}.xml"
+        # Reads XML, pretty format, and write back the contacts XML
         etree.parse(contacts, parser=etree.XMLParser(encoding='UTF-8', remove_blank_text=True)).write(contacts, pretty_print=True, xml_declaration=True, encoding="UTF-8") # pyright: ignore[reportAttributeAccessIssue]
 
-        # Copy a file to a new file or into a directory
-        #dismap_logo = os.path.join(home_folder, "NOAA DisMAP 2026 Final [Logo].png")
-        #table_thumbnail = os.path.join(home_folder, "table_thumbnail.png")
-        #shutil.copy(dismap_logo, table_thumbnail)
+        # Create Metadata object for new table
+        out_table_md = md.Metadata(dataset_path)
+        out_table_md.importMetadata(contacts, "ARCGIS_METADATA")
+        out_table_md.save()
+        out_table_md.synchronize("ALWAYS")
+        out_table_md.save()
+        del out_table_md
 
-        xml_file = os.path.join(arcgis_metadata, f"{os.path.basename(dataset_path)}.xml")
+        arcpy.AddMessage(f"\t\tAlter Fields for: '{os.path.basename(dataset_path)}'")
+        dismap_tools.alter_fields(csv_data_folder, dataset_path)
 
-        # Load Metadata
-        #contacts_md = md.Metadata(contacts)
-        dataset_md  = md.Metadata(dataset_path)
-        dataset_md.save()
+        dataset_md = md.Metadata(dataset_path)
         dataset_md.synchronize("ALWAYS")
         dataset_md.save()
-        if not arcpy.Exists(xml_file):
-            dataset_md.importMetadata(contacts, "ARCGIS_METADATA")
-        else:
-            dataset_md.importMetadata(xml_file, "ARCGIS_METADATA")
-        #dataset_md.copy(contacts_md)
-        dataset_md.save()
-        dataset_md.synchronize("ALWAYS")
-        dataset_md.save()
-        #dataset_md.thumbnailUri = table_thumbnail
-        #dataset_md.save()
-        #print(dataset_md.thumbnailUri)
-        #del contacts_md
         del dataset_md
-        del xml_file
 
-        # Import Metadata
-        dismap_tools.import_metadata(csv_data_folder=csv_data_folder, dataset=dataset_path)
+        #arcpy.AddMessage(f"\t\tImport Metadata for: '{os.path.basename(dataset_path)}'")
+        #dismap_tools.import_metadata(project_folder, dataset_path)
 
-##        #dataset_md.importMetadata(rf"{os.path.join(csv_data_folder, table_name)}.xml", "ARCGIS_METADATA")
-##        #dataset_md.save()
-##        dataset_md.synchronize("ALWAYS")
-##        dataset_md.save()
+        dataset_md = md.Metadata(dataset_path)
+        dataset_md.synchronize("ALWAYS")
+        dataset_md.save()
+        del dataset_md
+
+        #if not arcpy.Exists(xml_file):
+        #    dataset_md.importMetadata(contacts, "ARCGIS_METADATA")
+        #else:
+        #    dataset_md.importMetadata(xml_file, "ARCGIS_METADATA")
 
         dataset_md  = md.Metadata(dataset_path)
 
-        parser = etree.XMLParser(encoding="UTF-8", remove_blank_text=True) # pyright: ignore[reportAttributeAccessIssue]
-        tree = etree.parse(StringIO(dataset_md.xml), parser=parser) # pyright: ignore[reportAttributeAccessIssue]
+        tree = etree.parse(StringIO(dataset_md.xml), parser=etree.XMLParser(encoding="UTF-8", remove_blank_text=True))
         root = tree.getroot()
 
         old_linkage = root.find("./distInfo/distTranOps/onLineSrc/linkage").text
@@ -260,8 +244,8 @@ def worker(project_gdb="", csv_file=""):
 
         res_title = root.find("./dataIdInfo/idCitation/resTitle").text
 
-        root.find(".//enttypl").text = res_title if " Table " in res_title else res_title[:-9] + " Table " + version_code
-        root.find(".//enttypl").attrib["Sync"] = "FALSE"
+        #root.find(".//enttypl").text = res_title if " Table " in res_title else res_title[:-9] + " Table " + version_code
+        #root.find(".//enttypl").attrib["Sync"] = "FALSE"
 
         print("*" * 75 + "\n")
 
@@ -273,20 +257,16 @@ def worker(project_gdb="", csv_file=""):
 
         del res_title
 
-        etree.indent(root, space="\t") # pyright: ignore[reportAttributeAccessIssue]
-        dataset_md.xml = etree.tostring( # pyright: ignore[reportAttributeAccessIssue]
-            tree,
-            encoding="UTF-8",
-            method="xml",
-            xml_declaration=True,
-            pretty_print=True,
-        )
+        #dataset_md  = md.Metadata(dataset_path)#tree = etree.parse(StringIO(dataset_md.xml), parser=etree.XMLParser(encoding="UTF-8", remove_blank_text=True))
+        #root = tree.getroot()
+        etree.indent(root, space="\t")
+        dataset_md.xml = etree.tostring(tree, encoding="UTF-8", method="xml", xml_declaration=True, pretty_print=True,)
         dataset_md.save()
 
         del new_linkage, old_linkage
         del old_item_name, new_item_name
         del version_code
-        del root, tree, parser
+        del root, tree
 
         json_path = os.path.join(csv_data_folder, "root_dict.json")
 
@@ -356,13 +336,9 @@ def worker(project_gdb="", csv_file=""):
         del project_gdb, csv_file
 
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(
-            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
-        )
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        arcpy.AddError(
-            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
-        )
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
         arcpy.AddError(f"Traceback:\n{traceback.print_exc()}")
     except SystemExit:
         # This is not an error, so we allow the script to exit.
@@ -445,22 +421,16 @@ def update_datecode(csv_file="", project_name=""):
         del csv_file, project_name
 
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(
-            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
-        )
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        arcpy.AddError(
-            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
-        )
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
         arcpy.AddError("Traceback:\n")
         traceback.print_exc()
     except SystemExit:
         # This is not an error, so we allow the script to exit.
         pass
     except Exception as e:
-        arcpy.AddError(
-            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
-        )
+        arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}")
         arcpy.AddError("Traceback:\n")
         traceback.print_exc()
     else:
@@ -470,7 +440,7 @@ def update_datecode(csv_file="", project_name=""):
 def metadata_arcgis_worker(project_gdb="", csv_file=""):
     try:
         # Imports
-        #import shutil
+        import shutil
 
         from lxml import etree
         from  io import StringIO
@@ -485,15 +455,17 @@ def metadata_arcgis_worker(project_gdb="", csv_file=""):
         csv_data_folder   = os.path.dirname(csv_file)
         project_folder    = os.path.dirname(project_gdb)
         scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
-        project_name      = rf"{os.path.basename(project_folder)}"
-        #home_folder       = rf"{os.path.dirname(project_folder)}"
+        project_name      = os.path.basename(project_folder)
+        home_folder       = os.path.dirname(project_folder)
+        initial_data_folder = os.path.join(home_folder, "Initial-Data")
 
-        arcgis_metadata   = rf"{project_folder}\Metadata_ArcGIS"
+        arcgis_metadata   = rf"{project_folder}\Metadata_ArcGIS"  # noqa: F841
+        export_metadata   = rf"{project_folder}\Metadata_Export"
         inport_metadata   = rf"{project_folder}\Metadata_InPort"
 
         # Set basic workkpace variables
         arcpy.env.workspace                = project_gdb
-        arcpy.env.scratchWorkspace         = r"Scratch\\scratch.gdb"
+        arcpy.env.scratchWorkspace         = scratch_workspace
         arcpy.env.overwriteOutput          = True
         arcpy.env.parallelProcessingFactor = "100%"
         # print(table_name)
@@ -503,12 +475,24 @@ def metadata_arcgis_worker(project_gdb="", csv_file=""):
         # Load Metadata
         dataset_md  = md.Metadata(dataset_path)
 
+        # Copy a file to a new file or into a directory
+        dismap_logo = os.path.join(initial_data_folder, "NOAA DisMAP 2026 Final [Logo] clipped.jpg")
+        table_thumbnail = os.path.join(home_folder, "table_thumbnail.png")
+        shutil.copy(dismap_logo, table_thumbnail)
+
+        dataset_md.thumbnailUri = table_thumbnail
+        dataset_md.save()
+
+        del dismap_logo, table_thumbnail
+
+        # Parse
         parser = etree.XMLParser(encoding="UTF-8", remove_blank_text=True) # pyright: ignore[reportAttributeAccessIssue]
         tree = etree.parse(StringIO(dataset_md.xml), parser=parser) # pyright: ignore[reportAttributeAccessIssue]
         root = tree.getroot()
 
         print("*" * 75 + "\n")
 
+        # Set Create Date and time
         create_date = root.xpath("/metadata/Esri/CreaDate")
 
         if len(create_date) > 1:
@@ -579,11 +563,8 @@ def metadata_arcgis_worker(project_gdb="", csv_file=""):
         #                     "eainfo"     : 15, "contInfo"   : 16, "spref"       : 17,
         #                     "spatRepInfo" : 18, "dataSetFn" : 19, "Binary"      : 100,}
 
-        parser = etree.XMLParser(encoding="UTF-8", remove_blank_text=True) # pyright: ignore[reportAttributeAccessIssue]
 
-        tree = etree.parse(StringIO(dataset_md.xml), parser=parser)  # pyright: ignore[reportAttributeAccessIssue] # To parse from a string, use the fromstring() function instead.
-
-        del parser
+        tree = etree.parse(StringIO(dataset_md.xml), parser=etree.XMLParser(encoding="UTF-8", remove_blank_text=True))
 
         root = tree.getroot()
         for child in root.xpath("."):
@@ -591,22 +572,16 @@ def metadata_arcgis_worker(project_gdb="", csv_file=""):
             del child
 
         etree.indent(root, space="\t") # pyright: ignore[reportAttributeAccessIssue]
-        dataset_md.xml = etree.tostring( # pyright: ignore[reportAttributeAccessIssue]
-            tree,
-            encoding="UTF-8",
-            method="xml",
-            xml_declaration=True,
-            pretty_print=True,
-        )
+        dataset_md.xml = etree.tostring(tree, encoding="UTF-8", method="xml", xml_declaration=True, pretty_print=True,)
 
         del root
 
         dataset_md.save()
 
         # Save as ArcGIS Metadata XML
-        xml_file = os.path.join(arcgis_metadata, f"{os.path.basename(dataset_path)}.xml")
-        #dataset_md.saveAsXML(xml_file, "REMOVE_ALL_SENSITIVE_INFO")
-        dataset_md.saveAsXML(xml_file)
+        xml_file = os.path.join(export_metadata, f"{os.path.basename(dataset_path)}.xml")
+        dataset_md.saveAsXML(xml_file, "REMOVE_ALL_SENSITIVE_INFO")
+        #dataset_md.saveAsXML(xml_file)
         etree.parse(xml_file, parser=etree.XMLParser(encoding='UTF-8', remove_blank_text=True)).write(xml_file, pretty_print=True, xml_declaration=True, encoding="UTF-8") # pyright: ignore[reportAttributeAccessIssue]
         #webbrowser.open(xml_file)
         del xml_file
@@ -634,21 +609,15 @@ def metadata_arcgis_worker(project_gdb="", csv_file=""):
         del project_gdb, csv_file
 
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(
-            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
-        )
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        arcpy.AddError(
-            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
-        )
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
         arcpy.AddError(f"Traceback:\n{traceback.print_exc()}")
     except SystemExit:
         # This is not an error, so we allow the script to exit.
         pass
     except Exception as e:
-        arcpy.AddError(
-            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
-        )
+        arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}")
         arcpy.AddError("Traceback:\n")
         traceback.print_exc()
     else:
@@ -660,34 +629,36 @@ def script_tool(project_folder=""):
     try:
         from lxml import etree
         from  io import StringIO
-        #import requests
 
         from arcpy import metadata as md
 
         import dismap_tools
 
-        #xml_file = r"C:\Users\john.f.kennedy\Documents\ArcGIS\Projects\DisMAP\ArcGIS-Analysis-Python\Initial-Data\DisMAP_Contacts_20260601.xml"
-        #dismap_tools.print_xml_file(xml_file)
+        # Imports
+        from time import gmtime, localtime, strftime, time
 
+        # Set a start time so that we can see how log things take
+        start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
         arcpy.AddMessage(f"Python Script:  {os.path.basename(__file__)}")
         arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
+        arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
         arcpy.AddMessage(f"{'-' * 80}\n")
-        # Imports
-        #from dev_import_datasets_species_filter_csv_data import worker
+
+
         # Set basic arcpy.env variables
         arcpy.env.overwriteOutput          = True
         arcpy.env.parallelProcessingFactor = "100%"
 
-        project_name        = rf"{os.path.basename(project_folder)}"
-        project_gdb         = rf"{project_folder}\{project_name}.gdb"
-        home_folder         = rf"{os.path.dirname(project_folder)}"
-        csv_data_folder     = rf"{project_folder}\CSV_Data"
-        datasets_csv        = rf"{csv_data_folder}\Datasets.csv"
-        species_filter_csv  = rf"{csv_data_folder}\Species_Filter.csv"
-        survey_metadata_csv = rf"{csv_data_folder}\DisMAP_Survey_Info.csv"
+        project_name        = os.path.basename(project_folder)
+        project_gdb         = os.path.join(project_folder, f"{project_name}.gdb")
+        home_folder         = os.path.dirname(project_folder)
+        csv_data_folder     = os.path.join(project_folder, "CSV_Data")
+        datasets_csv        = os.path.join(csv_data_folder, "Datasets.csv")
+        species_filter_csv  = os.path.join(csv_data_folder, "Species_Filter.csv")
+        survey_metadata_csv = os.path.join(csv_data_folder, "DisMAP_Survey_Info.csv")
 
         SpeciesPersistenceIndicatorTrend = rf"{csv_data_folder}\SpeciesPersistenceIndicatorTrend.csv"
         SpeciesPersistenceIndicatorPercentileBin = rf"{csv_data_folder}\SpeciesPersistenceIndicatorPercentileBin.csv"
@@ -710,18 +681,18 @@ def script_tool(project_folder=""):
             update_datecode(csv_file=datasets_csv, project_name=project_name)
         del UpdateDatecode
         #
-        DatasetsCSVFile = True
+        DatasetsCSVFile = False
         if DatasetsCSVFile:
             # Worker: creates table, loads data, imports metadata, and then saves an XML
             worker(project_gdb=project_gdb, csv_file=datasets_csv)
         del DatasetsCSVFile
         #
-        SpeciesFilterCSVFile = True
+        SpeciesFilterCSVFile = False
         if SpeciesFilterCSVFile:
             worker(project_gdb=project_gdb, csv_file=species_filter_csv)
         del SpeciesFilterCSVFile
         #
-        DisMAPSurveyInfoFile = True
+        DisMAPSurveyInfoFile = False
         if DisMAPSurveyInfoFile:
             # Worker: creates table, loads data, imports metadata, and then saves an XML
             worker(project_gdb=project_gdb, csv_file=survey_metadata_csv)
@@ -766,23 +737,32 @@ def script_tool(project_folder=""):
         # Function Parameters
         del project_folder
 
+        # Elapsed time
+        end_time = time()
+        elapse_time = end_time - start_time
+        hours, rem = divmod(end_time - start_time, 3600)
+        minutes, seconds = divmod(rem, 60)
+        arcpy.AddMessage(f"\n{'-' * 80}")
+        arcpy.AddMessage(f"Python script: {os.path.basename(__file__)}")
+        arcpy.AddMessage(f"Start Time:    {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
+        arcpy.AddMessage(f"End Time:      {strftime('%a %b %d %I:%M %p', localtime(end_time))}")
+        arcpy.AddMessage(f"Elapsed Time   {int(hours):0>2}:{int(minutes):0>2}:{seconds:05.2f} (H:M:S)")
+        arcpy.AddMessage(f"{'-' * 80}")
+        del hours, rem, minutes, seconds
+        del elapse_time, end_time, start_time
+        del gmtime, localtime, strftime, time
+
     except arcpy.ExecuteWarning:
-        arcpy.AddWarning(
-            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
-        )
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        arcpy.AddError(
-            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
-        )
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
         arcpy.AddError("Traceback:\n")
         traceback.print_exc()
     except SystemExit:
         # This is not an error, so we allow the script to exit.
         pass
     except Exception as e:
-        arcpy.AddError(
-            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
-        )
+        arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}")
         arcpy.AddError("Traceback:")
         traceback.print_exc()
     else:

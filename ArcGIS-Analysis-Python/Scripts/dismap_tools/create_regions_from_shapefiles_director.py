@@ -19,15 +19,25 @@ import arcpy  # third-parties second
 
 def create_dismap_regions(project_gdb=""):
     try:
-        import dismap_tools
+        from lxml import etree
+        from  io import StringIO
+        #import json
 
-        project_folder = os.path.dirname(project_gdb)
-        csv_data_folder = os.path.join(project_folder, "CSV_Data")
+        from arcpy import metadata as md
+
+        import dismap_tools
 
         arcpy.env.overwriteOutput = True
 
-        if arcpy.Exists(os.path.join(project_gdb, "DisMAP_Regions")):
-            arcpy.management.Delete(os.path.join(project_gdb, "DisMAP_Regions"))
+        project_folder  = os.path.dirname(project_gdb)
+        csv_data_folder = os.path.join(project_folder, "CSV_Data")
+        project_name    = os.path.basename(project_folder)
+        home_folder     = os.path.dirname(project_folder)
+
+        dismap_regions = os.path.join(project_gdb, "DisMAP_Regions")
+
+        if arcpy.Exists(dismap_regions):
+            arcpy.management.Delete(dismap_regions)
 
         arcpy.AddMessage("Creating: 'DisMAP_Regions'")
         # Execute Tool
@@ -48,62 +58,73 @@ def create_dismap_regions(project_gdb=""):
             spatial_grid_2="0",
             spatial_grid_3="0",
         )
-        arcpy.AddMessage(
-            "\tCreate Featureclass: {0}\n".format(
-                arcpy.GetMessages().replace("\n", "\n\t")
-            )
-        )
+        arcpy.AddMessage("\tCreate Featureclass: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
         del sp_ref
-        dismap_tools.add_fields(
-            csv_data_folder, os.path.join(project_gdb, "DisMAP_Regions")
-        )
-        dismap_tools.import_metadata(
-            csv_data_folder, os.path.join(project_gdb, "DisMAP_Regions")
-        )
+
+        # Add boilerplate metadata to dataset
+        # Version Code
+        version_code = dismap_tools.date_code(project_name)
+        # Boilerplate
+        contacts = rf"{home_folder}\Initial-Data\DisMAP-Contacts-{version_code}.xml"
+        # Reads XML, pretty format, and write back the contacts XML
+        etree.parse(contacts, parser=etree.XMLParser(encoding='UTF-8', remove_blank_text=True)).write(contacts, pretty_print=True, xml_declaration=True, encoding="UTF-8") # pyright: ignore[reportAttributeAccessIssue]
+
+        # Create Metadata object for new table
+        dataset_md  = md.Metadata(dismap_regions)
+        dataset_md.importMetadata(contacts, "ARCGIS_METADATA")
+        dataset_md.save()
+        dataset_md.synchronize("ALWAYS")
+        dataset_md.save()
+        del dataset_md
+
+        arcpy.AddMessage(f"\t\tAlter Fields for: '{os.path.basename(dismap_regions)}'")
+        dismap_tools.add_fields(csv_data_folder, dismap_regions)
+
+        dataset_md = md.Metadata(dismap_regions)
+        dataset_md.synchronize("ALWAYS")
+        dataset_md.save()
+        del dataset_md
+
+        arcpy.AddMessage(f"\t\tImport Metadata for: '{os.path.basename(dismap_regions)}'")
+        dismap_tools.import_metadata(project_folder, dismap_regions)
+
+        dataset_md = md.Metadata(dismap_regions)
+        dataset_md.synchronize("ALWAYS")
+        dataset_md.save()
+        del dataset_md
+
+        dataset_md  = md.Metadata(dismap_regions)
+        tree = etree.parse(StringIO(dataset_md.xml), parser=etree.XMLParser(encoding="UTF-8", remove_blank_text=True))
+        root = tree.getroot()
+        etree.indent(root, space="\t")
+        dataset_md.xml = etree.tostring(tree, encoding="UTF-8", method="xml", xml_declaration=True, pretty_print=True,)
+        dataset_md.save()
+        del dataset_md
+        del tree, root
 
         # Imports
         del dismap_tools
         # Function Parameter
 
-    except KeyboardInterrupt:
-        sys.exit()
     except arcpy.ExecuteWarning:
         arcpy.AddWarning(
-            f"Caught an arcpy.ExecuteWarning error in the '{inspect.stack()[0][3]}' function."
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
         )
-        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
         arcpy.AddError(
-            f"Caught an arcpy.ExecuteError error in the '{inspect.stack()[0][3]}' function."
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
         )
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except SystemExit as se:
-        arcpy.AddError(
-            f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function."
-        )
-        sys.exit()
+        arcpy.AddError(f"Traceback:\n{traceback.print_exc()}")
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
     except Exception as e:
         arcpy.AddError(
-            f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function."
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
         )
+        arcpy.AddError("Traceback:\n")
         traceback.print_exc()
-        sys.exit()
-    except:  # noqa: E722
-        arcpy.AddError(
-            f"Caught an except error in the '{inspect.stack()[0][3]}' function."
-        )
-        traceback.print_exc()
-        sys.exit()
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-        del rk
         return True
     finally:
         arcpy.management.ClearWorkspaceCache()
@@ -134,10 +155,10 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         project_folder = os.path.dirname(project_gdb)
         scratch_folder = os.path.join(project_folder, "Scratch")
         scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
-        csv_data_folder = os.path.join(project_folder, f"CSV_Data")
+        csv_data_folder = os.path.join(project_folder, "CSV_Data")
 
         # Clear Scratch Folder
-        dismap_tools.clear_folder(folder=scratch_folder)
+        # dismap_tools.clear_folder(folder=scratch_folder)
 
         # Create Scratch Workspace for Project
         if not arcpy.Exists(os.path.join(scratch_folder, "scratch.gdb")):
@@ -154,6 +175,8 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         del project_folder, scratch_workspace
 
         create_dismap_regions(project_gdb)
+
+        dismap_regions = os.path.join(project_gdb, "DisMAP_Regions")
 
         if not table_names:
             table_names = [
@@ -204,17 +227,17 @@ def director(project_gdb="", Sequential=True, table_names=[]):
                 rf"{region_gdb}",
                 "DisMAP_Regions",
                 "POLYLINE",
-                os.path.join(project_gdb, "DisMAP_Regions"),
+                dismap_regions,
             )
             arcpy.AddMessage(
                 "\tCopy: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t"))
             )
 
-            dismap_regions_md = md.Metadata(os.path.join(project_gdb, "DisMAP_Regions"))
+            dismap_regions_md = md.Metadata(dismap_regions)
             dataset_md = md.Metadata(rf"{region_gdb}\DisMAP_Regions")
             dataset_md.copy(dismap_regions_md)
-            dataset_md.save()
-            dataset_md.synchronize("OVERWRITE")
+            # dataset_md.save()
+            # dataset_md.synchronize("OVERWRITE")
             dataset_md.save()
             dataset_md.synchronize("ALWAYS")
             dataset_md.save()
@@ -361,18 +384,25 @@ def director(project_gdb="", Sequential=True, table_names=[]):
                 del filename
             del dirpath, dirnames, filenames
         del walk
+
+
         for dataset in datasets:
             # print(dataset)
             datasets_short_path = f".. {'/'.join(dataset.split(os.sep)[-4:])}"
+
             dataset_name = os.path.basename(dataset)
             region_gdb = os.path.dirname(dataset)
+
             arcpy.AddMessage(f"\tDataset: '{dataset_name}'")
             arcpy.AddMessage(f"\t\tPath:       '{datasets_short_path}'")
             arcpy.AddMessage(f"\t\tRegion GDB: '{os.path.basename(region_gdb)}'")
+
             arcpy.management.Copy(dataset, rf"{project_gdb}\{dataset_name}")
+
             arcpy.AddMessage(
                 "\tCopy: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t"))
             )
+
             if dataset_name.endswith("_Boundary"):
                 arcpy.AddMessage(
                     f"\tAppending the {dataset_name} Dataset to the DisMAP Regions Dataset"
@@ -380,7 +410,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
                 # Process: Append
                 arcpy.management.Append(
                     inputs=rf"{project_gdb}\{dataset_name}",
-                    target=os.path.join(project_gdb, "DisMAP_Regions"),
+                    target=dismap_regions,
                     schema_type="NO_TEST",
                     field_mapping="",
                     subtype="",
@@ -393,12 +423,15 @@ def director(project_gdb="", Sequential=True, table_names=[]):
                 )
             else:
                 pass
+
             # arcpy.AddMessage(f"\t\tAlter Fields for: '{dataset_name}'")
             # dismap_tools.alter_fields(csv_data_folder, rf"{project_gdb}\{dataset_name}")
-            # dismap_tools.import_metadata(dataset=rf"{project_gdb}\{dataset_name}")
+            # dismap_tools.import_metadata(project_folder, dataset=rf"{project_gdb}\{dataset_name}")
             del region_gdb, dataset_name, datasets_short_path
             del dataset
+
         del datasets
+
         arcpy.AddMessage(f"Compacting the {os.path.basename(project_gdb)} GDB")
         arcpy.management.Compact(project_gdb)
         arcpy.AddMessage("\t" + arcpy.GetMessages(0).replace("\n", "\n\t"))
@@ -408,66 +441,45 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         del dismap_tools, worker, md
         # Function Parameters
         del project_gdb, Sequential, table_names
-    except KeyboardInterrupt:
-        sys.exit()
+
     except arcpy.ExecuteWarning:
         arcpy.AddWarning(
-            f"Caught an arcpy.ExecuteWarning error in the '{inspect.stack()[0][3]}' function."
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
         )
-        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
         arcpy.AddError(
-            f"Caught an arcpy.ExecuteError error in the '{inspect.stack()[0][3]}' function."
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
         )
-        arcpy.AddError(arcpy.GetMessages(2))
-        traceback.print_exc()
-        sys.exit()
-    except SystemExit as se:
-        arcpy.AddError(
-            f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function."
-        )
-        sys.exit()
+        arcpy.AddError(f"Traceback:\n{traceback.print_exc()}")
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
     except Exception as e:
         arcpy.AddError(
-            f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function."
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
         )
+        arcpy.AddError("Traceback:\n")
         traceback.print_exc()
-        sys.exit()
-    except:  # noqa: E722
-        arcpy.AddError(
-            f"Caught an except error in the '{inspect.stack()[0][3]}' function."
-        )
-        traceback.print_exc()
-        sys.exit()
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-        del rk
         return True
-    finally:
-        pass
 
 
-def script_tool(project_gdb=""):
+def script_tool(project_folder=""):
     try:
-        # Imports
-        from time import gmtime, localtime, strftime, time
 
-        # Set a start time so that we can see how log things take
-        start_time = time()
         arcpy.AddMessage(f"{'-' * 80}")
         arcpy.AddMessage(f"Python Script:  {os.path.basename(__file__)}")
         arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
-        arcpy.AddMessage(
-            f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}"
-        )
         arcpy.AddMessage(f"{'-' * 80}\n")
+
+        # Set basic arcpy.env variables
+        arcpy.env.overwriteOutput          = True
+        arcpy.env.parallelProcessingFactor = "100%"
+
+        project_name        = os.path.basename(project_folder)
+        project_gdb         = os.path.join(project_folder, f"{project_name}.gdb")
 
         try:
             pass
@@ -475,13 +487,9 @@ def script_tool(project_gdb=""):
             # "SEUS_FAL_IDW", "SEUS_SPR_IDW", "SEUS_SUM_IDW", "WC_ANN_IDW", "WC_TRI_IDW",
             test = False
             if test:
-                # director(project_gdb=project_gdb, Sequential=True, table_names=["HI_IDW"])
-                director(
-                    project_gdb=project_gdb,
-                    Sequential=True,
-                    table_names=["SEUS_SPR_IDW", "HI_IDW"],
-                )
-                # create_dismap_regions(project_gdb)
+                director(project_gdb=project_gdb, Sequential=True, table_names=["HI_IDW"])
+                #director(project_gdb=project_gdb, Sequential=True, table_names=["SEUS_SPR_IDW", "HI_IDW"],)
+
             elif not test:
                 # director(project_gdb=project_gdb, Sequential=False, table_names=["NBS_IDW", "ENBS_IDW", "HI_IDW", "SEUS_FAL_IDW", "SEUS_SPR_IDW", "SEUS_SUM_IDW",])
                 # director(project_gdb=project_gdb, Sequential=False, table_names=["WC_TRI_IDW", "GMEX_IDW", "AI_IDW", "GOA_IDW", "WC_ANN_IDW", "NEUS_FAL_IDW",])
@@ -492,90 +500,61 @@ def script_tool(project_gdb=""):
             traceback.print_exc()
             sys.exit()
 
-        # Declared Varaiables
-        del project_gdb
-        # Elapsed time
-        end_time = time()
-        elapse_time = end_time - start_time
-        hours, rem = divmod(end_time - start_time, 3600)
-        minutes, seconds = divmod(rem, 60)
-        arcpy.AddMessage(f"\n{'-' * 80}")
-        arcpy.AddMessage(f"Python script: {os.path.basename(__file__)}")
-        arcpy.AddMessage(
-            f"Start Time:    {strftime('%a %b %d %I:%M %p', localtime(start_time))}"
-        )
-        arcpy.AddMessage(
-            f"End Time:      {strftime('%a %b %d %I:%M %p', localtime(end_time))}"
-        )
-        arcpy.AddMessage(
-            f"Elapsed Time   {int(hours):0>2}:{int(minutes):0>2}:{seconds:05.2f} (H:M:S)"
-        )
-        arcpy.AddMessage(f"{'-' * 80}")
-        del hours, rem, minutes, seconds
-        del elapse_time, end_time, start_time
-        del gmtime, localtime, strftime, time
-
-    except KeyboardInterrupt:
-        sys.exit()
     except arcpy.ExecuteWarning:
         arcpy.AddWarning(
-            f"Caught an arcpy.ExecuteWarning error in the '{inspect.stack()[0][3]}' function."
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
         )
-        arcpy.AddWarning(arcpy.GetMessages(1))
     except arcpy.ExecuteError:
         arcpy.AddError(
-            f"Caught an arcpy.ExecuteError error in the '{inspect.stack()[0][3]}' function."
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
         )
-        arcpy.AddError(arcpy.GetMessages(2))
+        arcpy.AddError("Traceback:\n")
         traceback.print_exc()
-        sys.exit()
-    except SystemExit as se:
-        arcpy.AddError(
-            f"Caught an SystemExit error: {se} in the '{inspect.stack()[0][3]}' function."
-        )
-        sys.exit()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
     except Exception as e:
         arcpy.AddError(
-            f"Caught an Exception error: {e} in the '{inspect.stack()[0][3]}' function."
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
         )
+        arcpy.AddError("Traceback:")
         traceback.print_exc()
-        sys.exit()
-    except:  # noqa: E722
-        arcpy.AddError(
-            f"Caught an except error in the '{inspect.stack()[0][3]}' function."
-        )
-        traceback.print_exc()
-        sys.exit()
     else:
-        # While in development, leave here. For test, move to finally
-        rk = [key for key in locals().keys() if not key.startswith("__")]
-        if rk:
-            arcpy.AddMessage(
-                f"WARNING!! Remaining Keys in the '{inspect.stack()[0][3]}' function at line number {inspect.stack()[0][2]}\n\t##--> '{', '.join(rk)}' <--##"
-            )
-        del rk
-        return True
+        arcpy.AddMessage("\nScript finished successfully.\n")
     finally:
-        pass
+        arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
-        project_gdb = arcpy.GetParameterAsText(0)
-        if not project_gdb:
-            project_gdb = os.path.join(
-                os.path.expanduser("~"),
-                "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb",
-            )
+
+        project_folder = arcpy.GetParameterAsText(0)
+        if not project_folder:
+            # project_name = "August-1-2025"
+            # project_name = "February-1-2026"
+            project_name = "June-1-2026"
+            project_folder = os.path.join(os.path.expanduser('~'), f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}")
         else:
             pass
-        script_tool(project_gdb)
+
+        #project_name        = os.path.basename(project_folder)
+        #project_gdb         = os.path.join(project_folder, f"{project_name}.gdb")
+        #create_dismap_regions(project_gdb)
+
+        script_tool(project_folder)
+
         arcpy.SetParameterAsText(1, "Result")
-        del project_gdb
-    except:  # noqa: E722
+
+        del project_folder
+
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except arcpy.ExecuteError:
+        arcpy.AddError(arcpy.GetMessages(2))
         traceback.print_exc()
-    else:
-        pass
-    finally:
-        pass
+    except Exception:
+        traceback.print_exc()
+
+
 # This is an autogenerated comment.

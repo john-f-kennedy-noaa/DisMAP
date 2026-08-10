@@ -5,34 +5,24 @@ Script documentation
 - Update derived parameter values using arcpy.SetParameter() or
                                         arcpy.SetParameterAsText()
 """
-
 import os
+import traceback
+import inspect
 
 import arcpy
 
-
-def trace():
-    import sys  # noqa: E401
-    import traceback
-
-    tb = sys.exc_info()[2]
-    tbinfo = traceback.format_tb(tb)[0]
-    line = tbinfo.split(", ")[1]
-    filename = sys.path[0] + os.sep + "test.py"
-    synerror = traceback.format_exc().splitlines()[-1]
-    return line, filename, synerror
-
-
-def script_tool(
-    project_folder="", csv_data_file="", dataset_shapefiles="", contacts_file=""
-):
+def script_tool(project_folder=""):
     """Script code goes below"""
     try:
+        from lxml import etree
         from io import StringIO
         from zipfile import ZipFile
+        import json
+        import shutil
 
         from arcpy import metadata as md
-        from lxml import etree
+
+        import dismap_tools
 
         arcpy.env.overwriteOutput = True
 
@@ -40,39 +30,88 @@ def script_tool(
         # aprx.save()
         # project_folder = aprx.homeFolder
         arcpy.AddMessage(project_folder)
-        out_data_path = rf"{project_folder}\CSV_Data"
 
-        import json
+        project_name    = os.path.basename(project_folder)
+        project_gdb     = os.path.join(project_folder, f"{project_name}.gdb")  # noqa: F841
+        home_folder     = os.path.dirname(project_folder)
+        csv_data_folder = os.path.join(project_folder, "CSV_Data")  # noqa: F841
+        dataset_shapefiles_folder = rf"{project_folder}\Dataset_Shapefiles"  # noqa: F841
 
-        json_path = rf"{out_data_path}\root_dict.json"
+        dataset_shapefiles = os.path.join(home_folder, f"Initial-Data\\Dataset-Shapefiles-{dismap_tools.date_code(project_name)}.zip")
+
+## for i in range(0, len(alist)):
+##...     print(alist[i].replace('Dataset-Shapefiles-20260601/', 'Dataset_Shapefiles/'))
+##...
+
+        arcpy.AddMessage(dataset_shapefiles)
+        # Change Directory
+        os.chdir(project_folder)
+        arcpy.AddMessage(f"Un-Zipping files from {os.path.basename(dataset_shapefiles)}")
+        #print(arcpy.Exists(dataset_shapefiles))
+        with ZipFile(dataset_shapefiles, mode="r") as archive:
+            for file in archive.namelist():
+                archive.extract(file, ".")
+                del file
+        del archive
+        arcpy.AddMessage(f"Done Un-Zipping files from {os.path.basename(dataset_shapefiles)}")
+
+        # Change Directory
+        #os.chdir(os.path.join(project_folder, os.path.basename(dataset_shapefiles))
+
+        tmp_workspace = arcpy.env.workspace
+        arcpy.env.workspace = os.path.join(project_folder, os.path.basename(dataset_shapefiles).replace(".zip", ""))
+
+        #print(arcpy.env.workspace)
+
+        folders = arcpy.ListWorkspaces(workspace_type="Folder")
+
+        for folder in folders:
+            print(folder)
+
+            destination_folder = os.path.join(dataset_shapefiles_folder, os.path.basename(folder))
+
+            # Safely merges contents into an existing folder
+            shutil.copytree(folder, destination_folder, dirs_exist_ok=True)
+
+            del destination_folder
+
+        # Delete extract folder
+        arcpy.management.Delete(os.path.join(project_folder, os.path.basename(dataset_shapefiles).replace(".zip", "")))
+
+        arcpy.env.workspace = tmp_workspace
+        del tmp_workspace
+
+        csv_data_file = os.path.join(home_folder, f"Initial-Data\\CSV-Data-{dismap_tools.date_code(project_name)}.zip")
+        contacts_file = os.path.join(home_folder, f"InitialData\\DisMAP-Contacts-{dismap_tools.date_code(project_name)}.xml")
+
+        json_path = rf"{csv_data_folder}\root_dict.json"
         with open(json_path, "r", encoding='utf-8') as json_file:
-            root_dict = json.load(json_file)
+            root_dict = json.load(json_file)  # noqa: F841
         del json_file
         del json_path
-        del json
 
-        arcpy.AddMessage(out_data_path)
+        arcpy.AddMessage(csv_data_folder)
+        arcpy.AddMessage(csv_data_file)
         # Change Directory
-        os.chdir(out_data_path)
+        os.chdir(csv_data_folder)
         arcpy.AddMessage(f"Un-Zipping files from {os.path.basename(csv_data_file)}")
+        print(arcpy.Exists(csv_data_file))
         with ZipFile(csv_data_file, mode="r") as archive:
             for file in archive.namelist():
                 archive.extract(file, ".")
                 del file
         del archive
-        arcpy.AddMessage(
-            f"Done Un-Zipping files from {os.path.basename(csv_data_file)}"
-        )
+        arcpy.AddMessage(f"Done Un-Zipping files from {os.path.basename(csv_data_file)}")
+
         tmp_workspace = arcpy.env.workspace
-        arcpy.env.workspace = rf"{out_data_path}\python"
+        arcpy.env.workspace = rf"{csv_data_folder}\python"
 
         csv_files = arcpy.ListFiles("*_survey.csv")
 
         arcpy.AddMessage("Copying CSV Files and renaming the file")
         for csv_file in csv_files:
-            arcpy.management.Copy(
-                rf"{out_data_path}\python\{csv_file}",
-                rf"{out_data_path}\{csv_file.replace('_survey', '_IDW')}",
+            arcpy.management.Copy(rf"{csv_data_folder}\python\{csv_file}",
+                                  rf"{csv_data_folder}\{csv_file.replace('_survey', '_IDW')}",
             )
             del csv_file
         del csv_files
@@ -80,20 +119,21 @@ def script_tool(
         arcpy.env.workspace = tmp_workspace
         del tmp_workspace
 
-        if arcpy.Exists(rf"{out_data_path}\python"):
+        if arcpy.Exists(rf"{csv_data_folder}\python"):
             arcpy.AddMessage("Removing the extract folder")
-            arcpy.management.Delete(rf"{out_data_path}\python")
+            arcpy.management.Delete(rf"{csv_data_folder}\python")
         else:
             pass
 
         arcpy.AddMessage("Adding metadata to CSV file")
         tmp_workspace = arcpy.env.workspace
-        arcpy.env.workspace = out_data_path
+        arcpy.env.workspace = csv_data_folder
 
         csv_files = arcpy.ListFiles("*_IDW.csv")
         for csv_file in csv_files:
             arcpy.AddMessage(f"\t{csv_file}")
-            dataset_md = md.Metadata(rf"{out_data_path}\{csv_file}")
+            dataset_md = md.Metadata(rf"{csv_data_folder}\{csv_file}")
+            dataset_md.save()
             dataset_md.synchronize("ALWAYS")
             dataset_md.save()
             dataset_md.importMetadata(contacts_file, "ARCGIS_METADATA")
@@ -110,22 +150,22 @@ def script_tool(
                 "Esri/DataProperties/itemProps/itemName"
             ).text
             arcpy.AddMessage(new_item_name)
-            ##            onLineSrcs = target_root.findall("distInfo/distTranOps/onLineSrc")
-            ##            #arcpy.AddMessage(onLineSrcs)
-            ##            for onLineSrc in onLineSrcs:
-            ##                if onLineSrc.find('./protocol').text == "ESRI REST Service":
-            ##                    old_linkage_element = onLineSrc.find('./linkage')
-            ##                    old_linkage = old_linkage_element.text
-            ##                    #arcpy.AddMessage(old_linkage)
-            ##                    old_item_name = old_linkage[old_linkage.find("/services/")+len("/services/"):old_linkage.find("/FeatureServer")]
-            ##                    new_linkage = old_linkage.replace(old_item_name, new_item_name)
-            ##                    #arcpy.AddMessage(new_linkage)
-            ##                    old_linkage_element.text = new_linkage
-            ##                    #arcpy.AddMessage(old_linkage_element.text)
-            ##                    del old_linkage_element
-            ##                    del old_item_name, old_linkage, new_linkage
-            ##                    onLineSrc.find('./orName').text = f"{new_item_name} Feature Service"
-            ##            del onLineSrcs, new_item_name
+              #^onLineSrcs = target_root.findall("distInfo/distTranOps/onLineSrc")
+              #^#arcpy.AddMessage(onLineSrcs)
+              #^for onLineSrc in onLineSrcs:
+              #^    if onLineSrc.find('./protocol').text == "ESRI REST Service":
+              #^        old_linkage_element = onLineSrc.find('./linkage')
+              #^        old_linkage = old_linkage_element.text
+              #^        #arcpy.AddMessage(old_linkage)
+              #^        old_item_name = old_linkage[old_linkage.find("/services/")+len("/services/"):old_linkage.find("/FeatureServer")]
+              #^        new_linkage = old_linkage.replace(old_item_name, new_item_name)
+              #^        #arcpy.AddMessage(new_linkage)
+              #^        old_linkage_element.text = new_linkage
+              #^        #arcpy.AddMessage(old_linkage_element.text)
+              #^        del old_linkage_element
+              #^        del old_item_name, old_linkage, new_linkage
+              #^        onLineSrc.find('./orName').text = f"{new_item_name} Feature Service"
+              #^del onLineSrcs, new_item_name
             etree.indent(target_root, space="    ")
             dataset_md.xml = etree.tostring(
                 target_tree,
@@ -146,85 +186,54 @@ def script_tool(
         arcpy.env.workspace = tmp_workspace
         del tmp_workspace
 
-        # Imports
-        del md
-
-        # Function Variables
-        del project_folder, csv_data_file, dataset_shapefiles, contacts_file
-
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(
+            f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}"
+        )
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(
+            f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}"
+        )
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(
+            f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}"
+        )
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
-
+        arcpy.AddMessage("\nScript finished successfully.\n")
+    finally:
+        arcpy.AddMessage(f"\n{'--End' * 10}--")
 
 if __name__ == "__main__":
     try:
         project_folder = arcpy.GetParameterAsText(0)
         if not project_folder:
-            project_folder = os.path.join(
-                os.path.expanduser("~"),
-                "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026",
-            )
+            # project_name = "August-1-2025"
+            # project_name = "February-1-2026"
+            project_name = "June-1-2026"
+            project_folder = os.path.join(os.path.expanduser('~'), f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}")
         else:
             pass
 
-        csv_data_file = arcpy.GetParameterAsText(1)
-        if not csv_data_file:
-            csv_data_file = os.path.join(
-                os.path.expanduser("~"),
-                "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\Initial Data\\CSV Data 20260201.zip",
-            )
-        else:
-            pass
+        script_tool(project_folder)
 
-        dataset_shapefiles = arcpy.GetParameterAsText(2)
-        if not dataset_shapefiles:
-            dataset_shapefiles = os.path.join(
-                os.path.expanduser("~"),
-                "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\Initial Data\\Dataset Shapefiles 20260201.zip",
-            )
-        else:
-            pass
+        arcpy.SetParameterAsText(1, True)
 
-        contacts_file = arcpy.GetParameterAsText(3)
-        if not contacts_file:
-            contacts_file = os.path.join(
-                os.path.expanduser("~"),
-                "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\Initial Data\\DisMAP Contacts 20260201.xml",
-            )
-        else:
-            pass
+        del project_folder
 
-        script_tool(project_folder, csv_data_file, dataset_shapefiles, contacts_file)
-
-        arcpy.SetParameterAsText(3, True)
-
-        del project_folder, csv_data_file, dataset_shapefiles, contacts_file
-
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
+        arcpy.AddError(arcpy.GetMessages(2))
+        traceback.print_exc()
+    except Exception:
+        traceback.print_exc()
 
 # This is an autogenerated comment.

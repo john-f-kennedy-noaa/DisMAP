@@ -12,22 +12,9 @@
 import os
 import sys
 import traceback
+import inspect
 
 import arcpy  # third-parties second
-
-
-def trace():
-    import sys  # noqa: E401
-    import traceback
-
-    tb = sys.exc_info()[2]
-    tbinfo = traceback.format_tb(tb)[0]
-    line = tbinfo.split(", ")[1]
-    # filename = sys.path[0] + os.sep + f"{os.path.basename(__file__)}"
-    filename = os.path.basename(__file__)
-    synerror = traceback.print_exc().splitlines()[-1]
-    return line, filename, synerror
-
 
 def preprocessing(project_gdb="", table_names="", clear_folder=True):
     try:
@@ -163,27 +150,30 @@ def preprocessing(project_gdb="", table_names="", clear_folder=True):
         # Function Parameters
         del project_gdb, table_names
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}")
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
-
+        pass
 
 def director(project_gdb="", Sequential=True, table_names=[]):
     try:
         # Imports
+        from lxml import etree
+        from  io import StringIO
+        from arcpy import metadata as md
+
+        # Import the dismap module to access tools
         import dismap_tools
         from create_mosaics_worker import worker
 
@@ -196,34 +186,27 @@ def director(project_gdb="", Sequential=True, table_names=[]):
             pass
 
         # Set History and Metadata logs, set serverity and message level
-        arcpy.SetLogHistory(
-            True
-        )  # Look in %AppData%\Roaming\Esri\ArcGISPro\ArcToolbox\History
+        arcpy.SetLogHistory(True)  # Look in %AppData%\Roaming\Esri\ArcGISPro\ArcToolbox\History
         arcpy.SetLogMetadata(True)
-        arcpy.SetSeverityLevel(
-            2
-        )  # 0—A tool will not throw an exception, even if the tool produces an error or warning.
+        arcpy.SetSeverityLevel(2)  # 0—A tool will not throw an exception, even if the tool produces an error or warning.
         # 1—If a tool produces a warning or an error, it will throw an exception.
         # 2—If a tool produces an error, it will throw an exception. This is the default.
-        arcpy.SetMessageLevels(
-            ["NORMAL"]
-        )  # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
+        arcpy.SetMessageLevels(["NORMAL"])  # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
 
         # Set basic arcpy.env values
         arcpy.env.overwriteOutput = True
         arcpy.env.parallelProcessingFactor = "100%"
         arcpy.env.workspace = project_gdb
-        arcpy.env.scratchWorkspace = (
-            rf"{os.path.dirname(project_gdb)}\Scratch\scratch.gdb"
-        )
+        arcpy.env.scratchWorkspace = (rf"{os.path.dirname(project_gdb)}\Scratch\scratch.gdb")
 
-        preprocessing(
-            project_gdb=project_gdb, table_names=table_names, clear_folder=True
-        )
+        preprocessing(project_gdb=project_gdb, table_names=table_names, clear_folder=True)
 
         # Set basic workkpace variables
-        scratch_folder = rf"{os.path.dirname(project_gdb)}\Scratch"
-        csv_data_folder = rf"{os.path.dirname(project_gdb)}\CSV_Data"
+        project_folder = os.path.dirname(project_gdb)
+        project_name   = os.path.basename(project_folder)
+        home_folder    = os.path.dirname(project_folder)
+        scratch_folder = os.path.join(project_folder, "Scratch")
+        csv_data_folder = os.path.join(project_folder, "CSV_Data")
 
         # Sequential Processing
         if Sequential:
@@ -346,90 +329,135 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         # Post-Processing
         arcpy.AddMessage("Post-Processing Begins")
 
-        crf_folder = rf"{os.path.dirname(project_gdb)}\CRFs"
+        crf_folder = os.path.join(project_folder, "CRFs")
 
         datasets = list()
-        walk = arcpy.da.Walk(
-            scratch_folder, datatype=["RasterDataset", "MosaicDataset"]
-        )
+        walk = arcpy.da.Walk(scratch_folder, datatype=["RasterDataset", "MosaicDataset"])
+
         for dirpath, dirnames, filenames in walk:
             for filename in filenames:
                 datasets.append(os.path.join(dirpath, filename))
                 del filename
             del dirpath, dirnames, filenames
         del walk
+
         for dataset in datasets:
             datasets_short_path = f".. {'/'.join(dataset.split(os.sep)[-4:])}"
             dataset_name = os.path.basename(dataset)
             dataset_type = arcpy.Describe(dataset).datatype
             region_gdb = os.path.dirname(dataset)
+
+            out_dataset_path = os.path.join(project_gdb, dataset_name)
+
+            # Copy Raster to CRF
+            #out_crf_path = os.path.join(project_folder, f"CRFs\\{dataset_name}")
+
             arcpy.AddMessage(f"\tDataset: '{dataset_name}'")
             arcpy.AddMessage(f"\t\tType:       '{dataset_type}'")
             arcpy.AddMessage(f"\t\tPath:       '{datasets_short_path}'")
             arcpy.AddMessage(f"\t\tRegion GDB: '{os.path.basename(region_gdb)}'")
+
             if dataset.endswith("Mosaic"):
-                try:
-                    if arcpy.Exists(rf"{project_gdb}\{dataset_name}"):
-                        arcpy.management.Delete(rf"{project_gdb}\{dataset_name}")
-                    else:
-                        pass
-                    arcpy.AddMessage(f"Copy '{dataset_name}'")
-                    arcpy.management.Copy(
-                        in_data=dataset,
-                        out_data=rf"{project_gdb}\{dataset_name}",
-                        data_type="MosaicDataset",
-                        associated_data="MosaicCatalogItemCategoryDomain 'CV domain' MosaicCatalogItemCategoryDomain DEFAULTS",
-                    )
-                    arcpy.AddMessage(
-                        "\tCopy: {0}\n".format(
-                            arcpy.GetMessages().replace("\n", "\n\t")
-                        )
-                    )
-                    # arcpy.AddMessage(f"\t\tAlter Fields for: '{dataset_name}'")
-                    # dismap_tools.alter_fields(csv_data_folder, rf"{project_gdb}\{dataset_name}")
-                    dismap_tools.import_metadata(
-                        csv_data_folder, rf"{project_gdb}\{dataset_name}"
-                    )
-                except arcpy.ExecuteWarning:
-                    arcpy.AddWarning(arcpy.GetMessages(1))
-                except arcpy.ExecuteError:
-                    arcpy.AddError(arcpy.GetMessages(2))
-                    traceback.print_exc()
-                    sys.exit()
+                if arcpy.Exists(out_dataset_path):
+                    arcpy.management.Delete(out_dataset_path)
+                else:
+                    pass
+                arcpy.AddMessage(f"Copy '{dataset_name}'")
+                arcpy.management.Copy(
+                    in_data         = dataset,
+                    out_data        = out_dataset_path,
+                    data_type       = "MosaicDataset",
+                    associated_data = "MosaicCatalogItemCategoryDomain 'CV domain' MosaicCatalogItemCategoryDomain DEFAULTS",
+                )
+                arcpy.AddMessage("\tCopy: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
+
+                # Add boilerplate metadata to dataset
+                # Version Code
+                version_code = dismap_tools.date_code(project_name)
+                # Boilerplate
+                contacts = rf"{home_folder}\Initial-Data\DisMAP-Contacts-{version_code}.xml"
+                # Reads XML, pretty format, and write back the contacts XML
+                etree.parse(contacts, parser=etree.XMLParser(encoding='UTF-8', remove_blank_text=True)).write(contacts, pretty_print=True, xml_declaration=True, encoding="UTF-8") # pyright: ignore[reportAttributeAccessIssue]
+
+                # Create Metadata object for new table
+                dataset_md = md.Metadata(out_dataset_path)
+                dataset_md.importMetadata(contacts, "ARCGIS_METADATA")
+                dataset_md.save()
+                dataset_md.synchronize("ALWAYS")
+                dataset_md.save()
+                del dataset_md
+
+                arcpy.AddMessage(f"\t\tAlter Fields for: '{os.path.basename(out_dataset_path)}'")
+                dismap_tools.alter_fields(csv_data_folder, out_dataset_path)
+
+                dataset_md = md.Metadata(out_dataset_path)
+                dataset_md.synchronize("SELECTIVE")
+                dataset_md.save()
+                del dataset_md
+
+                arcpy.AddMessage(f"\t\tImport Metadata for: '{os.path.basename(out_dataset_path)}'")
+                dismap_tools.import_metadata(project_folder, out_dataset_path)
+
+                dataset_md = md.Metadata(out_dataset_path)
+                dataset_md.synchronize("ALWAYS")
+                dataset_md.save()
+                del dataset_md
+
+                dataset_md  = md.Metadata(out_dataset_path)
+                tree = etree.parse(StringIO(dataset_md.xml), parser=etree.XMLParser(encoding="UTF-8", remove_blank_text=True))
+                root = tree.getroot()
+                etree.indent(root, space="\t")
+                dataset_md.xml = etree.tostring(tree, encoding="UTF-8", method="xml", xml_declaration=True, pretty_print=True,)
+                dataset_md.save()
+                del dataset_md
+                del tree, root
 
             elif dataset.endswith(".crf"):
-                try:
-                    if arcpy.Exists(rf"{crf_folder}\{dataset_name}"):
-                        arcpy.management.Delete(rf"{crf_folder}\{dataset_name}")
-                    else:
-                        pass
-                    arcpy.AddMessage(f"Copy '{dataset_name}'")
-                    arcpy.management.Copy(
-                        in_data=dataset,
-                        out_data=rf"{crf_folder}\{dataset_name}",
-                        data_type="MosaicDataset",
-                        associated_data="MosaicCatalogItemCategoryDomain 'CV domain' MosaicCatalogItemCategoryDomain DEFAULTS",
-                    )
-                    arcpy.AddMessage(
-                        "\tCopy: {0}\n".format(
-                            arcpy.GetMessages().replace("\n", "\n\t")
-                        )
-                    )
-                    dismap_tools.import_metadata(
-                        csv_data_folder, rf"{project_gdb}\{dataset_name}"
-                    )
-                except arcpy.ExecuteWarning:
-                    arcpy.AddWarning(arcpy.GetMessages(1))
-                except arcpy.ExecuteError:
-                    arcpy.AddError(arcpy.GetMessages(2))
-                    traceback.print_exc()
-                    raise SystemExit
-            else:
-                pass
-            arcpy.management.Delete(dataset)
-            arcpy.AddMessage(
-                "\tDelete: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t"))
-            )
+                out_crf_path = os.path.join(crf_folder, dataset_name)
+                if arcpy.Exists(out_crf_path):
+                    pass
+                    # arcpy.management.Delete(out_crf_path)
+                else:
+                    pass
+                arcpy.AddMessage(f"Copy '{dataset_name}'")
+                arcpy.management.Copy(
+                    in_data         = dataset,
+                    out_data        = out_crf_path,
+                    data_type       = "MosaicDataset",
+                    associated_data = "MosaicCatalogItemCategoryDomain 'CV domain' MosaicCatalogItemCategoryDomain DEFAULTS",)
+                arcpy.AddMessage("\tCopy: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
+
+                # Add boilerplate metadata to dataset
+                # Version Code
+                version_code = dismap_tools.date_code(project_name)
+                # Boilerplate
+                contacts = rf"{home_folder}\Initial-Data\DisMAP-Contacts-{version_code}.xml"
+                # Reads XML, pretty format, and write back the contacts XML
+                etree.parse(contacts, parser=etree.XMLParser(encoding='UTF-8', remove_blank_text=True)).write(contacts, pretty_print=True, xml_declaration=True, encoding="UTF-8") # pyright: ignore[reportAttributeAccessIssue]
+
+                # Create Metadata object for new table
+                dataset_md = md.Metadata(out_crf_path)
+                dataset_md.importMetadata(contacts, "ARCGIS_METADATA")
+                dataset_md.save()
+                dataset_md.synchronize("ALWAYS")
+                dataset_md.save()
+                del dataset_md
+
+                arcpy.AddMessage(f"\t\tImport Metadata for: '{os.path.basename(out_crf_path)}'")
+                dismap_tools.import_metadata(project_folder, out_crf_path)
+
+                dataset_md  = md.Metadata(out_crf_path)
+                tree = etree.parse(StringIO(dataset_md.xml), parser=etree.XMLParser(encoding="UTF-8", remove_blank_text=True))
+                root = tree.getroot()
+                etree.indent(root, space="\t")
+                dataset_md.xml = etree.tostring(tree, encoding="UTF-8", method="xml", xml_declaration=True, pretty_print=True,)
+                dataset_md.save()
+                del dataset_md
+                del tree, root
+
+            #arcpy.management.Delete(dataset)
+            #arcpy.AddMessage("\tDelete: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
+
             del region_gdb, dataset_name, datasets_short_path, dataset_type
             del dataset
         del datasets
@@ -438,31 +466,30 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         arcpy.management.Compact(project_gdb)
         arcpy.AddMessage("\t" + arcpy.GetMessages().replace("\n", "\n\t"))
         # Declared Variables assigned in function
-        del scratch_folder, csv_data_folder, crf_folder
+        del scratch_folder, crf_folder # csv_data_folder
         # Imports
         del worker, dismap_tools
         # Function Parameters
         del project_gdb, Sequential, table_names
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}")
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
+        pass
 
 
-def script_tool(project_gdb=""):
+def script_tool(project_folder=""):
     try:
         # Imports
         from time import gmtime, localtime, strftime, time
@@ -474,10 +501,13 @@ def script_tool(project_gdb=""):
         arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
-        arcpy.AddMessage(
-            f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}"
-        )
+        arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
         arcpy.AddMessage(f"{'-' * 80}\n")
+
+        # Set varaibales
+        project_name   = os.path.basename(project_folder)
+        project_gdb    = os.path.join(project_folder, f"{project_name}.gdb")
+        #scratch_folder = rf"{project_folder}\Scratch"
 
         ##        # Clear Scratch Folder
         ##        ClearScratchFolder = False
@@ -497,16 +527,12 @@ def script_tool(project_gdb=""):
                 director(
                     project_gdb=project_gdb,
                     Sequential=True,
-                    table_names=[
-                        "SEUS_FAL_IDW",
-                        "HI_IDW",
-                        "NBS_IDW",
-                    ],
-                )
+                    table_names=["HI_IDW",],
+                    )
             elif not Test:
                 director(
                     project_gdb=project_gdb,
-                    Sequential=False,
+                    Sequential=True,
                     table_names=[
                         "AI_IDW",
                         "EBS_IDW",
@@ -519,7 +545,7 @@ def script_tool(project_gdb=""):
                 )
                 director(
                     project_gdb=project_gdb,
-                    Sequential=False,
+                    Sequential=True,
                     table_names=[
                         "NEUS_FAL_IDW",
                         "NEUS_SPR_IDW",
@@ -552,63 +578,57 @@ def script_tool(project_gdb=""):
         minutes, seconds = divmod(rem, 60)
         arcpy.AddMessage(f"\n{'-' * 80}")
         arcpy.AddMessage(f"Python script: {os.path.basename(__file__)}")
-        arcpy.AddMessage(
-            f"Start Time:    {strftime('%a %b %d %I:%M %p', localtime(start_time))}"
-        )
-        arcpy.AddMessage(
-            f"End Time:      {strftime('%a %b %d %I:%M %p', localtime(end_time))}"
-        )
-        arcpy.AddMessage(
-            f"Elapsed Time   {int(hours):0>2}:{int(minutes):0>2}:{seconds:05.2f} (H:M:S)"
-        )
+        arcpy.AddMessage(f"Start Time:    {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
+        arcpy.AddMessage(f"End Time:      {strftime('%a %b %d %I:%M %p', localtime(end_time))}")
+        arcpy.AddMessage(f"Elapsed Time   {int(hours):0>2}:{int(minutes):0>2}:{seconds:05.2f} (H:M:S)")
         arcpy.AddMessage(f"{'-' * 80}")
         del hours, rem, minutes, seconds
         del elapse_time, end_time, start_time
         del gmtime, localtime, strftime, time
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}")
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
+        arcpy.AddMessage("Script finished successfully.")
+    finally:
+        arcpy.AddMessage(f"{'--The End' * 10}--")
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
-        project_gdb = arcpy.GetParameterAsText(0)
-        if not project_gdb:
-            project_gdb = os.path.join(
-                os.path.expanduser("~"),
-                "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb",
-            )
+
+        project_folder = arcpy.GetParameterAsText(0)
+        if not project_folder:
+            # project_name = "August-1-2025"
+            # project_name = "February-1-2026"
+            project_name = "June-1-2026"
+            project_folder = os.path.join(os.path.expanduser('~'), f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}")
         else:
             pass
-        script_tool(project_gdb)
-        arcpy.SetParameterAsText(1, "Result")
-        del project_gdb
 
+        script_tool(project_folder)
+
+        arcpy.SetParameterAsText(1, "Result")
+
+        del project_folder
+
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
+        arcpy.AddError(arcpy.GetMessages(2))
+        traceback.print_exc()
+    except Exception:
+        traceback.print_exc()
 
 # This is an autogenerated comment.

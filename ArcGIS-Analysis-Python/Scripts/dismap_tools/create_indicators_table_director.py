@@ -12,22 +12,9 @@
 import os
 import sys
 import traceback
+import inspect
 
 import arcpy  # third-parties second
-
-
-def trace():
-    import sys  # noqa: E401
-    import traceback
-
-    tb = sys.exc_info()[2]
-    tbinfo = traceback.format_tb(tb)[0]
-    line = tbinfo.split(", ")[1]
-    # filename = sys.path[0] + os.sep + f"{os.path.basename(__file__)}"
-    filename = os.path.basename(__file__)
-    synerror = traceback.print_exc().splitlines()[-1]
-    return line, filename, synerror
-
 
 def director(project_gdb="", Sequential=True, table_names=[]):
     try:
@@ -66,9 +53,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         arcpy.env.workspace = project_gdb
         arcpy.env.scratchWorkspace = scratch_workspace
 
-        preprocessing(
-            project_gdb=project_gdb, table_names=table_names, clear_folder=True
-        )
+        preprocessing(project_gdb=project_gdb, table_names=table_names, clear_folder=True)
 
         # Sequential Processing
         if Sequential:
@@ -101,12 +86,8 @@ def director(project_gdb="", Sequential=True, table_names=[]):
             multiprocessing.set_executable(os.path.join(sys.exec_prefix, "pythonw.exe"))
             # Get CPU count and then take 2 away for other process
             _processes = multiprocessing.cpu_count() - 2
-            _processes = (
-                _processes if len(table_names) >= _processes else len(table_names)
-            )
-            arcpy.AddMessage(
-                f"Creating the multiprocessing Pool with {_processes} processes"
-            )
+            _processes = (_processes if len(table_names) >= _processes else len(table_names))
+            arcpy.AddMessage(f"Creating the multiprocessing Pool with {_processes} processes")
             # Create a pool of workers, keep one cpu free for surfing the net.
             # Let each worker process only handle 1 task before being restarted (in case of nasty memory leaks)
             with multiprocessing.Pool(processes=_processes, maxtasksperchild=1) as pool:
@@ -192,6 +173,7 @@ def director(project_gdb="", Sequential=True, table_names=[]):
         arcpy.AddMessage("Post-Processing Begins")
 
         datasets = list()
+
         walk = arcpy.da.Walk(scratch_folder, datatype=["Table", "FeatureClass"])
         for dirpath, dirnames, filenames in walk:
             for filename in filenames:
@@ -199,17 +181,20 @@ def director(project_gdb="", Sequential=True, table_names=[]):
                 del filename
             del dirpath, dirnames, filenames
         del walk
+
         for dataset in datasets:
+
             datasets_short_path = f".. {'/'.join(dataset.split(os.sep)[-4:])}"
             dataset_name = os.path.basename(dataset)
             region_gdb = os.path.dirname(dataset)
+
             arcpy.AddMessage(f"\tDataset: '{dataset_name}'")
             arcpy.AddMessage(f"\t\tPath:       '{datasets_short_path}'")
             arcpy.AddMessage(f"\t\tRegion GDB: '{os.path.basename(region_gdb)}'")
+
             arcpy.management.Copy(dataset, rf"{project_gdb}\{dataset_name}")
-            arcpy.AddMessage(
-                "\tCopy: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t"))
-            )
+            arcpy.AddMessage("\tCopy: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
+
             # arcpy.management.Delete(dataset)
             # arcpy.AddMessage(f"\t\tAlter Fields for: '{dataset}'")
             # dismap_tools.alter_fields(csv_data_folder, rf"{project_gdb}\{dataset}")
@@ -217,57 +202,62 @@ def director(project_gdb="", Sequential=True, table_names=[]):
             del dataset
         del datasets
 
+        # Reset environment settings to default settings.
+        arcpy.ResetEnvironments()
+
         arcpy.AddMessage(f"Compacting the {os.path.basename(project_gdb)} GDB")
         arcpy.management.Compact(project_gdb)
         arcpy.AddMessage("\t" + arcpy.GetMessages(0).replace("\n", "\n\t"))
+
         # Declared Variables
         del scratch_folder, csv_data_folder, scratch_workspace
+
         # Imports
         del preprocessing, worker, dismap_tools
         # Function Parameters
         del project_gdb, Sequential, table_names
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}")
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
+        pass
 
 
 def process_indicator_tables(project_gdb=""):
     try:
-        # Import
-        import dismap_tools
         from arcpy import metadata as md
 
-        arcpy.SetLogHistory(
-            True
-        )  # Look in %AppData%\Roaming\Esri\ArcGISPro\ArcToolbox\History
+        # Imports
+        from lxml import etree
+        from  io import StringIO
+        from arcpy import metadata as md  # noqa: F811
+
+        import dismap_tools
+
+        arcpy.SetLogHistory(True)  # Look in %AppData%\Roaming\Esri\ArcGISPro\ArcToolbox\History
         arcpy.SetLogMetadata(True)
-        arcpy.SetSeverityLevel(
-            1
-        )  # 0—A tool will not throw an exception, even if the tool produces an error or warning.
+        arcpy.SetSeverityLevel(1)  # 0—A tool will not throw an exception, even if the tool produces an error or warning.
         # 1—If a tool produces a warning or an error, it will throw an exception.
         # 2—If a tool produces an error, it will throw an exception. This is the default.
-        arcpy.SetMessageLevels(
-            ["NORMAL"]
-        )  # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
+        arcpy.SetMessageLevels(["NORMAL"])  # NORMAL, COMMANDSYNTAX, DIAGNOSTICS, PROJECTIONTRANSFORMATION
 
         project_folder = os.path.dirname(project_gdb)
+        project_name   = os.path.basename(project_folder)
+        home_folder    = os.path.dirname(project_folder)
         scratch_folder = os.path.join(project_folder, "Scratch")
         scratch_workspace = os.path.join(project_folder, "Scratch\\scratch.gdb")
-        csv_data_folder = os.path.join(project_folder, f"CSV_Data")
+        csv_data_folder = os.path.join(project_folder, "CSV_Data")
 
         arcpy.env.workspace = project_gdb
         arcpy.env.scratchWorkspace = scratch_workspace
@@ -275,15 +265,50 @@ def process_indicator_tables(project_gdb=""):
         arcpy.env.parallelProcessingFactor = "100%"
 
         arcpy.management.CreateTable(project_gdb, "Indicators", "", "", "")
-        arcpy.AddMessage(
-            "\tCreate Table: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t"))
-        )
+        arcpy.AddMessage("\tCreate Table: {0}\n".format(arcpy.GetMessages().replace("\n", "\n\t")))
 
-        indicators = rf"{project_gdb}\Indicators"
+        indicators = os.path.join(project_gdb, "Indicators")
 
-        dismap_tools.add_fields(csv_data_folder, indicators)
-        # dismap_tools.alter_fields(csv_data_folder, indicators)
-        dismap_tools.import_metadata(csv_data_folder, indicators)
+        # Add boilerplate metadata to dataset
+        # Version Code
+        version_code = dismap_tools.date_code(project_name)
+        # Boilerplate
+        contacts = rf"{home_folder}\Initial-Data\DisMAP-Contacts-{version_code}.xml"
+        # Reads XML, pretty format, and write back the contacts XML
+        etree.parse(contacts, parser=etree.XMLParser(encoding='UTF-8', remove_blank_text=True)).write(contacts, pretty_print=True, xml_declaration=True, encoding="UTF-8") # pyright: ignore[reportAttributeAccessIssue]
+
+        # Create Metadata object for new table
+        dataset_md = md.Metadata(indicators)
+        dataset_md.importMetadata(contacts, "ARCGIS_METADATA")
+        dataset_md.save()
+        dataset_md.synchronize("ALWAYS")
+        dataset_md.save()
+        del dataset_md
+
+        arcpy.AddMessage(f"\t\tAlter Fields for: '{os.path.basename(indicators)}'")
+        dismap_tools.alter_fields(csv_data_folder, indicators)
+
+        dataset_md = md.Metadata(indicators)
+        dataset_md.synchronize("ALWAYS")
+        dataset_md.save()
+        del dataset_md
+
+        arcpy.AddMessage(f"\t\tImport Metadata for: '{os.path.basename(indicators)}'")
+        dismap_tools.import_metadata(project_folder, indicators)
+
+        dataset_md = md.Metadata(indicators)
+        dataset_md.synchronize("ALWAYS")
+        dataset_md.save()
+        del dataset_md
+
+        dataset_md  = md.Metadata(indicators)
+        tree = etree.parse(StringIO(dataset_md.xml), parser=etree.XMLParser(encoding="UTF-8", remove_blank_text=True))
+        root = tree.getroot()
+        etree.indent(root, space="\t")
+        dataset_md.xml = etree.tostring(tree, encoding="UTF-8", method="xml", xml_declaration=True, pretty_print=True,)
+        dataset_md.save()
+        del dataset_md
+        del tree, root
 
         # in_tables = [it for it in arcpy.ListTables("*_Indicators") if it == "AI_IDW_Indicators"]
         # in_tables = [it for it in arcpy.ListTables("*_Indicators") if not any(lo in it for lo in ["GFDL", "GLMME"])]
@@ -364,41 +389,40 @@ def process_indicator_tables(project_gdb=""):
                 del in_table_path
             # end for loop
 
-        dataset_md = md.Metadata(indicators)
-        dataset_md.synchronize("ALWAYS")
-        dataset_md.save()
-        del dataset_md
+        # dataset_md = md.Metadata(indicators)
+        # dataset_md.synchronize("ALWAYS")
+        # dataset_md.save()
+        # del dataset_md
 
         arcpy.AddMessage(f"Compacting the {os.path.basename(project_gdb)} GDB")
         arcpy.management.Compact(project_gdb)
         arcpy.AddMessage("\t" + arcpy.GetMessages(0).replace("\n", "\n\t"))
+
         # Declared Variables assigned in function
-        del in_tables, indicators
+        #del in_tables, indicators
         del scratch_folder, scratch_workspace, csv_data_folder, project_folder
         # Imports
         del dismap_tools, md
         # Function Parameters
         del project_gdb
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}")
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
+        pass
 
-
-def script_tool(project_gdb=""):
+def script_tool(project_folder=""):
     try:
         # Imports
         from time import gmtime, localtime, strftime, time
@@ -410,16 +434,13 @@ def script_tool(project_gdb=""):
         arcpy.AddMessage(f"Location:       .. {'/'.join(__file__.split(os.sep)[-4:])}")
         arcpy.AddMessage(f"Python Version: {sys.version}")
         arcpy.AddMessage(f"Environment:    {os.path.basename(sys.exec_prefix)}")
-        arcpy.AddMessage(
-            f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}"
-        )
+        arcpy.AddMessage(f"Start Time:     {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
         arcpy.AddMessage(f"{'-' * 80}\n")
 
-        # Test if passed workspace exists, if not sys.exit()
-        if not arcpy.Exists(project_gdb):
-            sys.exit(f"{os.path.basename(project_gdb)} is missing!!")
-        else:
-            pass
+        # Set varaibales
+        project_name   = os.path.basename(project_folder)
+        project_gdb    = os.path.join(project_folder, f"{project_name}.gdb")
+        #scratch_folder = rf"{project_folder}\Scratch"
 
         try:
             pass
@@ -428,20 +449,11 @@ def script_tool(project_gdb=""):
 
             Test = False
             if Test:
-                director(
-                    project_gdb=project_gdb,
-                    Sequential=True,
-                    table_names=[
-                        "AI_IDW",
-                        "HI_IDW",
-                    ],
-                )
+                director(project_gdb=project_gdb, Sequential=True, table_names=["HI_IDW",],)
             elif not Test:
                 pass
-                # director(project_gdb=project_gdb, Sequential=False, table_names=["AI_IDW", "EBS_IDW", "ENBS_IDW", "GOA_IDW", "NBS_IDW",])
-                # director(project_gdb=project_gdb, Sequential=False, table_names=["SEUS_FAL_IDW", "SEUS_SPR_IDW", "SEUS_SUM_IDW",])
-                # director(project_gdb=project_gdb, Sequential=False, table_names=["GMEX_IDW", "WC_ANN_IDW", "WC_TRI_IDW", "NEUS_FAL_IDW", "NEUS_SPR_IDW",])
-                # director(project_gdb=project_gdb, Sequential=False, table_names=["HI_IDW", "NEUS_FAL_IDW", "NEUS_SPR_IDW",])
+                #director(project_gdb=project_gdb, Sequential=False, table_names=["AI_IDW", "EBS_IDW", "ENBS_IDW", "GOA_IDW", "GMEX_IDW", "HI_IDW", "NBS_IDW", "NEUS_FAL_IDW", "NEUS_SPR_IDW", "SEUS_FAL_IDW", "SEUS_SPR_IDW", "SEUS_SUM_IDW", "WC_ANN_IDW", "WC_TRI_IDW",])
+                #director(project_gdb=project_gdb, Sequential=True, table_names=["AI_IDW", "EBS_IDW", "ENBS_IDW", "GOA_IDW", "GMEX_IDW", "HI_IDW", "NBS_IDW", "NEUS_FAL_IDW", "NEUS_SPR_IDW", "SEUS_FAL_IDW", "SEUS_SPR_IDW", "SEUS_SUM_IDW", "WC_ANN_IDW", "WC_TRI_IDW",])
             else:
                 pass
             del Test
@@ -456,12 +468,12 @@ def script_tool(project_gdb=""):
 
         except:  # noqa: E722
             traceback.print_exc()
-            sys.exit()
 
         # Declared Variables
         # Imports
         # Function Parameters
         del project_gdb
+
         # Elapsed time
         end_time = time()
         elapse_time = end_time - start_time
@@ -469,66 +481,58 @@ def script_tool(project_gdb=""):
         minutes, seconds = divmod(rem, 60)
         arcpy.AddMessage(f"\n{'-' * 80}")
         arcpy.AddMessage(f"Python script: {os.path.basename(__file__)}")
-        arcpy.AddMessage(
-            f"Start Time:    {strftime('%a %b %d %I:%M %p', localtime(start_time))}"
-        )
-        arcpy.AddMessage(
-            f"End Time:      {strftime('%a %b %d %I:%M %p', localtime(end_time))}"
-        )
-        arcpy.AddMessage(
-            f"Elapsed Time   {int(hours):0>2}:{int(minutes):0>2}:{seconds:05.2f} (H:M:S)"
-        )
+        arcpy.AddMessage(f"Start Time:    {strftime('%a %b %d %I:%M %p', localtime(start_time))}")
+        arcpy.AddMessage(f"End Time:      {strftime('%a %b %d %I:%M %p', localtime(end_time))}")
+        arcpy.AddMessage(f"Elapsed Time   {int(hours):0>2}:{int(minutes):0>2}:{seconds:05.2f} (H:M:S)")
         arcpy.AddMessage(f"{'-' * 80}")
         del hours, rem, minutes, seconds
         del elapse_time, end_time, start_time
         del gmtime, localtime, strftime, time
 
+    except arcpy.ExecuteWarning:
+        arcpy.AddWarning(f"ArcPy Execute Warning in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(1)}")
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-        return False
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
-        return False
+        arcpy.AddError(f"ArcPy Execute Error in '{inspect.stack()[0][3]}':\n{arcpy.GetMessages(2)}")
+        arcpy.AddError("Traceback:\n")
+        traceback.print_exc()
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
+    except Exception as e:
+        arcpy.AddError(f"An unexpected error occurred in '{inspect.stack()[0][3]}': {e}")
+        arcpy.AddError("Traceback:")
+        traceback.print_exc()
     else:
-        return True
+        arcpy.AddMessage("Script finished successfully.")
+    finally:
+        arcpy.AddMessage(f"{'--The End' * 10}--")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
-        project_gdb = arcpy.GetParameterAsText(0)
-        if not project_gdb:
-            project_gdb = os.path.join(
-                os.path.expanduser("~"),
-                "Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\February 1 2026\\February 1 2026.gdb",
-            )
+
+        project_folder = arcpy.GetParameterAsText(0)
+        if not project_folder:
+            # project_name = "August-1-2025"
+            # project_name = "February-1-2026"
+            project_name = "June-1-2026"
+            project_folder = os.path.join(os.path.expanduser('~'), f"Documents\\ArcGIS\\Projects\\DisMAP\\ArcGIS-Analysis-Python\\{project_name}")
         else:
             pass
 
-        script_tool(project_gdb)
+        script_tool(project_folder)
 
         arcpy.SetParameterAsText(1, "Result")
 
-        del project_gdb
+        del project_folder
 
+    except SystemExit:
+        # This is not an error, so we allow the script to exit.
+        pass
     except arcpy.ExecuteError:
-        # Return Geoprocessing tool specific errors
-        line, filename, err = trace()
-        arcpy.AddError("Geoprocessing error on " + line + " of " + filename + " :")
-        for msg in range(0, arcpy.GetMessageCount()):
-            if arcpy.GetSeverity(msg) == 2:
-                arcpy.AddReturnMessage(msg)
-    except:  # noqa: E722
-        # Gets non-tool errors
-        line, filename, err = trace()
-        arcpy.AddError("Python error on " + line + " of " + filename)
-        arcpy.AddError(err)
+        arcpy.AddError(arcpy.GetMessages(2))
+        traceback.print_exc()
+    except Exception:
+        traceback.print_exc()
 
 # This is an autogenerated comment.
